@@ -63,11 +63,12 @@ import { aihubmixHeaders } from './integrations/aihubmix.js';
 import type { AgentCliEnvPrefs } from './app-config.js';
 import type { RuntimeAgentDef } from './runtimes/types.js';
 import { preparePromptFileForAgent, type PreparedPromptFile } from './runtimes/prompt-file.js';
-import { configuredAllowedInternalHosts } from './origin-validation.js';
+import { configuredAllowedInternalHosts, configuredAllowPrivateNetworks } from './origin-validation.js';
 import {
   isAllowlistedInternalHost,
   isBlockedExternalApiHostname,
   isLoopbackApiHost,
+  isRfc1918Host,
   validateBaseUrl,
   type AgentTestRequest,
   type BaseUrlValidationResult,
@@ -184,9 +185,15 @@ export async function validateBaseUrlResolved(
     }
     // A resolved address the operator explicitly allowlisted (they listed the
     // IP rather than the hostname) is permitted; everything else in private
-    // space is still blocked.
+    // space is still blocked. RFC1918 addresses (10/8, 172.16/12, 192.168/16)
+    // additionally skip the block when the operator opts in via
+    // `allowPrivateNetworks`. Cloud-metadata (169.254/16) and CGNAT
+    // (100.64/10) are not in the RFC1918 set and stay blocked regardless.
     if (isAllowlistedInternalHost(ip, options.allowedInternalHosts)) continue;
-    if (isBlockedExternalApiHostname(ip)) {
+    if (
+      isBlockedExternalApiHostname(ip) &&
+      !(options.allowPrivateNetworks === true && isRfc1918Host(ip))
+    ) {
       return { error: 'Internal IPs blocked', forbidden: true };
     }
   }
@@ -217,6 +224,7 @@ export function validateUserProviderBaseUrl(
 ): Promise<BaseUrlValidationResult> {
   return validateBaseUrlResolved(baseUrl, lookup, {
     allowedInternalHosts: configuredAllowedInternalHosts(),
+    allowPrivateNetworks: configuredAllowPrivateNetworks(),
   });
 }
 

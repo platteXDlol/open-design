@@ -5,6 +5,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   allowedBrowserPorts,
+  configuredAllowPrivateNetworks,
   configuredAllowedInternalHosts,
   configuredAllowedOrigins,
   isAllowedBrowserOrigin,
@@ -814,5 +815,30 @@ describe('configuredAllowedInternalHosts: OD_ALLOWED_INTERNAL_HOSTS parsing (iss
     expect(hosts).toEqual(['10.0.0.5']);
     expect(warnings).toHaveLength(1);
     expect(warnings[0]).toMatch(/CIDR/i);
+  });
+});
+
+describe('configuredAllowPrivateNetworks: OD_ALLOW_PRIVATE_NETWORKS parsing (Local-First fork)', () => {
+  it('defaults to true when the env var is unset, blank, or unrecognized', () => {
+    expect(configuredAllowPrivateNetworks({})).toBe(true);
+    expect(configuredAllowPrivateNetworks({ OD_ALLOW_PRIVATE_NETWORKS: '' })).toBe(true);
+    expect(configuredAllowPrivateNetworks({ OD_ALLOW_PRIVATE_NETWORKS: '   ' })).toBe(true);
+    // Unrecognized values fall back to the default (true) rather than failing
+    // closed — the LAN-toggle is product-default, not security-critical.
+    expect(configuredAllowPrivateNetworks({ OD_ALLOW_PRIVATE_NETWORKS: 'maybe' })).toBe(true);
+  });
+
+  it('returns false only for explicit falsy values', () => {
+    expect(configuredAllowPrivateNetworks({ OD_ALLOW_PRIVATE_NETWORKS: '0' })).toBe(false);
+    expect(configuredAllowPrivateNetworks({ OD_ALLOW_PRIVATE_NETWORKS: 'false' })).toBe(false);
+    expect(configuredAllowPrivateNetworks({ OD_ALLOW_PRIVATE_NETWORKS: 'no' })).toBe(false);
+    expect(configuredAllowPrivateNetworks({ OD_ALLOW_PRIVATE_NETWORKS: 'off' })).toBe(false);
+  });
+
+  it('is case-insensitive on both the literal and surrounding whitespace', () => {
+    expect(configuredAllowPrivateNetworks({ OD_ALLOW_PRIVATE_NETWORKS: 'TRUE' })).toBe(true);
+    expect(configuredAllowPrivateNetworks({ OD_ALLOW_PRIVATE_NETWORKS: '  Yes  ' })).toBe(true);
+    expect(configuredAllowPrivateNetworks({ OD_ALLOW_PRIVATE_NETWORKS: 'FALSE' })).toBe(false);
+    expect(configuredAllowPrivateNetworks({ OD_ALLOW_PRIVATE_NETWORKS: 'OFF' })).toBe(false);
   });
 });

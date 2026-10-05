@@ -71,6 +71,28 @@ function isBlockedIpv4(hostname: string): boolean {
   );
 }
 
+// RFC1918 private ranges only: 10/8, 172.16/12, 192.168/16. Cloud-metadata
+// (169.254/16) and CGNAT (100.64/10) are NOT in this set — they stay blocked
+// always regardless of `allowPrivateNetworks`. Used as the carve-out predicate
+// when the Local-First daemon operator opts into LAN AI endpoints.
+// Exported so the daemon's DNS-aware `validateBaseUrlResolved` (which lives
+// in `apps/daemon/src/connectionTest.ts` because the contract layer is pure
+// TS with no Node `dns` dependency) can apply the same RFC1918 carve-out at
+// the resolved-IP layer.
+export function isRfc1918Host(hostname: string): boolean {
+  const parts = parseIpv4(hostname);
+  if (parts) {
+    const [a, b] = parts;
+    return a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
+  }
+  // IPv4-mapped IPv6 literal (e.g. `[::ffff:192.168.1.5]`) — recurse with
+  // the dotted-quad form so the carve-out applies there too. Brackets are
+  // already stripped inside `ipv4MappedToDotted` via `normalizeBracketedIpv6`.
+  const mapped = ipv4MappedToDotted(hostname);
+  if (mapped) return isRfc1918Host(mapped);
+  return false;
+}
+
 function ipv4MappedToDotted(hostname: string): string | null {
   const host = normalizeBracketedIpv6(hostname);
   const mapped = /^::ffff:(.+)$/i.exec(host)?.[1];
@@ -162,6 +184,16 @@ export interface ValidateBaseUrlOptions {
   // false so user-configured provider endpoints (connection test, BYOK chat)
   // keep working with local gateways.
   forbidLoopback?: boolean;
+  // When true, RFC1918 hosts (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
+  // skip the internal-IP block. Used by the Local-First fork so an operator
+  // running a self-hosted AI on the LAN (e.g. llama-swap at 192.168.1.42)
+  // does not have to list every host in `allowedInternalHosts`. Defaults to
+  // false at the contract layer (strict default-deny preserved for any caller
+  // that does not opt in). Cloud-metadata (169.254/16) and CGNAT (100.64/10)
+  // are NOT in the RFC1918 set and stay blocked regardless of this toggle.
+  // The asset-download SSRF guard (`assertExternalAssetUrl`) never consults
+  // this option — strict always.
+  allowPrivateNetworks?: boolean;
 }
 
 export function validateBaseUrl(
@@ -187,7 +219,8 @@ export function validateBaseUrl(
   if (
     !isLoopbackApiHost(hostname) &&
     !isAllowlistedInternalHost(hostname, options.allowedInternalHosts) &&
-    isBlockedExternalApiHostname(hostname)
+    isBlockedExternalApiHostname(hostname) &&
+    !(options.allowPrivateNetworks === true && isRfc1918Host(hostname))
   ) {
     return { error: 'Internal IPs blocked', forbidden: true };
   }
