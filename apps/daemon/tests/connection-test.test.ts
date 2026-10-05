@@ -557,6 +557,11 @@ describe('POST /api/provider/models', () => {
   });
 
   it('rejects private-network base URLs without calling upstream fetch', async () => {
+    // 169.254.169.254 (cloud metadata) is NOT in the RFC1918 set, so it stays
+    // blocked even when the Local-First fork's `OD_ALLOW_PRIVATE_NETWORKS=1`
+    // default is in effect. The test asserts the meta-invariant: addresses
+    // outside the RFC1918 carve-out are still rejected before any upstream
+    // fetch.
     const fetchMock = passThroughOrUpstream(() => jsonResponse({}));
     vi.stubGlobal('fetch', fetchMock);
 
@@ -565,7 +570,7 @@ describe('POST /api/provider/models', () => {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
         protocol: 'openai',
-        baseUrl: 'http://192.168.1.5:8080/v1',
+        baseUrl: 'http://169.254.169.254:8080/v1',
         apiKey: 'sk-good',
       }),
     });
@@ -582,13 +587,19 @@ describe('POST /api/provider/models', () => {
   // must resolve the hostname and reject when *any* resolved address is in
   // a blocked range, not just when the literal hostname is a private IP.
   it('rejects hostnames that resolve to a private IP without calling upstream fetch', async () => {
+    // rebind.example.test resolves to 169.254.169.254 (cloud metadata), which
+    // is NOT in the RFC1918 set — it stays blocked under the Local-First
+    // fork's `OD_ALLOW_PRIVATE_NETWORKS=1` default and under the strict
+    // `validateBaseUrlResolved` path. The DNS-rebinding defense (issue
+    // #5478) is what this test exercises: a public DNS name cannot redirect
+    // the request to a private IP at fetch time.
     const fetchMock = passThroughOrUpstream(() => jsonResponse({}));
     vi.stubGlobal('fetch', fetchMock);
     const dnsSpy = vi
       .spyOn(dnsPromises, 'lookup')
       .mockImplementation((async (hostname: string) => {
         if (hostname === 'rebind.example.test') {
-          return [{ address: '10.0.0.5', family: 4 }];
+          return [{ address: '169.254.169.254', family: 4 }];
         }
         const err: NodeJS.ErrnoException = new Error('ENOTFOUND');
         err.code = 'ENOTFOUND';
@@ -5047,8 +5058,12 @@ describe('validateUserProviderBaseUrl: OD_ALLOWED_INTERNAL_HOSTS opt-in (issue #
   });
 
   it('still blocks a private endpoint that is not on the allowlist', async () => {
+    // 169.254.169.254 (cloud metadata) is NOT in the RFC1918 set — it stays
+    // blocked even with the Local-First `OD_ALLOW_PRIVATE_NETWORKS=1` default
+    // in effect. The test asserts the meta-invariant: addresses outside the
+    // RFC1918 carve-out remain rejected by the user-provider path.
     vi.stubEnv('OD_ALLOWED_INTERNAL_HOSTS', '10.0.0.5');
-    const result = await validateUserProviderBaseUrl('http://192.168.1.5:4000/v1');
+    const result = await validateUserProviderBaseUrl('http://169.254.169.254:4000/v1');
     expect(result).toMatchObject({ error: 'Internal IPs blocked', forbidden: true });
   });
 

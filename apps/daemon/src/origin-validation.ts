@@ -89,6 +89,27 @@ export function configuredAllowedInternalHosts(
   return hosts;
 }
 
+// Issue (Local-First fork) — default-on RFC1918 carve-out for user-configured
+// provider endpoints. Reads `OD_ALLOW_PRIVATE_NETWORKS`; the Local-First
+// product stance defaults to ON so an operator running a self-hosted AI on
+// the LAN (e.g. llama-swap at 192.168.1.42) does not have to list every host
+// in `OD_ALLOWED_INTERNAL_HOSTS`. The contract-level `allowPrivateNetworks`
+// option this drives affects ONLY `validateUserProviderBaseUrl` — the
+// asset-download SSRF guard (`assertExternalAssetUrl`,
+// `createAssetValidatingLookup`) is unchanged and stays strict.
+//
+// Recognized truthy: `1`, `true`, `yes`, `on` (case-insensitive).
+// Recognized falsy: `0`, `false`, `no`, `off` (case-insensitive).
+// Empty / unset / unrecognized → `true` (the default).
+export function configuredAllowPrivateNetworks(
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  const raw = String(env.OD_ALLOW_PRIVATE_NETWORKS ?? '').trim().toLowerCase();
+  if (raw === '') return true;
+  if (raw === '0' || raw === 'false' || raw === 'no' || raw === 'off') return false;
+  return true;
+}
+
 export function allowedBrowserPorts(
   port: number | string | null | undefined,
   env: NodeJS.ProcessEnv = process.env,

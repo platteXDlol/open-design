@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   isAllowlistedInternalHost,
   isLoopbackApiHost,
+  isRfc1918Host,
   validateBaseUrl,
 } from '../src/api/connectionTest';
 
@@ -66,6 +67,83 @@ describe('provider base URL validation', () => {
         forbidden: true,
       });
     }
+  });
+
+  it('allows RFC1918 hosts when allowPrivateNetworks is true (Local-First LAN carve-out)', () => {
+    for (const baseUrl of [
+      'http://10.0.0.5:11434/v1',               // 10/8
+      'http://172.16.0.5:11434/v1',             // 172.16/12
+      'http://192.168.1.5:11434/v1',            // 192.168/16
+      'http://10.0.0.5.:11434/v1',              // trailing-dot FQDN
+      'http://[::ffff:192.168.1.5]:11434/v1',   // IPv4-mapped IPv6 literal
+    ]) {
+      const result = validateBaseUrl(baseUrl, { allowPrivateNetworks: true });
+      expect(result.error).toBeUndefined();
+      expect(result.parsed).toBeDefined();
+    }
+  });
+
+  it('still blocks RFC1918 hosts when allowPrivateNetworks is false (default)', () => {
+    for (const baseUrl of [
+      'http://10.0.0.5:11434/v1',
+      'http://172.16.0.5:11434/v1',
+      'http://192.168.1.5:11434/v1',
+    ]) {
+      expect(validateBaseUrl(baseUrl)).toMatchObject({
+        error: 'Internal IPs blocked',
+        forbidden: true,
+      });
+      expect(validateBaseUrl(baseUrl, { allowPrivateNetworks: false })).toMatchObject({
+        error: 'Internal IPs blocked',
+        forbidden: true,
+      });
+    }
+  });
+
+  it('keeps cloud-metadata and CGNAT blocked even when allowPrivateNetworks is true', () => {
+    // The toggle is the RFC1918 carve-out, not a license to reach every
+    // private address. Cloud-metadata (169.254/16) and CGNAT (100.64/10)
+    // stay blocked always because they are NOT in the RFC1918 set.
+    for (const baseUrl of [
+      'http://169.254.169.254/latest/meta-data', // cloud metadata
+      'http://100.64.0.1:11434/v1',              // CGNAT
+    ]) {
+      expect(validateBaseUrl(baseUrl, { allowPrivateNetworks: true })).toMatchObject({
+        error: 'Internal IPs blocked',
+        forbidden: true,
+      });
+    }
+  });
+});
+
+describe('isRfc1918Host (Local-First LAN carve-out predicate)', () => {
+  it('matches the three RFC1918 ranges', () => {
+    expect(isRfc1918Host('10.0.0.5')).toBe(true);
+    expect(isRfc1918Host('10.255.255.255')).toBe(true);
+    expect(isRfc1918Host('172.16.0.1')).toBe(true);
+    expect(isRfc1918Host('172.31.255.255')).toBe(true);
+    expect(isRfc1918Host('192.168.0.1')).toBe(true);
+    expect(isRfc1918Host('192.168.255.255')).toBe(true);
+  });
+
+  it('rejects addresses outside RFC1918', () => {
+    // Just-outside the lower bound
+    expect(isRfc1918Host('172.15.0.1')).toBe(false);
+    expect(isRfc1918Host('172.32.0.1')).toBe(false);
+    // Cloud-metadata and CGNAT must NOT match
+    expect(isRfc1918Host('169.254.169.254')).toBe(false);
+    expect(isRfc1918Host('100.64.0.1')).toBe(false);
+    // Public addresses
+    expect(isRfc1918Host('8.8.8.8')).toBe(false);
+    expect(isRfc1918Host('1.1.1.1')).toBe(false);
+  });
+
+  it('rejects non-IPv4 input', () => {
+    expect(isRfc1918Host('example.com')).toBe(false);
+    expect(isRfc1918Host('localhost')).toBe(false);
+    expect(isRfc1918Host('')).toBe(false);
+    expect(isRfc1918Host('::1')).toBe(false);
+    expect(isRfc1918Host('fc00::1')).toBe(false);
   });
 });
 
