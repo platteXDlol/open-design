@@ -116,7 +116,7 @@ describe('BYOK draft validation', () => {
       }).ok,
     ).toBe(true);
     expect(
-      validateByokDraft('google', {
+      validateByokDraft('openai', {
         apiKey: 'enterprise-gemini-key',
         baseUrl: 'https://gemini.internal.example.com/v1beta',
         model: 'gemini-2.0-flash',
@@ -192,7 +192,7 @@ describe('BYOK draft validation', () => {
   });
 
   it('rejects Anthropic/OpenAI base URLs on the Google Gemini tab', () => {
-    const anthropicHost = validateByokDraft('google', {
+    const anthropicHost = validateByokDraft('openai', {
       apiKey: 'AQ.TestKeyForUnitTests01234567890123456789012',
       baseUrl: 'https://api.anthropic.com',
       model: 'gemini-2.0-flash',
@@ -210,14 +210,14 @@ describe('BYOK draft validation', () => {
 
   it('accepts Google Gemini AQ. service-account-bound keys on the first-party endpoint', () => {
     expect(
-      validateByokDraft('google', {
+      validateByokDraft('openai', {
         apiKey: 'AQ.TestKeyForUnitTests01234567890123456789012',
         baseUrl: 'https://generativelanguage.googleapis.com',
         model: 'gemini-2.0-flash',
       }).ok,
     ).toBe(true);
     expect(
-      validateByokDraft('google', {
+      validateByokDraft('openai', {
         apiKey: 'AIzaSyD-Aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa1',
         baseUrl: 'https://generativelanguage.googleapis.com',
         model: 'gemini-2.0-flash',
@@ -242,7 +242,7 @@ describe('BYOK draft validation', () => {
       ]),
     );
 
-    const google = validateByokDraft('google', {
+    const google = validateByokDraft('openai', {
       apiKey: 'sk-openai-key',
       baseUrl: 'https://generativelanguage.googleapis.com',
       model: 'gemini-2.0-flash',

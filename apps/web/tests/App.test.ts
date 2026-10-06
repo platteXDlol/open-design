@@ -318,7 +318,7 @@ describe('buildPersistedConfig', () => {
       buildPersistedConfig(
         {
           ...baseConfig,
-          apiProtocol: 'google',
+          apiProtocol: 'openai',
           privacyDecisionAt: null,
           telemetry: { metrics: true, content: true, artifactManifest: false },
         },
@@ -330,7 +330,7 @@ describe('buildPersistedConfig', () => {
         },
       ),
     ).toMatchObject({
-      apiProtocol: 'google',
+      apiProtocol: 'openai',
       installationId: 'inst-current',
       privacyDecisionAt: 12345,
       telemetry: { metrics: false, content: false, artifactManifest: false },

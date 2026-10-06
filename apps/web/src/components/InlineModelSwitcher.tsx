@@ -134,9 +134,6 @@ interface Props {
 const API_PROTOCOL_TABS: Array<{ id: ApiProtocol; title: string }> = [
   { id: 'anthropic', title: 'Anthropic' },
   { id: 'openai', title: 'OpenAI' },
-  { id: 'azure', title: 'Azure' },
-  { id: 'google', title: 'Google' },
-  { id: 'aihubmix', title: 'AIHubMix' },
 ];
 
 const AMR_REMINDER_SEEN_KEY = 'open-design:inline-amr-cli-reminder-seen:v2';
@@ -997,14 +994,14 @@ export function InlineModelSwitcher({
   // picker otherwise depends on Settings/onboarding having fetched first, so on
   // a fresh load the BYOK list shows only the small static seed list instead of
   // the live catalogue. We fetch when the panel is open in BYOK mode and the
-  // preconditions for the active protocol are met (AIHubMix's catalogue is
-  // public, so it needs no key; every other protocol needs one). Results are
-  // keyed identically to Settings (`providerModelsKey`), so a single fetch
+  // preconditions for the active protocol are met (every Local-First
+  // protocol except ollama needs an API key). Results are keyed
+  // identically to Settings (`providerModelsKey`), so a single fetch
   // serves both surfaces and replaces any stale slot.
   useEffect(() => {
     if (!open || config.mode !== 'api' || !onProviderModelsCacheChange) return;
-    if (apiProtocol === 'azure' || apiProtocol === 'ollama') return;
-    if (apiProtocol !== 'aihubmix' && !config.apiKey.trim()) return;
+    if (apiProtocol === 'ollama') return;
+    if (!config.apiKey.trim()) return;
     const baseUrl = config.baseUrl.trim();
     if (!/^https?:\/\//i.test(baseUrl)) return;
     const key = providerModelsKey;

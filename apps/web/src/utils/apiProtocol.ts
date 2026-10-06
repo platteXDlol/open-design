@@ -5,12 +5,7 @@ import { API_PROTOCOL_AGENT_IDS } from './byokProvider';
 const API_PROTOCOL_LABELS: Record<ApiProtocol, string> = {
   anthropic: 'Anthropic API',
   openai: 'OpenAI API',
-  azure: 'Azure OpenAI',
-  google: 'Google Gemini',
   ollama: 'Ollama Cloud API',
-  senseaudio: 'SenseAudio API',
-  aihubmix: 'AIHubMix API',
-  bedrock: 'AWS Bedrock',
 };
 
 export function apiProtocolLabel(protocol: ApiProtocol | undefined): string {
@@ -30,16 +25,12 @@ export function apiProtocolAgentId(protocol: ApiProtocol | undefined): string {
   return API_PROTOCOL_AGENT_IDS[protocol ?? 'anthropic'];
 }
 
+// Local-First fork: only `anthropic` routes through the Anthropic proxy.
+// Everything else (`openai`, `ollama`, and the implicit OpenAI-compatible
+// fallback when `apiProtocol` is unset and the model looks compatible)
+// routes through the OpenAI-compatible path.
 export function usesAnthropicProxy(cfg: AppConfig): boolean {
-  if (
-    cfg.apiProtocol === 'azure' ||
-    cfg.apiProtocol === 'ollama' ||
-    cfg.apiProtocol === 'google' ||
-    cfg.apiProtocol === 'senseaudio' ||
-    cfg.apiProtocol === 'aihubmix' ||
-    cfg.apiProtocol === 'bedrock' ||
-    cfg.apiProtocol === 'openai'
-  ) {
+  if (cfg.apiProtocol === 'openai' || cfg.apiProtocol === 'ollama') {
     return false;
   }
   if (!cfg.apiProtocol && isOpenAICompatible(cfg.model, cfg.baseUrl)) {

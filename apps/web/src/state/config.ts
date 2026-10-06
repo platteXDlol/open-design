@@ -227,26 +227,6 @@ export const KNOWN_PROVIDERS: KnownProvider[] = [
     ],
   },
   {
-    label: 'Azure OpenAI',
-    protocol: 'azure',
-    baseUrl: '',
-    preferredModels: [],
-  },
-  {
-    label: 'Google Gemini',
-    protocol: 'google',
-    baseUrl: 'https://generativelanguage.googleapis.com',
-    preferredModels: [
-      'gemini-3.5-flash',
-      'gemini-3.1-pro-preview',
-      'gemini-3-flash-preview',
-      'gemini-3.1-flash-lite',
-      'gemini-2.5-pro',
-      'gemini-2.5-flash',
-      'gemini-2.5-flash-lite',
-    ],
-  },
-  {
     label: 'SiliconFlow (CN)',
     protocol: 'openai',
     baseUrl: 'https://api.siliconflow.cn/v1',
@@ -476,37 +456,6 @@ export const KNOWN_PROVIDERS: KnownProvider[] = [
     baseUrl: 'https://token-plan-cn.xiaomimimo.com/anthropic',
     preferredModels: ['mimo-v2.5-pro'],
   },
-  {
-    label: 'SenseAudio',
-    protocol: 'senseaudio',
-    baseUrl: 'https://api.senseaudio.cn',
-    preferredModels: [
-      'senseaudio-s2',
-      'senseaudio-s2-flash',
-      'deepseek-v4-flash',
-      'deepseek-v4-pro',
-      'glm-5.1',
-      'kimi-k2.6',
-      'MiniMax-M2.7-highspeed',
-      'MiniMax-M2.7',
-    ],
-  },
-  {
-    label: 'AIHubMix',
-    protocol: 'aihubmix',
-    baseUrl: 'https://aihubmix.com/v1',
-    preferredModels: [
-      'gpt-5.5',
-      'gpt-4o',
-      'gpt-4o-mini',
-      'claude-opus-4-8',
-      'claude-sonnet-4-5',
-      'claude-haiku-4-5',
-      'gemini-2.0-flash',
-      'deepseek-chat',
-      'deepseek-reasoner',
-    ],
-  },
 ];
 
 export function defaultKnownProviderModel(
@@ -603,34 +552,10 @@ function isValidOrbitTime(time: string): boolean {
   return hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59;
 }
 
-function isBedrockRuntimeBaseUrl(baseUrl: string): boolean {
-  try {
-    const hostname = new URL(baseUrl).hostname.toLowerCase();
-    return (
-      /^bedrock-runtime(?:-fips)?[.-].*\.amazonaws\.com(?:\.cn)?$/.test(hostname)
-      || /^bedrock-runtime(?:-fips)?[.-].*\.api\.aws$/.test(hostname)
-    );
-  } catch {
-    return false;
-  }
-}
-
 function downgradeUnsupportedChatProtocol(config: AppConfig): boolean {
-  if (
-    config.apiProtocol !== 'bedrock'
-    && !isBedrockRuntimeBaseUrl(config.baseUrl)
-  ) {
-    return false;
-  }
-
-  config.apiProtocol = DEFAULT_CONFIG.apiProtocol;
-  config.apiKey = DEFAULT_CONFIG.apiKey;
-  config.apiVersion = DEFAULT_CONFIG.apiVersion;
-  config.baseUrl = DEFAULT_CONFIG.baseUrl;
-  config.model = DEFAULT_CONFIG.model;
-  config.apiProviderBaseUrl = DEFAULT_CONFIG.apiProviderBaseUrl;
-  delete config.apiProtocolConfigs?.bedrock;
-  return true;
+  // Local-First fork: all retained protocols (anthropic, openai, ollama)
+  // are supported. No protocol downgrade is needed.
+  return false;
 }
 
 function inferApiProtocol(model: string, baseUrl: string): ApiProtocol {
@@ -640,14 +565,6 @@ function inferApiProtocol(model: string, baseUrl: string): ApiProtocol {
     // protocol so both chat and the connection test hit the native Ollama
     // proxy instead of the Anthropic or OpenAI paths.
     if (normalized.includes('ollama.com')) return 'ollama';
-    // SenseAudio host gets routed to its own proxy so the daemon log line
-    // and the BYOK tab UI stay consistent with the protocol the user
-    // picked — even though the on-wire shape is OpenAI-compatible.
-    if (normalized.includes('senseaudio.cn')) return 'senseaudio';
-    // AIHubMix host routes to its own proxy so the daemon injects the
-    // APP-Code attribution header even though the wire shape is
-    // OpenAI-compatible.
-    if (normalized.includes('aihubmix.com')) return 'aihubmix';
     return isOpenAICompatible(model, baseUrl) ? 'openai' : 'anthropic';
   } catch {
     // Preserve the rest of the user's settings even if an old saved base URL is

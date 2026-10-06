@@ -15,13 +15,14 @@ export function providerModelsCacheKey(
   protocol: ApiProtocol,
   baseUrl: string,
   apiKey: string,
-  apiVersion = '',
+  _apiVersion = '',
 ): string {
+  // Local-First fork: apiVersion was Azure-specific; no retained protocol
+  // exposes it, so it's no longer part of the cache key.
   return [
     protocol,
     baseUrl.trim().replace(/\/+$/, ''),
     fingerprintSecret(apiKey.trim()),
-    protocol === 'azure' ? apiVersion.trim() : '',
   ].join('\n');
 }
 

@@ -33,14 +33,10 @@ describe('byokAgentProviderId', () => {
   it('maps each BYOK protocol to its tracking provider', () => {
     expect(byokAgentProviderId('anthropic')).toBe('anthropic');
     expect(byokAgentProviderId('openai')).toBe('openai');
-    expect(byokAgentProviderId('azure')).toBe('azure_openai');
-    expect(byokAgentProviderId('google')).toBe('google_gemini');
     expect(byokAgentProviderId('ollama')).toBe('ollama_cloud');
-    expect(byokAgentProviderId('senseaudio')).toBe('senseaudio');
   });
 
-  it('tracks the aggregator separately and folds unknown protocols into other', () => {
-    expect(byokAgentProviderId('aihubmix')).toBe('aihubmix');
+  it('folds unknown protocols into other', () => {
     expect(byokAgentProviderId(undefined)).toBe('other');
   });
 });

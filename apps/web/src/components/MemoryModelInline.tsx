@@ -132,7 +132,9 @@ function chatProtocolFromAgent(
 function memoryProviderFromApiProtocol(
   protocol: ApiProtocol,
 ): MemoryExtractionProvider | null {
-  return protocol === 'bedrock' ? null : protocol;
+  // Local-First fork: all three remaining protocols (anthropic, openai,
+  // ollama) work as memory extraction providers.
+  return protocol;
 }
 
 function cliAgentLabel(agentId: string | null | undefined): string | null {
@@ -289,7 +291,7 @@ export function MemoryModelInline({
           model: trimmedModel,
           baseUrl: chatBaseUrl.trim(),
           apiKey: chatApiKey,
-          apiVersion: apiProtocol === 'azure' ? chatApiVersion.trim() : '',
+          apiVersion: '',
         };
       }
       const provider =
@@ -359,11 +361,10 @@ export function MemoryModelInline({
     if (!config || !config.model) return;
     const trimmedBaseUrl = chatBaseUrl.trim();
     const newTail = (chatApiKey || '').slice(-4);
-    const azureVersion = apiProtocol === 'azure' ? chatApiVersion.trim() : '';
     const drift =
       config.provider !== apiMemoryProvider
       || config.baseUrl !== trimmedBaseUrl
-      || config.apiVersion !== azureVersion
+      || config.apiVersion !== ''
       || config.apiKeyTail !== newTail;
     if (!drift) return;
     const handle = setTimeout(() => {

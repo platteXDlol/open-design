@@ -609,11 +609,11 @@ type TestState =
 // Providers whose live model fetch IS their full account catalogue, so the
 // per-option "from your account" badge and the "Loaded N from your account"
 // hint are noise — every option carries the same badge and distinguishes
-// nothing. For these we drop the source label and show a plain count instead.
-// Add a protocol here when the same applies to another provider.
+// nothing. Local-First fork: after dropping the cloud-only providers in
+// v0.2 (azure, google, bedrock, senseaudio, aihubmix), no remaining
+// protocol has this property. The set stays empty for future additions.
 const ACCOUNT_MODEL_SOURCE_LABEL_HIDDEN = new Set<ApiProtocol>([
-  'aihubmix',
-  'bedrock',
+  // Local-First fork: no entries.
 ]);
 
 function hidesAccountModelSourceLabel(protocol: ApiProtocol): boolean {
@@ -709,9 +709,8 @@ export function canFetchProviderModels(
 ): boolean {
   return (
     !isProviderModelDiscoveryUnsupported(protocol, config.baseUrl) &&
-    protocol !== 'azure' &&
     protocol !== 'ollama' &&
-    (protocol === 'bedrock' || Boolean(config.apiKey.trim())) &&
+    Boolean(config.apiKey.trim()) &&
     Boolean(config.baseUrl.trim()) &&
     isValidApiBaseUrl(config.baseUrl)
   );
@@ -721,7 +720,7 @@ export function isProviderModelDiscoveryUnsupported(
   protocol: ApiProtocol,
   baseUrl: string,
 ): boolean {
-  if (protocol === 'azure' || protocol === 'ollama') return true;
+  if (protocol === 'ollama') return true;
   try {
     const host = new URL(baseUrl).hostname.toLowerCase();
     return host === 'token-plan-cn.xiaomimimo.com';
@@ -747,11 +746,10 @@ function missingByokModelFetchFields(
   protocol?: ApiProtocol,
 ): ByokRequiredField[] {
   const missing: ByokRequiredField[] = [];
-  // AIHubMix publishes its catalogue on a public endpoint, so its model list
-  // loads without a key (the user shouldn't need to paste a key just to browse
-  // models). Bedrock uses a static model seed until AWS auth lands in BYOK.
-  // Every other protocol fetches /v1/models behind the key.
-  if (protocol !== 'aihubmix' && protocol !== 'bedrock' && !config.apiKey.trim()) missing.push('api_key');
+  // Local-First fork: every retained protocol fetches /v1/models behind the
+  // key. (After dropping azure/aihubmix/bedrock, no protocol publishes a
+  // public catalogue that skips the api_key check.)
+  if (!config.apiKey.trim()) missing.push('api_key');
   if (!config.baseUrl.trim()) missing.push('base_url');
   return missing;
 }
@@ -765,7 +763,7 @@ function providerConnectionTestKey(
     config.baseUrl.trim().replace(/\/+$/, ''),
     config.apiKey.trim(),
     config.model.trim(),
-    protocol === 'azure' ? config.apiVersion?.trim() ?? '' : '',
+    '',
   ].join('\n');
 }
 
@@ -781,8 +779,7 @@ function byokFirstPartyBaseUrlHint(
 ): ByokFirstPartyBaseUrlHint | undefined {
   if (
     protocol !== 'anthropic' &&
-    protocol !== 'openai' &&
-    protocol !== 'google'
+    protocol !== 'openai'
   ) {
     return undefined;
   }
@@ -827,29 +824,9 @@ const API_KEY_CONSOLE_LINKS: Record<ApiProtocol, { host: string; url: string }> 
     host: 'platform.openai.com',
     url: 'https://platform.openai.com/api-keys',
   },
-  azure: {
-    host: 'portal.azure.com',
-    url: 'https://portal.azure.com/',
-  },
-  google: {
-    host: 'aistudio.google.com',
-    url: 'https://aistudio.google.com/apikey',
-  },
   ollama: {
     host: 'ollama.com',
     url: 'https://ollama.com/settings/keys',
-  },
-  senseaudio: {
-    host: 'docs.senseaudio.cn',
-    url: 'https://docs.senseaudio.cn',
-  },
-  aihubmix: {
-    host: 'aihubmix.com',
-    url: 'https://aihubmix.com/?aff=JA1e',
-  },
-  bedrock: {
-    host: 'aws.amazon.com',
-    url: 'https://aws.amazon.com/bedrock/',
   },
 };
 
@@ -1003,7 +980,7 @@ function nextApiProtocolConfig(
     return {
       ...currentConfig,
       apiKey: '',
-      apiVersion: protocol === 'azure' ? currentConfig.apiVersion : '',
+      apiVersion: '',
       apiProviderBaseUrl: null,
     };
   }
@@ -1157,24 +1134,16 @@ function applyApiProtocolConfig(
     baseUrl: resolveFixedOriginBaseUrl(protocol, apiConfig.baseUrl),
     model: apiConfig.model,
     apiProviderBaseUrl: apiConfig.apiProviderBaseUrl ?? null,
-    apiVersion: protocol === 'azure' ? (apiConfig.apiVersion ?? '') : '',
-    // byokImageModel applies to the protocols that inject the daemon-side
-    // generate_image tool (SenseAudio, AIHubMix) — flipping to another BYOK
-    // tab shouldn't carry an image-model choice into, say, the OpenAI form.
-    // Mirrors the apiVersion guarding above.
-    byokImageModel:
-      protocol === 'senseaudio' || protocol === 'aihubmix'
-        ? (apiConfig.byokImageModel ?? '')
-        : '',
-    // byokVideoModel only applies to AIHubMix today (the only BYOK chat with a
-    // video-model picker; SenseAudio's video tool uses a fixed model).
-    byokVideoModel:
-      protocol === 'aihubmix' ? (apiConfig.byokVideoModel ?? '') : '',
-    // Speech model + voice also AIHubMix-only today.
-    byokSpeechModel:
-      protocol === 'aihubmix' ? (apiConfig.byokSpeechModel ?? '') : '',
-    byokSpeechVoice:
-      protocol === 'aihubmix' ? (apiConfig.byokSpeechVoice ?? '') : '',
+    apiVersion: '',
+    // Local-First fork: image / video / speech model pickers used to be
+    // SenseAudio / AIHubMix-only fields. Both protocols were dropped in
+    // v0.2, so all byokImage/Video/Speech fields now apply to no
+    // retained protocol and resolve to ''. Kept as fields so existing
+    // configs don't break on load — they just won't surface in the UI.
+    byokImageModel: '',
+    byokVideoModel: '',
+    byokSpeechModel: '',
+    byokSpeechVoice: '',
   };
 }
 
@@ -1857,7 +1826,6 @@ export function SettingsDialog({
       const protocol = initial.apiProtocol ?? 'anthropic';
       if (
         initial.mode !== 'api' ||
-        protocol === 'azure' ||
         protocol === 'ollama' ||
         missingByokModelFetchFields(initial, protocol).length > 0 ||
         !isValidApiBaseUrl(initial.baseUrl)
@@ -2650,10 +2618,7 @@ export function SettingsDialog({
           baseUrl: cfg.baseUrl,
           apiKey: cleanByokApiKey(cfg.apiKey),
           model: cfg.model,
-          apiVersion:
-            apiProtocol === 'azure'
-              ? cfg.apiVersion?.trim() || undefined
-              : undefined,
+          apiVersion: undefined,
         },
         controller.signal,
       );
@@ -2762,21 +2727,6 @@ export function SettingsDialog({
       });
     };
     if (providerModelsState.status === 'running') {
-      return;
-    }
-    if (apiProtocol === 'azure') {
-      trackModelsFetchResult({
-        result: 'failed',
-        error_code: 'unsupported_azure',
-        error_kind: 'unsupported_azure',
-        duration_ms: 0,
-      });
-      if (!options.silent) {
-        setByokPreconditionNotice({
-          action: 'test',
-          message: t('settings.fetchModelsUnsupportedAzure'),
-        });
-      }
       return;
     }
     if (apiProtocol === 'ollama') {
@@ -3086,9 +3036,7 @@ export function SettingsDialog({
       case 'base_url':
         return t('settings.baseUrl');
       case 'model':
-        return apiProtocol === 'azure'
-          ? t('settings.azureDeploymentModel')
-          : t('settings.model');
+        return t('settings.model');
       default: {
         const exhaustive: never = field;
         return exhaustive;
@@ -3464,12 +3412,9 @@ export function SettingsDialog({
   const selectedProviderIndex =
     protocolProviders.findIndex((p) => {
       if (cfg.apiProviderBaseUrl == null) {
-        return apiProtocol === 'azure' && p.baseUrl === '' && Boolean(cfg.baseUrl?.trim());
+        return false;
       }
-      return (
-        p.baseUrl === cfg.apiProviderBaseUrl &&
-        (p.baseUrl === cfg.baseUrl || (apiProtocol === 'azure' && p.baseUrl === ''))
-      );
+      return p.baseUrl === cfg.apiProviderBaseUrl && p.baseUrl === cfg.baseUrl;
     });
   const selectedProvider = selectedProviderIndex >= 0 ? protocolProviders[selectedProviderIndex] : undefined;
   const apiKeyConsoleLink =
@@ -3504,7 +3449,7 @@ export function SettingsDialog({
     if (!entry) return false;
     if (provider.baseUrl) {
       if (entry.baseUrl !== provider.baseUrl) return false;
-    } else if (provider.protocol !== 'azure' && entry.baseUrl !== provider.baseUrl) {
+    } else if (entry.baseUrl !== provider.baseUrl) {
       return false;
     }
     const knownProvider = KNOWN_PROVIDERS.find((item) => item.baseUrl === provider.baseUrl);
@@ -3597,11 +3542,9 @@ export function SettingsDialog({
     [apiProtocol, cfg.baseUrl, cfg.apiKey, cfg.apiVersion],
   );
   const providerModelDiscoveryUnavailable =
-    apiProtocol !== 'azure' &&
     apiProtocol !== 'ollama' &&
     isProviderModelDiscoveryUnsupported(apiProtocol, cfg.baseUrl);
   const providerModelDiscoverySupported =
-    apiProtocol !== 'azure' &&
     apiProtocol !== 'ollama' &&
     !providerModelDiscoveryUnavailable;
   const fetchedApiModelOptions =
@@ -3704,7 +3647,6 @@ export function SettingsDialog({
     if (blockingByokDraftIssues(byokDraftValidation).length > 0) return;
     if (providerModelDiscoverySupported) {
       if (
-        apiProtocol !== 'aihubmix' &&
         providerModelsCommittedKey !== providerModelsKey
       ) {
         const timer = window.setTimeout(() => {
@@ -3754,11 +3696,10 @@ export function SettingsDialog({
     if (isProviderModelDiscoveryUnsupported(apiProtocol, cfg.baseUrl)) return;
     if (byokFirstPartyBaseUrl?.hostTypo) return;
     if (blockingByokDraftIssues(byokModelFetchDraftValidation).length > 0) return;
-    // AIHubMix needs no key and prefills its base URL, so there's nothing to
-    // debounce-commit — fetch as soon as the tab is selected. Every other
-    // protocol waits until the key/baseUrl inputs are committed (on blur) so we
-    // don't fire on each keystroke.
-    if (apiProtocol !== 'aihubmix' && providerModelsCommittedKey !== providerModelsKey) return;
+    // Wait until the key/baseUrl inputs are committed (on blur) so we don't
+    // fire on each keystroke. (Local-First fork: the AIHubMix special
+    // case is moot after dropping that protocol in v0.2.)
+    if (providerModelsCommittedKey !== providerModelsKey) return;
     const timer = window.setTimeout(() => {
       void handleFetchProviderModels({ silent: true });
     }, 300);
@@ -3860,16 +3801,14 @@ export function SettingsDialog({
       apiModelCustomEditing,
     );
   const baseUrlReadOnly =
-    (apiProtocol === 'anthropic' || apiProtocol === 'google') &&
+    apiProtocol === 'anthropic' &&
     cfg.apiProviderBaseUrl !== null &&
     Boolean(cfg.baseUrl.trim()) &&
     !baseUrlInvalid;
   const baseUrlPlaceholder =
-    apiProtocol === 'azure'
-      ? t('settings.azureBaseUrlPlaceholder')
-      : apiProtocol === 'ollama'
-        ? 'http://localhost:11434'
-        : undefined;
+    apiProtocol === 'ollama'
+      ? 'http://localhost:11434'
+      : undefined;
   useEffect(() => {
     if (!focusByokRequiredFieldAfterProtocolSwitchRef.current) return;
     focusByokRequiredFieldAfterProtocolSwitchRef.current = false;
@@ -5627,13 +5566,12 @@ export function SettingsDialog({
                     customize: t('settings.baseUrlCustomize'),
                     invalid: t('settings.baseUrlInvalid'),
                     defaultHint: t('settings.baseUrlDefaultHint'),
-                    azureHint: t('settings.azureBaseUrlHint'),
                   }}
                   onBlur={commitProviderModelsInputs}
                   onChange={(value) =>
                     updateApiConfig({
                       baseUrl: value,
-                      apiProviderBaseUrl: apiProtocol === 'azure' ? '' : null,
+                      apiProviderBaseUrl: null,
                     })
                   }
                   onCustomize={() => {
@@ -5673,16 +5611,10 @@ export function SettingsDialog({
                 customInputRef={customModelInputRef}
                 labels={{
                   customModel: t('settings.modelCustom'),
-                  customModelLabel: apiProtocol === 'azure'
-                    ? t('settings.azureCustomDeploymentName')
-                    : t('settings.modelCustomLabel'),
-                  customModelPlaceholder: apiProtocol === 'azure'
-                    ? t('settings.azureDeploymentModel')
-                    : t('settings.modelCustomPlaceholder'),
+                  customModelLabel: t('settings.modelCustomLabel'),
+                  customModelPlaceholder: t('settings.modelCustomPlaceholder'),
                   fetchModelsUnsupported: t('settings.fetchModelsUnsupported'),
-                  model: apiProtocol === 'azure'
-                    ? t('settings.azureDeploymentModel')
-                    : t('settings.model'),
+                  model: t('settings.model'),
                   required: t('settings.required'),
                   searchPlaceholder: t('designs.searchPlaceholder'),
                   suggestedModelsHint: t('settings.suggestedModelsHint'),
@@ -5714,13 +5646,12 @@ export function SettingsDialog({
                     : null
                 }
                 providerModelsFailureMessage={providerModelsFailureMessage}
-                forceTextInput={apiProtocol === 'azure'}
-                showAzureModelFetchHint={apiProtocol === 'azure'}
+                forceTextInput={false}
+                showAzureModelFetchHint={false}
                 showFetchModelsUnsupportedHint={
-                  apiProtocol !== 'azure' &&
                   isProviderModelDiscoveryUnsupported(apiProtocol, cfg.baseUrl)
                 }
-                showSuggestedModelsHint={apiProtocol !== 'azure' && !selectedProvider}
+                showSuggestedModelsHint={!selectedProvider}
                 azureModelFetchHint={t('settings.azureModelFetchHint')}
                 onCustomModelChange={(value) => updateApiConfig({ model: value })}
                 onCustomModelSelect={() => {
@@ -5764,108 +5695,10 @@ export function SettingsDialog({
                   />
                 </div>
               </details>
-              {apiProtocol === 'azure' ? (
-                <label className="field">
-                  <span className="field-label">{t('settings.apiVersion')}</span>
-                  <input
-                    type="text"
-                    value={cfg.apiVersion ?? ''}
-                    placeholder="2024-10-21"
-                    onBlur={commitProviderModelsInputs}
-                    onChange={(e) => updateApiConfig({ apiVersion: e.target.value.trim() })}
-                  />
-                </label>
-              ) : null}
-              {apiProtocol === 'senseaudio' || apiProtocol === 'aihubmix' ? (
-                <label className="field">
-                  <span className="field-label">{t('settings.byokImageModel')}</span>
-                  <SearchableModelSelect
-                    className="inline-switcher__select settings-model-select settings-model-select--byok"
-                    aria-label={t('settings.byokImageModel')}
-                    searchPlaceholder={t('designs.searchPlaceholder')}
-                    popoverClassName="settings-byok-select-popover"
-                    minSearchableOptions={Number.POSITIVE_INFINITY}
-                    // Live catalogue from the shared hook: AIHubMix's image
-                    // models for aihubmix, the static SenseAudio registry
-                    // otherwise. The default-empty option (first entry) resolves
-                    // to the registry default on the daemon side.
-                    models={[
-                      {
-                        id: '',
-                        label: byokImageModelOptions[0]?.label
-                          ? `${byokImageModelOptions[0].label} (${t('settings.byokModelDefaultOption')})`
-                          : t('settings.byokModelDefaultOption'),
-                      },
-                      ...byokImageModelOptions.map((m) => ({ id: m.id, label: m.label })),
-                    ]}
-                    value={cfg.byokImageModel ?? ''}
-                    onChange={(value) =>
-                      updateApiConfig({ byokImageModel: value })
-                    }
-                  />
-                </label>
-              ) : null}
-              {apiProtocol === 'aihubmix' ? (
-                <label className="field">
-                  <span className="field-label">{t('settings.byokVideoModel')}</span>
-                  <select
-                    value={cfg.byokVideoModel ?? ''}
-                    onChange={(e) =>
-                      updateApiConfig({ byokVideoModel: e.target.value })
-                    }
-                  >
-                    {/* Empty resolves to the default video model on the daemon
-                        side. The LLM can still override per-call via the tool's
-                        `model` arg. */}
-                    <option value="">
-                      {byokVideoModelOptions[0]?.label
-                        ? `${byokVideoModelOptions[0].label} (${t('settings.byokModelDefaultOption')})`
-                        : t('settings.byokModelDefaultOption')}
-                    </option>
-                    {byokVideoModelOptions.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
-              {apiProtocol === 'aihubmix' ? (
-                <label className="field">
-                  <span className="field-label">{t('settings.byokSpeechModel')}</span>
-                  <select
-                    value={cfg.byokSpeechModel ?? ''}
-                    onChange={(e) => updateApiConfig({ byokSpeechModel: e.target.value })}
-                  >
-                    <option value="">
-                      {byokSpeechModelOptions[0]?.label
-                        ? `${byokSpeechModelOptions[0].label} (${t('settings.byokModelDefaultOption')})`
-                        : t('settings.byokModelDefaultOption')}
-                    </option>
-                    {byokSpeechModelOptions.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
-              {apiProtocol === 'aihubmix' ? (
-                <label className="field">
-                  <span className="field-label">{t('settings.byokSpeechVoice')}</span>
-                  <select
-                    value={cfg.byokSpeechVoice ?? ''}
-                    onChange={(e) => updateApiConfig({ byokSpeechVoice: e.target.value })}
-                  >
-                    <option value="">alloy (default)</option>
-                    {['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'].map((v) => (
-                      <option key={v} value={v}>
-                        {v}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
+              {/* Local-First fork: apiVersion was Azure-specific; the
+                  byokImageModel / byokVideoModel / byokSpeechModel /
+                  byokSpeechVoice pickers were SenseAudio / AIHubMix-specific.
+                  No retained protocol exposes any of these fields today. */}
             </section>
           )}
             </>

@@ -2438,7 +2438,7 @@ describe('EntryShell onboarding OpenDesign AMR runtime', () => {
     const props = renderOnboarding({
       config: baseConfig({
         mode: 'api',
-        apiProtocol: 'azure',
+        apiProtocol: 'openai',
         apiProviderBaseUrl: '',
       }),
     });

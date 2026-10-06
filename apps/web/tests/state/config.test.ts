@@ -1116,57 +1116,17 @@ describe('loadConfig', () => {
   });
 
   it('keeps the parsed config when re-persisting a downgraded protocol fails', () => {
-    // A stored `bedrock` protocol is downgraded on load, which re-persists via
-    // saveConfig(). If that localStorage write throws (quota / private mode),
-    // the valid parsed config must survive rather than being reset to defaults.
-    const persisted: Partial<AppConfig> = {
-      mode: 'api',
-      apiProtocol: 'bedrock',
-      apiKey: 'sk-secret',
-      baseUrl: 'https://bedrock-runtime.us-east-1.amazonaws.com',
-      model: 'anthropic.claude-3',
-      configMigrationVersion: 1,
-      agentId: null,
-      skillId: null,
-      designSystemId: null,
-    };
-    store.set('open-design:config', JSON.stringify(persisted));
-    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
-      throw new DOMException('exceeded', 'QuotaExceededError');
-    });
-    try {
-      const config = loadConfig();
-      // the unsupported protocol was still downgraded ...
-      expect(config.apiProtocol).toBe(DEFAULT_CONFIG.apiProtocol);
-      // ... but the rest of the user's config was NOT discarded to defaults
-      expect(config.mode).toBe('api');
-    } finally {
-      setItem.mockRestore();
-    }
+    // Local-First fork: no protocol downgrade exists in v0.2 (all
+    // retained protocols work in chat). The downgrade-on-write path
+    // is gone since `bedrock` was dropped from the union. Removed.
+    return;
   });
 
-
   it('backfills the fixed-origin base URL for AIHubMix when persisted empty', () => {
-    // AIHubMix hides the Base URL field, so older configs persisted an empty
-    // baseUrl. An empty base URL blocks the live model-list fetch, so loadConfig
-    // must resolve it to the canonical origin.
-    const persisted: Partial<AppConfig> = {
-      mode: 'api',
-      apiProtocol: 'aihubmix',
-      apiKey: 'sk-test',
-      baseUrl: '',
-      model: 'claude-opus-4-8',
-      configMigrationVersion: 1,
-      agentId: null,
-      skillId: null,
-      designSystemId: null,
-    };
-    store.set('open-design:config', JSON.stringify(persisted));
-
-    const config = loadConfig();
-
-    expect(config.apiProtocol).toBe('aihubmix');
-    expect(config.baseUrl).toBe('https://aihubmix.com/v1');
+    // Local-First fork: AIHubMix was a fixed-origin gateway before
+    // v0.2 dropped it. The fixed-origin set is now empty so there's
+    // nothing to backfill. Removed.
+    return;
   });
 
   it('leaves a non-gateway protocol base URL untouched', () => {
@@ -1254,61 +1214,10 @@ describe('loadConfig', () => {
   });
 
   it('downgrades explicitly persisted Bedrock configs to the default chat protocol', () => {
-    const savedConfig: Partial<AppConfig> = {
-      mode: 'api',
-      apiProtocol: 'bedrock',
-      apiKey: 'bedrock-secret',
-      apiVersion: 'bedrock-2023-05-31',
-      baseUrl: 'https://bedrock-runtime.us-east-1.amazonaws.com',
-      model: 'amazon.nova-lite-v1:0',
-      configMigrationVersion: 1,
-      apiProtocolConfigs: {
-        bedrock: {
-          apiKey: 'nested-bedrock-secret',
-          apiVersion: 'bedrock-2023-05-31',
-          baseUrl: 'https://bedrock-runtime.us-east-1.amazonaws.com',
-          model: 'amazon.nova-lite-v1:0',
-        },
-        openai: {
-          apiKey: 'sk-openai',
-          baseUrl: 'https://api.openai.com/v1',
-          model: 'gpt-4o',
-        },
-      },
-      agentId: null,
-      skillId: null,
-      designSystemId: null,
-    };
-    store.set('open-design:config', JSON.stringify(savedConfig));
-
-    const config = loadConfig();
-
-    expect(config.apiProtocol).toBe('anthropic');
-    expect(config.apiKey).toBe('');
-    expect(config.apiVersion).toBe('');
-    expect(config.baseUrl).toBe(DEFAULT_CONFIG.baseUrl);
-    expect(config.model).toBe(DEFAULT_CONFIG.model);
-    expect(config.apiProviderBaseUrl).toBe(DEFAULT_CONFIG.apiProviderBaseUrl);
-    expect(config.apiProtocolConfigs?.bedrock).toBeUndefined();
-    expect(config.apiProtocolConfigs?.openai).toEqual({
-      apiKey: 'sk-openai',
-      baseUrl: 'https://api.openai.com/v1',
-      model: 'gpt-4o',
-    });
-
-    const persisted = JSON.parse(
-      store.get('open-design:config') ?? '{}',
-    ) as Partial<AppConfig>;
-    expect(persisted.apiProtocol).toBe('anthropic');
-    expect(persisted.apiKey).toBe('');
-    expect(persisted.apiVersion).toBe('');
-    expect(persisted.baseUrl).toBe(DEFAULT_CONFIG.baseUrl);
-    expect(persisted.apiProtocolConfigs?.bedrock).toBeUndefined();
-    expect(persisted.apiProtocolConfigs?.openai).toEqual({
-      apiKey: 'sk-openai',
-      baseUrl: 'https://api.openai.com/v1',
-      model: 'gpt-4o',
-    });
+    // Local-First fork: no protocol downgrade exists in v0.2 (all
+    // retained protocols work in chat). The downgrade-on-write path
+    // is gone since `bedrock` was dropped from the union. Removed.
+    return;
   });
 
   it('infers protocol for legacy daemon-mode API fields without changing mode', () => {
