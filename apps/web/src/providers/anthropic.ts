@@ -12,12 +12,8 @@ import { effectiveMaxTokens } from '../state/maxTokens';
 import type { AppConfig, ChatMessage } from '../types';
 import { streamMessageAnthropicProxy } from './anthropic-compatible';
 import type { ProxyContext } from './api-proxy';
-import { streamMessageAzure } from './azure-compatible';
-import { streamMessageGoogle } from './google-compatible';
 import { streamMessageOllama } from './ollama-compatible';
 import { isOpenAICompatible, streamMessageOpenAI } from './openai-compatible';
-import { streamMessageSenseAudio } from './senseaudio-compatible';
-import { streamMessageAIHubMix } from './aihubmix-compatible';
 import { usesAnthropicProxy } from '../utils/apiProtocol';
 
 // Re-export for convenience
@@ -52,26 +48,8 @@ export async function streamMessage(
 ): Promise<void> {
   // Prefer the explicit Settings protocol; keep the legacy heuristic as a
   // fallback for configs saved before apiProtocol existed.
-  if (cfg.apiProtocol === 'azure') {
-    return streamMessageAzure(cfg, system, history, signal, handlers);
-  }
   if (cfg.apiProtocol === 'ollama') {
     return streamMessageOllama(cfg, system, history, signal, handlers);
-  }
-  if (cfg.apiProtocol === 'google') {
-    return streamMessageGoogle(cfg, system, history, signal, handlers);
-  }
-  if (cfg.apiProtocol === 'senseaudio') {
-    return streamMessageSenseAudio(cfg, system, history, signal, handlers, context);
-  }
-  if (cfg.apiProtocol === 'aihubmix') {
-    return streamMessageAIHubMix(cfg, system, history, signal, handlers, context);
-  }
-  if (cfg.apiProtocol === 'bedrock') {
-    handlers.onError(
-      new Error('AWS Bedrock BYOK chat requires AWS credential signing and is not supported by the current API-key proxy.'),
-    );
-    return;
   }
   if (cfg.apiProtocol === 'openai' || (!cfg.apiProtocol && isOpenAICompatible(cfg.model, cfg.baseUrl))) {
     return streamMessageOpenAI(cfg, system, history, signal, handlers);

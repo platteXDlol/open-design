@@ -6,9 +6,10 @@ import {
 import { KNOWN_PROVIDERS } from '../../src/state/config';
 
 describe('apiProtocols table consistency', () => {
-  it('FAST_MODEL_BY_PROTOCOL.google is one of the live suggested models', () => {
-    expect(SUGGESTED_MODELS_BY_PROTOCOL.google).toContain(FAST_MODEL_BY_PROTOCOL.google);
-  });
+  // Local-First fork: dropped the Google Gemini table entry in v0.2
+  // (cloud-only). The previous test that asserted google's suggested
+  // models covered FAST_MODEL_BY_PROTOCOL.google; both sides of that
+  // assertion are gone now.
 
   it('keeps the Ollama Cloud picker current with recent cloud models', () => {
     const recentCloudModels = [

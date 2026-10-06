@@ -15,7 +15,6 @@ interface ByokProviderBaseUrlProps {
     customize: string;
     invalid: string;
     defaultHint: string;
-    azureHint: string;
   };
   onBlur: () => void;
   onChange: (value: string) => void;
@@ -91,11 +90,6 @@ export function ByokProviderBaseUrl({
       {baseUrlReadOnly ? (
         <span className="field-inline-status">
           {labels.defaultHint}
-        </span>
-      ) : null}
-      {apiProtocol === 'azure' ? (
-        <span className="field-inline-status">
-          {labels.azureHint}
         </span>
       ) : null}
     </label>

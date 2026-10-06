@@ -281,15 +281,28 @@ export interface ConnectionTestDiagnostics {
   stderrTail?: string;
 }
 
+// Local-First fork: only the three Local-First-relevant HTTP provider
+// protocols remain. `openai` covers OpenAI API plus any OpenAI-compatible
+// gateway (LM Studio, vLLM, llama-swap, OpenRouter, NVIDIA, DeepInfra);
+// `anthropic` covers Anthropic API plus any Anthropic-compatible endpoint;
+// `ollama` is the self-hosted LLM server. The five cloud-only upstream
+// protocols (azure, google, bedrock, senseaudio, aihubmix) were dropped
+// because they have no Local-First use case.
 export type ConnectionTestProtocol =
   | 'anthropic'
   | 'openai'
-  | 'azure'
-  | 'google'
-  | 'ollama'
-  | 'senseaudio'
-  | 'aihubmix'
-  | 'bedrock';
+  | 'ollama';
+
+// Runtime enumeration mirroring the `ConnectionTestProtocol` union. The
+// `satisfies` clause makes the constant a compile-time witness of the
+// union — adding a member to the union without listing it here, or vice
+// versa, is a TypeScript error. Tests assert on this runtime list to
+// pin down the Local-First protocol scope.
+export const CONNECTION_TEST_PROTOCOLS = [
+  'anthropic',
+  'openai',
+  'ollama',
+] as const satisfies ReadonlyArray<ConnectionTestProtocol>;
 
 export interface ProviderTestRequest extends ReasoningExecutionRequestFields {
   protocol: ConnectionTestProtocol;

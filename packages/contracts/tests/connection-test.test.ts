@@ -1,10 +1,31 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CONNECTION_TEST_PROTOCOLS,
   isAllowlistedInternalHost,
   isLoopbackApiHost,
   isRfc1918Host,
   validateBaseUrl,
 } from '../src/api/connectionTest';
+
+describe('ConnectionTestProtocol scope (Local-First fork)', () => {
+  // The Local-First fork only supports the three Local-First-relevant
+  // HTTP provider protocols: openai (covers OpenAI API + any
+  // OpenAI-compatible gateway such as LM Studio, vLLM, OpenRouter,
+  // NVIDIA, DeepInfra), anthropic (Anthropic API + Anthropic-compatible
+  // endpoints), and ollama (self-hosted LLM server). The five cloud-only
+  // upstream protocols (azure, google, bedrock, senseaudio, aihubmix)
+  // were dropped in v0.2 because they have no Local-First use case.
+  // This test asserts the runtime constant mirrors the intended set;
+  // adding a new protocol to the union without updating this test is a
+  // visible contract change.
+  it('exposes only openai, anthropic, ollama', () => {
+    expect([...CONNECTION_TEST_PROTOCOLS].sort()).toEqual([
+      'anthropic',
+      'ollama',
+      'openai',
+    ]);
+  });
+});
 
 describe('provider base URL validation', () => {
   it('allows public endpoints and loopback local providers', () => {

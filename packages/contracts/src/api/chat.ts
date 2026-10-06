@@ -81,14 +81,12 @@ export interface RunTerminalLifecycleStatus {
 export type ChatRole = 'user' | 'assistant';
 export type ChatSessionMode = 'design' | 'chat' | 'plan';
 export type ChatCommentSelectionKind = PreviewCommentSelectionKind | 'visual';
+// Local-First fork: alias to `ConnectionTestProtocol`. The chat route
+// and the connection-test surface agree on the same three providers.
 export type ByokChatProtocol =
   | 'anthropic'
   | 'openai'
-  | 'azure'
-  | 'google'
-  | 'ollama'
-  | 'senseaudio'
-  | 'aihubmix';
+  | 'ollama';
 
 export interface ByokChatProviderConfig {
   protocol: ByokChatProtocol;

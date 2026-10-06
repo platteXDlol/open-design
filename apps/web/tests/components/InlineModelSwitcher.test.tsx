@@ -838,7 +838,7 @@ describe('InlineModelSwitcher AMR row', () => {
         config={{
           ...baseConfig,
           mode: 'api',
-          apiProtocol: 'aihubmix',
+          apiProtocol: 'openai',
           baseUrl: 'https://aihubmix.com/v1',
           apiProviderBaseUrl: 'https://aihubmix.com/v1',
           apiKey: '',
@@ -876,7 +876,7 @@ describe('InlineModelSwitcher AMR row', () => {
     const updater = onProviderModelsCacheChange.mock.calls[0]![0] as (
       current: Record<string, ProviderModelOption[]>,
     ) => Record<string, ProviderModelOption[]>;
-    const key = providerModelsCacheKey('aihubmix', 'https://aihubmix.com/v1', '', '');
+    const key = providerModelsCacheKey('openai', 'https://aihubmix.com/v1', '', '');
     const next = updater({});
     expect(next[key]?.map((m) => m.id)).toEqual([
       'claude-opus-4-8',
@@ -924,7 +924,7 @@ describe('InlineModelSwitcher AMR row', () => {
         config={{
           ...baseConfig,
           mode: 'api',
-          apiProtocol: 'aihubmix',
+          apiProtocol: 'openai',
           baseUrl: 'https://aihubmix.com/v1',
           apiProviderBaseUrl: 'https://aihubmix.com/v1',
           apiKey: '',

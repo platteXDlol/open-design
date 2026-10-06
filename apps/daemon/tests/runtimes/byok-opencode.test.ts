@@ -37,7 +37,7 @@ describe('byok-opencode runtime config', () => {
     }
   });
 
-  it.each(['openai', 'anthropic', 'google', 'azure', 'ollama', 'senseaudio', 'aihubmix'] as const)(
+  it.each(['openai', 'anthropic', 'ollama'] as const)(
     'allows images from attachments and Read tools for unknown %s models',
     (protocol) => {
       const out = buildOpenCodeByokProviderConfig(
@@ -68,7 +68,7 @@ describe('byok-opencode runtime config', () => {
   it('builds OpenAI-compatible provider config without embedding the secret in JSON', () => {
     const out = buildOpenCodeByokProviderConfig(
       {
-        protocol: 'senseaudio',
+        protocol: 'openai',
         apiKey: 'sk-secret',
         baseUrl: 'https://api.senseaudio.cn',
       },
@@ -161,12 +161,12 @@ describe('byok-opencode runtime config', () => {
       },
     });
     expect(buildOpenCodeByokProviderConfig(
-      { protocol: 'google', apiKey: 'AIza', baseUrl: 'https://generativelanguage.googleapis.com/' },
+      { protocol: 'openai', apiKey: 'AIza', baseUrl: 'https://generativelanguage.googleapis.com/' },
       'gemini-3.5-flash',
     )?.config).toMatchObject({
       provider: {
         [BYOK_OPENCODE_PROVIDER_ID]: {
-          npm: '@ai-sdk/google',
+          npm: '@ai-sdk/openai',
           options: { baseURL: 'https://generativelanguage.googleapis.com/v1beta' },
         },
       },
@@ -273,89 +273,18 @@ describe('byok-opencode runtime config', () => {
       provider: { [BYOK_OPENCODE_PROVIDER_ID]: { npm: '@ai-sdk/anthropic' } },
     });
     expect(buildOpenCodeByokProviderConfig(
-      { protocol: 'google', apiKey: 'AIza', baseUrl: 'https://generativelanguage.googleapis.com' },
+      { protocol: 'openai', apiKey: 'AIza', baseUrl: 'https://generativelanguage.googleapis.com' },
       'gemini-2.5-flash',
     )?.config).toMatchObject({
-      provider: { [BYOK_OPENCODE_PROVIDER_ID]: { npm: '@ai-sdk/google' } },
+      provider: { [BYOK_OPENCODE_PROVIDER_ID]: { npm: '@ai-sdk/openai' } },
     });
   });
 
-  it('preserves Azure deployment-based URL mode for classic Azure OpenAI resources', () => {
+  it('rejects OpenAI providers without a base URL', () => {
     expect(buildOpenCodeByokProviderConfig(
-      { protocol: 'azure', apiKey: 'azure-key', baseUrl: 'https://example.openai.azure.com', apiVersion: '2024-10-21' },
-      'gpt-4o',
-    )?.config).toMatchObject({
-      provider: {
-        [BYOK_OPENCODE_PROVIDER_ID]: {
-          npm: '@ai-sdk/azure',
-          options: {
-            baseURL: 'https://example.openai.azure.com',
-            apiKey: `{env:${BYOK_OPENCODE_API_KEY_ENV}}`,
-            apiVersion: '2024-10-21',
-            useDeploymentBasedUrls: true,
-          },
-          models: {
-            'gpt-4o': {
-              name: 'gpt-4o',
-            },
-          },
-        },
-      },
-    });
-    expect(buildOpenCodeByokProviderConfig(
-      { protocol: 'azure', apiKey: 'azure-key', baseUrl: 'https://example.openai.azure.com' },
-      'deployment-one',
-    )?.config).toMatchObject({
-      provider: {
-        [BYOK_OPENCODE_PROVIDER_ID]: {
-          options: {
-            apiVersion: '2024-10-21',
-            useDeploymentBasedUrls: true,
-          },
-        },
-      },
-    });
-  });
-
-  it('rejects Azure providers without a base URL', () => {
-    expect(buildOpenCodeByokProviderConfig(
-      { protocol: 'azure', apiKey: 'azure-key', baseUrl: '' },
+      { protocol: 'openai', apiKey: 'openai-key', baseUrl: '' },
       'gpt-4o',
     )).toBeNull();
-  });
-
-  it('keeps Azure OpenAI-compatible v1 paths in model-based URL mode', () => {
-    expect(buildOpenCodeByokProviderConfig(
-      {
-        protocol: 'azure',
-        apiKey: 'azure-key',
-        baseUrl: 'https://resource.services.ai.azure.com/api/projects/project/openai/v1',
-        apiVersion: '',
-      },
-      'prod',
-    )?.config).toMatchObject({
-      provider: {
-        [BYOK_OPENCODE_PROVIDER_ID]: {
-          npm: '@ai-sdk/azure',
-          options: {
-            baseURL: 'https://resource.services.ai.azure.com/api/projects/project/openai/v1',
-            apiKey: `{env:${BYOK_OPENCODE_API_KEY_ENV}}`,
-          },
-        },
-      },
-    });
-    const provider = (buildOpenCodeByokProviderConfig(
-      {
-        protocol: 'azure',
-        apiKey: 'azure-key',
-        baseUrl: 'https://resource.services.ai.azure.com/api/projects/project/openai/v1',
-        apiVersion: '',
-      },
-      'prod',
-    )?.config.provider as Record<string, { options?: Record<string, unknown> }> | undefined)
-      ?.[BYOK_OPENCODE_PROVIDER_ID];
-    expect(provider?.options).not.toHaveProperty('useDeploymentBasedUrls');
-    expect(provider?.options).not.toHaveProperty('apiVersion');
   });
 
   it('maps Ollama Cloud to OpenCode documented OpenAI-compatible v1 config', () => {

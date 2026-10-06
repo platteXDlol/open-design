@@ -395,15 +395,15 @@ describe('SettingsDialog API protocol switching', () => {
       model: 'openai-model',
       apiProviderBaseUrl: null,
     });
-    const google = switchApiProtocolConfig(openaiEdited, 'google');
-    const googleEdited = updateCurrentApiProtocolConfig(google, {
-      apiKey: 'google-key',
-      baseUrl: 'https://google-proxy.example.com',
-      model: 'google-model',
+    const anthropic = switchApiProtocolConfig(openaiEdited, 'anthropic');
+    const anthropicEdited = updateCurrentApiProtocolConfig(anthropic, {
+      apiKey: 'anthropic-key',
+      baseUrl: 'https://anthropic-proxy.example.com',
+      model: 'claude-sonnet-4-5',
       apiProviderBaseUrl: null,
     });
 
-    const restoredOpenai = switchApiProtocolConfig(googleEdited, 'openai');
+    const restoredOpenai = switchApiProtocolConfig(anthropicEdited, 'openai');
 
     expect(restoredOpenai).toMatchObject({
       mode: 'api',
@@ -413,10 +413,10 @@ describe('SettingsDialog API protocol switching', () => {
       model: 'openai-model',
       apiProviderBaseUrl: null,
     });
-    expect(restoredOpenai.apiProtocolConfigs?.google).toMatchObject({
-      apiKey: 'google-key',
-      baseUrl: 'https://google-proxy.example.com',
-      model: 'google-model',
+    expect(restoredOpenai.apiProtocolConfigs?.anthropic).toMatchObject({
+      apiKey: 'anthropic-key',
+      baseUrl: 'https://anthropic-proxy.example.com',
+      model: 'claude-sonnet-4-5',
       apiProviderBaseUrl: null,
     });
   });
@@ -453,35 +453,35 @@ describe('SettingsDialog API protocol switching', () => {
     });
   });
 
-  it('auto-fills Google defaults when switching from a selected known provider', () => {
-    expect(switchApiProtocolConfig(baseConfig, 'google')).toMatchObject({
+  it('auto-fills openai defaults when switching from a selected known provider', () => {
+    expect(switchApiProtocolConfig(baseConfig, 'openai')).toMatchObject({
       mode: 'api',
-      apiProtocol: 'google',
+      apiProtocol: 'openai',
       apiKey: '',
-      baseUrl: 'https://generativelanguage.googleapis.com',
-      model: 'gemini-3.5-flash',
-      apiProviderBaseUrl: 'https://generativelanguage.googleapis.com',
+      baseUrl: 'https://api.openai.com/v1',
+      model: 'gpt-4o',
+      apiProviderBaseUrl: 'https://api.openai.com/v1',
     });
   });
 
-  it('keeps Azure API version in the Azure draft only', () => {
+  it('keeps the API version in the openai draft only', () => {
     const config: AppConfig = {
       ...baseConfig,
-      apiProtocol: 'azure',
-      apiKey: 'azure-key',
-      model: 'deployment-one',
+      apiProtocol: 'openai',
+      apiKey: 'openai-key',
+      model: 'gpt-4o-deployment',
       apiVersion: '2024-10-21',
     };
 
-    const next = switchApiProtocolConfig(config, 'openai');
+    const next = switchApiProtocolConfig(config, 'anthropic');
 
     expect(next).toMatchObject({
-      apiProtocol: 'openai',
+      apiProtocol: 'anthropic',
       apiKey: '',
       apiVersion: '',
     });
-    expect(next.apiProtocolConfigs?.azure).toMatchObject({
-      apiKey: 'azure-key',
+    expect(next.apiProtocolConfigs?.openai).toMatchObject({
+      apiKey: 'openai-key',
       model: 'deployment-one',
       apiVersion: '2024-10-21',
     });
@@ -568,10 +568,10 @@ describe('SettingsDialog provider model fetch helpers', () => {
     ).toBe(true);
     expect(
       canFetchProviderModels(
-        { apiKey: 'azure-key', baseUrl: 'https://example.openai.azure.com' },
-        'azure',
+        { apiKey: 'openai-key', baseUrl: 'https://api.openai.com/v1' },
+        'openai',
       ),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       canFetchProviderModels(
         { apiKey: 'ollama-key', baseUrl: 'https://ollama.com' },

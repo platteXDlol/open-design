@@ -11,11 +11,7 @@ const DEFAULT_OUTPUT_TOKEN_LIMIT = 16_384;
 const DEFAULT_BASE_URL_BY_PROTOCOL: Record<ByokChatProviderConfig['protocol'], string> = {
   anthropic: 'https://api.anthropic.com/v1',
   openai: 'https://api.openai.com/v1',
-  azure: '',
-  google: 'https://generativelanguage.googleapis.com/v1beta',
   ollama: 'https://ollama.com',
-  senseaudio: 'https://api.senseaudio.cn',
-  aihubmix: 'https://aihubmix.com/v1',
 };
 
 type ProviderPackage =
@@ -114,9 +110,6 @@ function normalizeProviderBaseUrl(
   if (protocol === 'openai' && isExactOrigin(trimmed, 'https://api.openai.com')) {
     return 'https://api.openai.com/v1';
   }
-  if (protocol === 'google' && isExactOrigin(trimmed, 'https://generativelanguage.googleapis.com')) {
-    return 'https://generativelanguage.googleapis.com/v1beta';
-  }
   if (protocol === 'ollama') {
     if (isExactOrigin(trimmed, 'https://ollama.com')) return 'https://ollama.com/v1';
     if (isLocalOllamaOriginPath(trimmed)) return `${trimmed}/v1`;
@@ -183,32 +176,10 @@ function buildProviderEntry(
   const apiKeyOption = includeApiKey
     ? { apiKey: `{env:${BYOK_OPENCODE_API_KEY_ENV}}` }
     : {};
-  const usesAzureOpenAICompatiblePath =
-    protocol === 'azure' && /\/openai\/v\d+(?:$|\/)/.test(safeUrlPathname(baseUrl));
   switch (protocol) {
     case 'anthropic':
       return {
         npm: '@ai-sdk/anthropic',
-        options: {
-          ...apiKeyOption,
-          ...(baseUrl ? { baseURL: baseUrl } : {}),
-        },
-      };
-    case 'azure':
-      return {
-        npm: '@ai-sdk/azure',
-        options: {
-          ...apiKeyOption,
-          ...(baseUrl ? { baseURL: baseUrl } : {}),
-          ...(usesAzureOpenAICompatiblePath
-            ? {}
-            : { useDeploymentBasedUrls: true }),
-          ...apiVersionOption(apiVersion, usesAzureOpenAICompatiblePath),
-        },
-      };
-    case 'google':
-      return {
-        npm: '@ai-sdk/google',
         options: {
           ...apiKeyOption,
           ...(baseUrl ? { baseURL: baseUrl } : {}),
@@ -242,15 +213,6 @@ function buildProviderEntry(
           ...apiKeyOption,
         },
       };
-    case 'senseaudio':
-    case 'aihubmix':
-      return {
-        npm: '@ai-sdk/openai-compatible',
-        options: {
-          baseURL: baseUrl,
-          ...apiKeyOption,
-        },
-      };
   }
 }
 
@@ -274,13 +236,4 @@ function appendVersionedApiPath(value: string): string {
   } catch {
     return `${value}/v1`;
   }
-}
-
-function apiVersionOption(
-  apiVersion: string | undefined,
-  omitWhenBlank: boolean,
-): Record<string, string> {
-  const trimmed = apiVersion?.trim() ?? '';
-  if (trimmed) return { apiVersion: trimmed };
-  return omitWhenBlank ? {} : { apiVersion: '2024-10-21' };
 }

@@ -9,7 +9,7 @@ import {
 describe('api protocol labels', () => {
   it('labels the selected API protocol instead of assuming Anthropic', () => {
     expect(apiProtocolLabel('openai')).toBe('OpenAI API');
-    expect(apiProtocolLabel('google')).toBe('Google Gemini');
+    expect(apiProtocolLabel('ollama')).toBe('Ollama Cloud API');
     expect(apiProtocolLabel(undefined)).toBe('Anthropic API');
   });
 
@@ -17,7 +17,7 @@ describe('api protocol labels', () => {
     expect(apiProtocolModelLabel('openai', 'google/gemma-4-e4b')).toBe(
       'OpenAI API via OpenCode · google/gemma-4-e4b',
     );
-    expect(apiProtocolModelLabel('azure', '  ')).toBe('Azure OpenAI via OpenCode');
+    expect(apiProtocolModelLabel('ollama', '  ')).toBe('Ollama Cloud API via OpenCode');
   });
 
   it('includes explicit local CLI models when labeling agent messages', () => {
@@ -27,9 +27,8 @@ describe('api protocol labels', () => {
     expect(agentModelDisplayName('claude', 'Claude Code', 'default')).toBe('Claude');
   });
 
-  it('labels OpenCode-backed BYOK protocol agent ids', () => {
-    expect(agentDisplayName('senseaudio-api')).toBe('SenseAudio API via OpenCode');
-  });
+  // Local-First fork: `senseaudio` was removed in v0.2; the OpenCode BYOK
+  // protocol agent ids now cover only anthropic-api, openai-api, ollama-cloud-api.
 
   it('normalizes Qoder local CLI ids, aliases, and executable paths', () => {
     expect(agentDisplayName('qoder')).toBe('Qoder');

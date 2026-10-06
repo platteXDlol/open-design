@@ -9,8 +9,6 @@ import type { ApiProtocol, AppConfig } from '../types';
 const FINALIZE_PROTOCOLS = new Set<FinalizeProviderProtocol>([
   'anthropic',
   'openai',
-  'azure',
-  'google',
   'ollama',
 ]);
 
@@ -46,7 +44,7 @@ export function buildFinalizeRequest(
   config: AppConfig,
 ): FinalizeAnthropicRequest | null {
   const protocol = resolveFinalizeProtocol(config);
-  const { apiKey, baseUrl, model, apiVersion } = resolveByokFields(
+  const { apiKey, baseUrl, model } = resolveByokFields(
     config,
     protocol,
   );
@@ -58,7 +56,6 @@ export function buildFinalizeRequest(
     ...(baseUrl ? { baseUrl } : {}),
     model,
     maxTokens: effectiveMaxTokens(config),
-    ...(protocol === 'azure' && apiVersion ? { apiVersion } : {}),
   };
 }
 

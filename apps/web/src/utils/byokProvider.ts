@@ -34,12 +34,7 @@ export function byokProviderRequiresApiKey(
 export const API_PROTOCOL_AGENT_IDS: Record<ApiProtocol, string> = {
   anthropic: 'anthropic-api',
   openai: 'openai-api',
-  azure: 'azure-openai-api',
-  google: 'google-gemini-api',
   ollama: 'ollama-cloud-api',
-  senseaudio: 'senseaudio-api',
-  aihubmix: 'aihubmix-api',
-  bedrock: 'bedrock-api',
 };
 
 /** daemon 模式下那台替 BYOK 跑活的 OpenCode。 */

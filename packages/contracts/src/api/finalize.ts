@@ -1,3 +1,4 @@
+import type { ConnectionTestProtocol } from './connectionTest';
 import type { ReasoningExecutionRequestFields } from './reasoningExecution';
 
 // Shared DTOs for the `/api/projects/:id/finalize/<provider>` family of
@@ -18,13 +19,13 @@ export const FINALIZE_SCHEMA_VERSION = 1;
  * Matches the daemon/web finalize allowlists. This is intentionally narrower
  * than connection-test/provider-model protocols because some transports can be
  * tested or listed before finalized-design synthesis supports them.
+ *
+ * Local-First fork: alias to `ConnectionTestProtocol` so the finalize
+ * route and the connection-test surface agree on which providers are
+ * supported. The two unions were parallel historical artifacts; now
+ * they are the same set of three (anthropic, openai, ollama).
  */
-export type FinalizeProviderProtocol =
-  | 'anthropic'
-  | 'openai'
-  | 'azure'
-  | 'google'
-  | 'ollama';
+export type FinalizeProviderProtocol = ConnectionTestProtocol;
 
 /**
  * Request body for `POST /api/projects/:id/finalize/<provider>`.

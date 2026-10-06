@@ -2314,7 +2314,6 @@ function OnboardingView({
     Boolean(config.baseUrl.trim()) &&
     Boolean(config.model.trim());
   const canFetchProviderModels =
-    apiProtocol !== 'azure' &&
     apiProtocol !== 'ollama' &&
     Boolean(config.apiKey.trim()) &&
     Boolean(config.baseUrl.trim()) &&
@@ -2332,10 +2331,7 @@ function OnboardingView({
   const selectedProvider = KNOWN_PROVIDERS.find(
     (provider) =>
       provider.protocol === apiProtocol &&
-      (
-        provider.baseUrl === (config.apiProviderBaseUrl ?? config.baseUrl) ||
-        (apiProtocol === 'azure' && provider.baseUrl === '' && Boolean(config.baseUrl?.trim()))
-      ),
+      provider.baseUrl === (config.apiProviderBaseUrl ?? config.baseUrl),
   ) ?? null;
   const candidateCliAgents = agents.filter(
     (agent) => agent.id !== 'amr' && (agent.available || deepSeekHarnessNeedsSetup(agent)),
@@ -2632,8 +2628,7 @@ function OnboardingView({
     });
   }
   const protocolProviders = KNOWN_PROVIDERS.filter((provider) => provider.protocol === apiProtocol);
-  const hasProtocolOwnedEmptyProvider =
-    apiProtocol === 'azure' && protocolProviders.some((provider) => provider.baseUrl === '');
+  const hasProtocolOwnedEmptyProvider = false;
   const byokProviderOptions = [
     ...(hasProtocolOwnedEmptyProvider
       ? []
@@ -2681,7 +2676,7 @@ function OnboardingView({
       apiKey: nextProtocolConfig.apiKey,
       baseUrl: nextProtocolConfig.baseUrl,
       model: nextProtocolConfig.model,
-      apiVersion: protocol === 'azure' ? (nextProtocolConfig.apiVersion ?? '') : '',
+      apiVersion: '',
       apiProviderBaseUrl: nextProtocolConfig.apiProviderBaseUrl ?? null,
       apiProtocolConfigs: {
         ...(config.apiProtocolConfigs ?? {}),
@@ -3376,8 +3371,7 @@ function OnboardingView({
     const baseUrl = config.baseUrl;
     const apiKey = config.apiKey;
     const model = config.model;
-    const apiVersion =
-      protocol === 'azure' ? config.apiVersion?.trim() || undefined : undefined;
+    const apiVersion = undefined;
     return startOrJoinInlineTest(providerTestRunRef, inputKey, async (signal) => {
       providerAutoTestKeyRef.current = inputKey;
       setProviderTestState({ status: 'running', inputKey });
@@ -4014,7 +4008,7 @@ function OnboardingView({
                   onBaseUrlChange={(baseUrl) =>
                     updateApiConfig({
                       baseUrl,
-                      apiProviderBaseUrl: apiProtocol === 'azure' ? '' : null,
+                      apiProviderBaseUrl: null,
                     })
                   }
                   modelOptions={byokModelOptions}
@@ -4251,7 +4245,7 @@ function OnboardingByokSetupPanel({
   const t = useT();
   const running = testState.status === 'running';
   const fetchingModels = modelsState.status === 'running';
-  const useDeploymentInput = apiProtocol === 'azure';
+  const useDeploymentInput = false;
   return (
     <div className="onboarding-view__setup-panel">
       <div className="onboarding-view__setup-head">
@@ -4304,7 +4298,7 @@ function OnboardingByokSetupPanel({
         value={selectedProvider?.baseUrl ?? ''}
         options={providerOptions}
         onChange={onProviderChange}
-        allowEmptyValue={apiProtocol === 'azure'}
+        allowEmptyValue={false}
         searchable
         searchPlaceholder={t('settings.quickFillProvider')}
       />

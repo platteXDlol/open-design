@@ -3376,9 +3376,9 @@ describe('ProjectView conversation run isolation', () => {
     renderProjectView({
       ...config,
       mode: 'api',
-      apiProtocol: 'bedrock',
+      apiProtocol: 'openai',
       apiKey: '',
-      model: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+      model: 'gpt-4o',
     });
 
     await waitFor(() => expect(screen.getByTestId('active-conversation').textContent).toBe('conv-a'));

@@ -24,36 +24,36 @@ describe('resolve-finalize-request', () => {
     const request = buildFinalizeRequest({
       ...DEFAULT_CONFIG,
       mode: 'daemon',
-      apiProtocol: 'google',
+      apiProtocol: 'openai',
       apiKey: '',
       baseUrl: '',
       model: '',
       apiProtocolConfigs: {
-        google: {
-          apiKey: 'google-key',
-          baseUrl: 'https://generativelanguage.googleapis.com',
-          model: 'gemini-2.5-pro',
+        openai: {
+          apiKey: 'openai-key',
+          baseUrl: 'https://api.openai.com/v1',
+          model: 'gpt-4o',
         },
       },
     });
 
     expect(request).toMatchObject({
-      protocol: 'google',
-      apiKey: 'google-key',
-      baseUrl: 'https://generativelanguage.googleapis.com',
-      model: 'gemini-2.5-pro',
+      protocol: 'openai',
+      apiKey: 'openai-key',
+      baseUrl: 'https://api.openai.com/v1',
+      model: 'gpt-4o',
     });
     expect(isFinalizeByokConfigured({
       ...DEFAULT_CONFIG,
       mode: 'daemon',
-      apiProtocol: 'google',
+      apiProtocol: 'openai',
       apiKey: '',
       model: '',
       apiProtocolConfigs: {
-        google: {
-          apiKey: 'google-key',
-          baseUrl: 'https://generativelanguage.googleapis.com',
-          model: 'gemini-2.5-pro',
+        openai: {
+          apiKey: 'openai-key',
+          baseUrl: 'https://api.openai.com/v1',
+          model: 'gpt-4o',
         },
       },
     })).toBe(true);

@@ -1955,7 +1955,6 @@ function byokOpenCodeProviderFromConfig(
       && !config.apiKey.trim())
     || !model
     || model.toLowerCase() === 'default'
-    || (config.apiProtocol === 'azure' && !config.baseUrl.trim())
   ) {
     return undefined;
   }
@@ -1964,9 +1963,6 @@ function byokOpenCodeProviderFromConfig(
     apiKey: config.apiKey.trim(),
     baseUrl: config.baseUrl.trim(),
     model,
-    ...(config.apiProtocol === 'azure' && config.apiVersion?.trim()
-      ? { apiVersion: config.apiVersion.trim() }
-      : {}),
     requiresApiKey: byokProviderRequiresApiKey(
       config.apiProtocol,
       selectedProvider,
@@ -1991,14 +1987,12 @@ function selectedKnownProviderForConfig(config: AppConfig) {
 function isOpenCodeByokChatProtocol(
   protocol: AppConfig['apiProtocol'],
 ): protocol is ByokChatProtocol {
+  // Local-First fork: every retained protocol routes through OpenCode BYOK.
+  if (protocol === undefined) return false;
   return (
     protocol === 'anthropic' ||
     protocol === 'openai' ||
-    protocol === 'azure' ||
-    protocol === 'google' ||
-    protocol === 'ollama' ||
-    protocol === 'senseaudio' ||
-    protocol === 'aihubmix'
+    protocol === 'ollama'
   );
 }
 
@@ -8459,7 +8453,7 @@ export function ProjectView({
       );
       const byokOpenCodeProvider = byokOpenCodeProviderFromConfig(config);
       const requiresByokPreflight =
-        (config.mode === 'api' && config.apiProtocol !== 'bedrock') ||
+        (config.mode === 'api') ||
         (config.mode === 'daemon' && config.agentId === 'byok-opencode');
       if (requiresByokPreflight && !byokOpenCodeProvider) {
         const blockReason = byokPreflightBlockReason(config) ?? 'config_invalid';
@@ -10406,10 +10400,6 @@ export function ProjectView({
         });
         return true;
       } else {
-        if (config.apiProtocol === 'bedrock') {
-          handlers.onError(new Error(BEDROCK_BYOK_UNSUPPORTED_MESSAGE));
-          return true;
-        }
         if (!agentsById.get('byok-opencode')?.available) {
           handlers.onError(new Error(BYOK_OPENCODE_UNAVAILABLE_MESSAGE));
           return true;

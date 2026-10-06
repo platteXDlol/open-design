@@ -53,13 +53,11 @@ import {
 } from './runtimes/auth.js';
 import { loadMmdRouteLaunchEnv } from './runtimes/mmd-routes.js';
 import {
-  buildLegacyMaxTokensParam,
   buildMaxCompletionTokensParam,
   buildOpenAIChatTokenParam,
   isAzureOpenAIHostname,
   isUnsupportedMaxTokensError,
 } from './integrations/openai-chat-token-params.js';
-import { aihubmixHeaders } from './integrations/aihubmix.js';
 import type { AgentCliEnvPrefs } from './app-config.js';
 import type { RuntimeAgentDef } from './runtimes/types.js';
 import { preparePromptFileForAgent, type PreparedPromptFile } from './runtimes/prompt-file.js';
@@ -81,7 +79,6 @@ import {
   type ParsedBaseUrl,
   type ProviderTestRequest,
 } from '@open-design/contracts/api/connectionTest';
-import { googleGenerateContentUrl } from './integrations/google-models.js';
 import { readVelaCredentialRevision, resolveAmrProfile } from './integrations/vela.js';
 import { amrModelLoadingCache } from './runtimes/amr-model-cache.js';
 import { buildAmrModelCacheKey } from './runtimes/amr-model-probe.js';
@@ -925,18 +922,7 @@ const GOOGLE_GEMINI_DEFAULT_BASE_URL = 'https://generativelanguage.googleapis.co
 function normalizeProviderTestInput(
   input: ProviderConnectionInput,
 ): ProviderConnectionInput {
-  const baseUrl = String(input.baseUrl ?? '').trim();
-  if (input.protocol === 'google' && !baseUrl) {
-    return { ...input, baseUrl: GOOGLE_GEMINI_DEFAULT_BASE_URL };
-  }
   return input;
-}
-
-function googleBaseUrlMismatchDetail(hostname: string): string | null {
-  if (hostname === 'api.anthropic.com' || hostname === 'api.openai.com') {
-    return `Base URL points to ${hostname}. For Google Gemini use ${GOOGLE_GEMINI_DEFAULT_BASE_URL}.`;
-  }
-  return null;
 }
 
 function smokeFailureDetail(sample: string): string {
@@ -954,12 +940,9 @@ function inspectProviderCompletion(
   const obj = data && typeof data === 'object' ? data as Record<string, unknown> : null;
   if (!obj) return { valid: false };
 
-  if (protocol === 'openai' || protocol === 'azure' || protocol === 'senseaudio' || protocol === 'aihubmix') {
+  if (protocol === 'openai') {
     const responseModel = typeof obj.model === 'string' ? obj.model : '';
     if (
-      // AIHubMix is omitted from the strict response-model check (like Azure):
-      // its gateway routes by model name and may echo a normalized id.
-      (protocol === 'openai' || protocol === 'senseaudio') &&
       enforceResponseModel &&
       responseModel &&
       requestedModel &&
@@ -993,27 +976,12 @@ function inspectProviderCompletion(
     };
   }
 
-  if (protocol === 'google') {
-    return {
-      valid: Array.isArray((obj as { candidates?: unknown }).candidates),
-      sample: 'valid completion',
-    };
-  }
-
   if (protocol === 'ollama') {
     const msg = (obj as { message?: { content?: unknown } }).message;
     const hasContent = typeof msg?.content === 'string';
     return {
       valid: Array.isArray((obj as { messages?: unknown }).messages) || hasContent,
       ...(hasContent ? { sample: truncateSample(msg?.content) } : {}),
-    };
-  }
-
-  if (protocol === 'bedrock') {
-    return {
-      valid: false,
-      kind: 'unknown',
-      detail: 'AWS Bedrock BYOK connection tests need AWS credential signing, which is not supported by the current API-key smoke test.',
     };
   }
 
@@ -1206,116 +1174,6 @@ async function validateLocalOpenAiModel(
   };
 }
 
-function isSenseAudioNonChatModel(model: string): boolean {
-  return (
-    model.startsWith('senseaudio-image-') ||
-    model.startsWith('doubao-seedream-') ||
-    model === 'sensenova-u1-fast' ||
-    model.startsWith('doubao-seedance-') ||
-    model.startsWith('senseaudio-asr-') ||
-    model.startsWith('senseaudio-tts-') ||
-    model.startsWith('senseaudio-music-')
-  );
-}
-
-async function validateSenseAudioNonChatModel(
-  input: ProviderTestRequest,
-  signal: AbortSignal,
-  start: number,
-  requestInit: Pick<RequestInit, 'dispatcher'> = {},
-): Promise<ConnectionTestResponse | null> {
-  if (input.protocol !== 'senseaudio' || !isSenseAudioNonChatModel(input.model)) {
-    return null;
-  }
-
-  const url = appendVersionedApiPath(String(input.baseUrl), '/models');
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      ...requestInit,
-      method: 'GET',
-      headers: { authorization: `Bearer ${String(input.apiKey)}` },
-      signal,
-      redirect: 'error',
-    });
-  } catch (err) {
-    const latencyMs = Date.now() - start;
-    const kind = networkErrorToKind(err);
-    return {
-      ok: false,
-      kind,
-      latencyMs,
-      model: input.model,
-      detail: networkErrorDetail(err, [input.apiKey]),
-    };
-  }
-
-  const latencyMs = Date.now() - start;
-  let rawText = '';
-  let data: unknown = {};
-  let parseError: unknown = null;
-  try {
-    rawText = await response.text();
-  } catch {
-    rawText = '';
-  }
-  try {
-    data = rawText ? JSON.parse(rawText) : {};
-  } catch (err) {
-    parseError = err;
-  }
-
-  if (parseError && response.ok) {
-    return {
-      ok: false,
-      kind: 'unknown',
-      latencyMs,
-      model: input.model,
-      status: response.status,
-      detail: redactSecrets(
-        parseError instanceof Error ? parseError.message : String(parseError),
-        [input.apiKey],
-      ),
-    };
-  }
-
-  if (!response.ok) {
-    const redactedDetail = redactSecrets(
-      extractProviderErrorDetail(data, rawText).slice(0, 240),
-      [input.apiKey],
-    );
-    return {
-      ok: false,
-      kind: statusToKind(response.status, redactedDetail),
-      latencyMs,
-      model: input.model,
-      status: response.status,
-      detail: redactedDetail,
-    };
-  }
-
-  const modelIds = extractOpenAiModelIds(data);
-  if (!modelIds.includes(input.model)) {
-    return {
-      ok: false,
-      kind: 'not_found_model',
-      latencyMs,
-      model: input.model,
-      status: response.status,
-      detail: `Model "${input.model}" is not reported by SenseAudio /models.`,
-    };
-  }
-
-  return {
-    ok: true,
-    kind: 'success',
-    latencyMs,
-    model: input.model,
-    status: response.status,
-    detail: 'SenseAudio model is available, but this media model is not chat-testable from Settings.',
-  };
-}
-
 interface ProviderCallShape {
   url: string;
   headers: Record<string, string>;
@@ -1436,108 +1294,15 @@ function buildProviderCall(input: ProviderTestRequest): ProviderCallShape {
           return '';
         },
       };
-    case 'aihubmix':
-      // AIHubMix is wire-compatible with OpenAI but carries the fixed APP-Code
-      // attribution header on every request (see aihubmixHeaders). Same body /
-      // response shape as the OpenAI case otherwise.
-      return {
-        url: appendVersionedApiPath(baseUrl, '/chat/completions'),
-        headers: {
-          'content-type': 'application/json',
-          ...aihubmixHeaders(apiKey),
-        },
-        body: {
-          model,
-          ...buildOpenAIChatTokenParam(model, PROVIDER_MAX_TOKENS),
-          messages: [{ role: 'user', content: SMOKE_PROMPT }],
-          stream: false,
-        },
-        extractText: extractOpenAIMessageText,
-      };
-    case 'openai':
-    case 'senseaudio':
-      // SenseAudio is wire-compatible with OpenAI (POST /v1/chat/completions,
-      // Bearer auth, identical body + response shape), so the connection
-      // smoke test reuses the same call shape. We default the base URL
-      // upstream-side in chat-routes; this layer assumes the caller passed
-      // a concrete URL via the BYOK form.
-      if (input.protocol === 'openai') {
-        const runProviderPackage = resolveOpenAIConnectionTestRunProviderPackage(input);
-        if (runProviderPackage === '@ai-sdk/openai') {
-          return openAIResponsesProviderCall(baseUrl, apiKey, model);
-        }
-        if (runProviderPackage === '@ai-sdk/openai-compatible') {
-          return openAIChatCompletionsProviderCall(baseUrl, apiKey, model);
-        }
+    case 'openai': {
+      const runProviderPackage = resolveOpenAIConnectionTestRunProviderPackage(input);
+      if (runProviderPackage === '@ai-sdk/openai') {
+        return openAIResponsesProviderCall(baseUrl, apiKey, model);
+      }
+      if (runProviderPackage === '@ai-sdk/openai-compatible') {
+        return openAIChatCompletionsProviderCall(baseUrl, apiKey, model);
       }
       return openAIChatCompletionsProviderCall(baseUrl, apiKey, model);
-    case 'azure': {
-      const url = new URL(baseUrl);
-      const basePath = url.pathname.replace(/\/+$/, '');
-      const usesVersionedOpenAIPath = /\/openai\/v\d+(?:$|\/)/.test(basePath);
-      const apiVersion =
-        typeof input.apiVersion === 'string' && input.apiVersion.trim()
-          ? input.apiVersion.trim()
-          : usesVersionedOpenAIPath
-            ? ''
-            : '2024-10-21';
-      url.pathname = usesVersionedOpenAIPath
-        ? `${basePath}/chat/completions`
-        : `${basePath}/openai/deployments/${encodeURIComponent(model)}/chat/completions`;
-      if (usesVersionedOpenAIPath && !apiVersion) {
-        url.searchParams.delete('api-version');
-      }
-      if (apiVersion) {
-        url.searchParams.set('api-version', apiVersion);
-      }
-      return {
-        url: url.toString(),
-        headers: {
-          'content-type': 'application/json',
-          'api-key': apiKey,
-        },
-        body: {
-          ...(usesVersionedOpenAIPath ? { model } : {}),
-          ...buildLegacyMaxTokensParam(PROVIDER_MAX_TOKENS),
-          messages: [{ role: 'user', content: SMOKE_PROMPT }],
-          stream: false,
-        },
-        retryBodyOnUnsupportedMaxTokens: {
-          ...(usesVersionedOpenAIPath ? { model } : {}),
-          messages: [{ role: 'user', content: SMOKE_PROMPT }],
-          stream: false,
-          ...buildMaxCompletionTokensParam(PROVIDER_MAX_TOKENS),
-        },
-        extractText: extractOpenAIMessageText,
-      };
-    }
-    case 'google': {
-      const effectiveBaseUrl = baseUrl.trim() || GOOGLE_GEMINI_DEFAULT_BASE_URL;
-      return {
-        url: googleGenerateContentUrl(effectiveBaseUrl, model),
-        headers: {
-          'content-type': 'application/json',
-          'x-goog-api-key': apiKey,
-        },
-        body: {
-          contents: [
-            { role: 'user', parts: [{ text: SMOKE_PROMPT }] },
-          ],
-          generationConfig: { maxOutputTokens: PROVIDER_MAX_TOKENS },
-        },
-        extractText: (data) => {
-          const candidates = (data as { candidates?: unknown }).candidates;
-          if (!Array.isArray(candidates) || candidates.length === 0) return '';
-          const parts = (candidates[0] as { content?: { parts?: unknown } })
-            .content?.parts;
-          if (!Array.isArray(parts)) return '';
-          return parts
-            .map((p: { text?: unknown }) =>
-              typeof p?.text === 'string' ? p.text : '',
-            )
-            .join('');
-        },
-      };
     }
     case 'ollama': {
       const trimmedBase = baseUrl.replace(/\/+$/, '').replace(/\/api\/?$/, '');
@@ -1561,10 +1326,6 @@ function buildProviderCall(input: ProviderTestRequest): ProviderCallShape {
         },
       };
     }
-    case 'bedrock':
-      throw new Error(
-        'AWS Bedrock BYOK requires AWS credential signing; the current provider smoke test only supports API-key based providers.',
-      );
     default:
       throw new Error(`Unknown protocol: ${(input as { protocol?: string }).protocol}`);
   }
@@ -1618,21 +1379,6 @@ export async function testProviderConnection(
     };
   }
 
-  if (normalizedInput.protocol === 'google') {
-    const mismatch = googleBaseUrlMismatchDetail(
-      validated.parsed.hostname.toLowerCase(),
-    );
-    if (mismatch) {
-      return {
-        ok: false,
-        kind: 'invalid_base_url',
-        latencyMs: Date.now() - start,
-        model,
-        detail: mismatch,
-      };
-    }
-  }
-
   let call: ProviderCallShape;
   try {
     call = buildProviderCall(normalizedInput);
@@ -1666,14 +1412,6 @@ export async function testProviderConnection(
       proxyDispatcher.requestInit,
     );
     if (modelError) return modelError;
-
-    const senseAudioNonChatResult = await validateSenseAudioNonChatModel(
-      normalizedInput,
-      controller.signal,
-      start,
-      proxyDispatcher.requestInit,
-    );
-    if (senseAudioNonChatResult) return senseAudioNonChatResult;
 
     const requestInit = {
       ...proxyDispatcher.requestInit,

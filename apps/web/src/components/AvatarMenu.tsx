@@ -473,11 +473,11 @@ export function AvatarMenu({
   useEffect(() => {
     if (!open || config.mode !== 'api') return;
     if (fetchedByokModels.length > 0) return;
-    if (apiProtocol === 'azure' || apiProtocol === 'ollama') return;
+    if (apiProtocol === 'ollama') return;
     const baseUrl = config.baseUrl?.trim() ?? '';
     if (!/^https?:\/\//i.test(baseUrl)) return;
-    // AIHubMix's catalogue is public; every other protocol needs a key.
-    if (apiProtocol !== 'aihubmix' && !(config.apiKey ?? '').trim()) return;
+    // Every Local-First protocol except ollama needs an API key.
+    if (!(config.apiKey ?? '').trim()) return;
     const key = byokModelsKey;
     let cancelled = false;
     void fetchProviderModels({

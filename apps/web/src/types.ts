@@ -111,15 +111,13 @@ export type {
 } from '@open-design/contracts';
 
 export type ExecMode = 'daemon' | 'api';
-export type ApiProtocol =
-  | 'anthropic'
-  | 'openai'
-  | 'azure'
-  | 'google'
-  | 'ollama'
-  | 'senseaudio'
-  | 'aihubmix'
-  | 'bedrock';
+
+// Local-First fork: alias to the contracts-layer protocol union. The
+// web app keeps the same name for backward compatibility with the
+// existing config switcher, but the set is now narrowed to the three
+// Local-First-relevant protocols (openai, anthropic, ollama). Cloud-only
+// upstream protocols were dropped in v0.2 — see PR #9.
+export type ApiProtocol = ConnectionTestProtocol;
 
 export type LiveArtifactTabId = `live:${string}`;
 // Tab ids are arbitrary strings; the template-literal members below are

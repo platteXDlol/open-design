@@ -67,7 +67,6 @@ export interface ByokModelPreference {
 }
 
 const ZERO_WIDTH_CHARS = /[\u200B-\u200D\uFEFF]/g;
-const GOOGLE_GEMINI_DEFAULT_BASE_URL = 'https://generativelanguage.googleapis.com';
 
 export function cleanByokApiKey(value: string): string {
   return value
@@ -180,14 +179,14 @@ export function validateByokDraft(
         message: 'Base URL must be a valid public http:// or https:// URL.',
         action: 'focus_base_url',
       });
-    } else if (protocol === 'google' && baseUrl) {
+    } else if (protocol === 'openai' && baseUrl) {
       const host = baseUrlHostname(baseUrl);
-      if (host === 'api.anthropic.com' || host === 'api.openai.com') {
+      if (host === 'api.anthropic.com') {
         issues.push({
           field: 'base_url',
           level: 'error',
           code: 'base_url_invalid',
-          message: `Base URL points to ${host}. For Google Gemini use ${GOOGLE_GEMINI_DEFAULT_BASE_URL}.`,
+          message: `Base URL points to ${host}.`,
           action: 'focus_base_url',
         });
       }
@@ -299,28 +298,16 @@ function validateApiKeyShape(
     };
   }
 
-  if (protocol === 'google' && isGoogleFirstPartyBaseUrl(baseUrl)) {
-    if (isGoogleGeminiApiKeyShape(apiKey)) return null;
-    return {
-      field: 'api_key',
-      level: 'error',
-      code: detectedProtocol
-        ? 'api_key_wrong_protocol'
-        : 'api_key_malformed',
-      message: detectedProtocol
-        ? 'This key does not look like a Google Gemini API key.'
-        : 'This API key does not match the expected Google Gemini format.',
-      action: 'focus_api_key',
-      ...(detectedProtocol ? { detectedProtocol } : {}),
-    };
-  }
+  // Local-First fork: no retained protocol has a "first-party" base URL /
+// api-key-shape validation rule beyond OpenAI's, so the Google-specific
+// branch is dropped. (Anthropic's equivalent ran a few lines above.)
 
   return null;
 }
 
 function detectByokApiKeyProtocol(apiKey: string): ApiProtocol | null {
+  // Local-First fork: dropped Google Gemini detection in v0.2 (cloud-only).
   if (apiKey.startsWith('sk-ant-')) return 'anthropic';
-  if (isGoogleGeminiApiKeyShape(apiKey)) return 'google';
   if (apiKey.startsWith('sk-')) return 'openai';
   return null;
 }
@@ -346,10 +333,6 @@ function isOpenAiFirstPartyBaseUrl(baseUrl: string): boolean {
   } catch {
     return false;
   }
-}
-
-function isGoogleFirstPartyBaseUrl(baseUrl: string): boolean {
-  return baseUrlHostname(baseUrl) === 'generativelanguage.googleapis.com';
 }
 
 function baseUrlHostname(baseUrl: string): string | undefined {
