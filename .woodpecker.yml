@@ -17,6 +17,17 @@
 # mirror while Woodpecker stabilizes (see root `AGENTS.md` §
 # "GitHub automation boundary"). Removal of the GH Actions surface
 # is a follow-up decision.
+#
+# Note on pnpm installation: every step installs pnpm via
+# `npm install -g pnpm@10.33.2`. Woodpecker steps run in fresh
+# containers, so per-step install is required. The earlier
+# `corepack enable && corepack prepare pnpm@10.33.2 --activate`
+# approach failed at runtime: corepack creates shims in
+# `~/.cache/node/corepack/v1/`, but that directory is not in the
+# default `PATH` for the non-interactive `sh` shell that the step
+# command runner uses, so subsequent `pnpm` invocations error with
+# "pnpm: not found". The npm-global install puts pnpm in
+# `/usr/local/bin/`, which IS in PATH.
 
 when:
   - event: pull_request
@@ -31,7 +42,7 @@ steps:
       CI: "true"
     commands:
       - apk add --no-cache python3 make g++ git
-      - corepack enable && corepack prepare pnpm@10.33.2 --activate
+      - npm install -g pnpm@10.33.2
       - pnpm install --frozen-lockfile
 
   guard:
@@ -39,6 +50,8 @@ steps:
     image: node:24-alpine
     depends_on: [install]
     commands:
+      - apk add --no-cache python3 make g++ git
+      - npm install -g pnpm@10.33.2
       - pnpm guard
 
   typecheck:
@@ -46,6 +59,8 @@ steps:
     image: node:24-alpine
     depends_on: [install]
     commands:
+      - apk add --no-cache python3 make g++ git
+      - npm install -g pnpm@10.33.2
       - pnpm typecheck
 
   test-contracts:
@@ -53,6 +68,8 @@ steps:
     image: node:24-alpine
     depends_on: [install]
     commands:
+      - apk add --no-cache python3 make g++ git
+      - npm install -g pnpm@10.33.2
       - pnpm --filter @open-design/contracts test
 
   test-daemon:
@@ -60,6 +77,8 @@ steps:
     image: node:24-alpine
     depends_on: [install]
     commands:
+      - apk add --no-cache python3 make g++ git
+      - npm install -g pnpm@10.33.2
       # Focused deterministic subset for PR feedback. The full daemon
       # test surface runs locally via
       # `pnpm --filter @open-design/daemon test` and is gated on
