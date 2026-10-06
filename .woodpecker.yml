@@ -1,11 +1,12 @@
 # Woodpecker CI for the Local-First fork. The pipeline triggers on
-# `pull_request` (any PR against any branch) and on `push` to `main`
-# (the merge-queue equivalent). Five steps run in order; each gates
-# the next on success. The full `@open-design/daemon` test surface
-# (>5 min on this machine; 17 pre-existing failures slow it further)
-# stays local via `pnpm --filter @open-design/daemon test` — the
-# PR-feedback path runs only the focused `origin-validation` subset
-# for fast, deterministic gating.
+# `pull_request` only — every check that can fail must gate the PR,
+# because a broken `main` is worse than a delayed merge. Five steps
+# run in order; each gates the next on success. The full
+# `@open-design/daemon` test surface (>5 min on this machine; 17
+# pre-existing failures slow it further) stays local via
+# `pnpm --filter @open-design/daemon test` — the PR-feedback path
+# runs only the focused `origin-validation` subset for fast,
+# deterministic gating.
 #
 # No `pnpm build` on PR — full builds stay local via
 # `pnpm tools-dev run web`. The repo's `pnpm guard` policy floor is
@@ -31,8 +32,6 @@
 
 when:
   - event: pull_request
-  - event: push
-    branch: main
 
 steps:
   install:
@@ -80,8 +79,8 @@ steps:
       - apk add --no-cache python3 make g++ git
       - npm install -g pnpm@10.33.2
       # Focused deterministic subset for PR feedback. The full daemon
-      # test surface runs locally via
-      # `pnpm --filter @open-design/daemon test` and is gated on
-      # merge to main (in a follow-up cron job — out of scope for
-      # this initial Woodpecker setup).
+      # test surface stays local via `pnpm --filter @open-design/daemon test`
+      # and is part of the merge gate (developer runs it locally
+      # before pushing). A nightly cron job against `main` tip is a
+      # follow-up — out of scope for this initial Woodpecker setup.
       - pnpm --filter @open-design/daemon test tests/origin-validation.test.ts
