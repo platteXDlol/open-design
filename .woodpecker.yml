@@ -24,21 +24,18 @@ when:
     branch: main
 
 clone:
-  git:
-    depth: 1
+  depth: 1
 
 steps:
   install:
     name: install
     image: node:24-alpine
     environment:
-      - CI=true
+      CI: "true"
     commands:
       - apk add --no-cache python3 make g++ git
       - corepack enable && corepack prepare pnpm@10.33.2 --activate
       - pnpm install --frozen-lockfile
-    volumes:
-      - /tmp/woodpecker-pnpm-store:/root/.local/share/pnpm/store
 
   guard:
     name: policy guard
