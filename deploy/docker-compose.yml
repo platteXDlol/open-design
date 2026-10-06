@@ -17,6 +17,11 @@ services:
       OD_WEB_PORT: ${OPEN_DESIGN_PORT:-7456}
       OD_API_TOKEN: ${OD_API_TOKEN:-}
       OD_DISABLE_API_AUTH: ${OPEN_DESIGN_DISABLE_API_AUTH:-}
+      # Local-First LAN toggle. Default 1: RFC1918 (10/8 + 172.16/12 + 192.168/16)
+      # is allowed for user-configured provider endpoints; cloud-metadata
+      # and CGNAT stay blocked always. Set OD_ALLOW_PRIVATE_NETWORKS=0 in
+      # the host environment to restore the upstream strict default.
+      OD_ALLOW_PRIVATE_NETWORKS: ${OD_ALLOW_PRIVATE_NETWORKS:-1}
       OD_CODEX_SANDBOX: ${OD_CODEX_SANDBOX:-}
     ports:
       - "127.0.0.1:${OPEN_DESIGN_PORT:-7456}:7456"
