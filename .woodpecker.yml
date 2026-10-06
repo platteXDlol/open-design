@@ -1,0 +1,74 @@
+# Woodpecker CI for the Local-First fork. The pipeline triggers on
+# `pull_request` (any PR against any branch) and on `push` to `main`
+# (the merge-queue equivalent). Five steps run in order; each gates
+# the next on success. The full `@open-design/daemon` test surface
+# (>5 min on this machine; 17 pre-existing failures slow it further)
+# stays local via `pnpm --filter @open-design/daemon test` — the
+# PR-feedback path runs only the focused `origin-validation` subset
+# for fast, deterministic gating.
+#
+# No `pnpm build` on PR — full builds stay local via
+# `pnpm tools-dev run web`. The repo's `pnpm guard` policy floor is
+# the source of truth for cross-cutting checks; add new gates to
+# `scripts/guard.ts` first, then mirror them in the matching
+# Woodpecker step.
+#
+# Migration context: `.github/workflows/` is kept as a transitional
+# mirror while Woodpecker stabilizes (see root `AGENTS.md` §
+# "GitHub automation boundary"). Removal of the GH Actions surface
+# is a follow-up decision.
+
+when:
+  - event: pull_request
+  - event: push
+    branch: main
+
+clone:
+  git:
+    depth: 1
+
+steps:
+  install:
+    name: install
+    image: node:24-alpine
+    environment:
+      - CI=true
+    commands:
+      - apk add --no-cache python3 make g++ git
+      - corepack enable && corepack prepare pnpm@10.33.2 --activate
+      - pnpm install --frozen-lockfile
+    volumes:
+      - /tmp/woodpecker-pnpm-store:/root/.local/share/pnpm/store
+
+  guard:
+    name: policy guard
+    image: node:24-alpine
+    depends_on: [install]
+    commands:
+      - pnpm guard
+
+  typecheck:
+    name: typecheck
+    image: node:24-alpine
+    depends_on: [install]
+    commands:
+      - pnpm typecheck
+
+  test-contracts:
+    name: contracts tests
+    image: node:24-alpine
+    depends_on: [install]
+    commands:
+      - pnpm --filter @open-design/contracts test
+
+  test-daemon:
+    name: daemon tests (focused)
+    image: node:24-alpine
+    depends_on: [install]
+    commands:
+      # Focused deterministic subset for PR feedback. The full daemon
+      # test surface runs locally via
+      # `pnpm --filter @open-design/daemon test` and is gated on
+      # merge to main (in a follow-up cron job — out of scope for
+      # this initial Woodpecker setup).
+      - pnpm --filter @open-design/daemon test tests/origin-validation.test.ts

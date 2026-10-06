@@ -8,7 +8,7 @@ This file is the single source of truth for agents entering this repository. Rea
 - Contribution and environment: `CONTRIBUTING.md`, `docs/i18n/CONTRIBUTING.zh-CN.md`.
 - Architecture and protocols: `docs/architecture.md`, `docs/skills-protocol.md`, `docs/agent-adapters.md`, `docs/modes.md`.
 - Historical product baseline: `docs/spec.md`, `docs/roadmap.md` (both explicitly archived; do not treat their dated decisions as current behavior).
-- References and current plans: `docs/references.md`, `docs/code-review-guidelines.md`, `specs/current/maintainability-roadmap.md`, `specs/current/ci.md` (CI scope confidence methodology — required before changing planner confidence, routing, or omission policy in `.github/config/scopes.json` and `.github/scripts/scopes.py`), `specs/current/chat-panel-next.md` (ChatPanel 重构:基线、任务进度规格、决策记录、踩过的坑 — 改 chat 渲染管线/工具调用展示/执行记录前必读), `specs/current/chat-panel-next-plan.md` (交付计划与纠偏节点).
+- References and current plans: `docs/references.md`, `docs/code-review-guidelines.md`, `specs/current/maintainability-roadmap.md`, `specs/current/chat-panel-next.md` (ChatPanel 重构:基线、任务进度规格、决策记录、踩过的坑 — 改 chat 渲染管线/工具调用展示/执行记录前必读), `specs/current/chat-panel-next-plan.md` (交付计划与纠偏节点), and the Local-First fork's own roadmap at `specs/current/claude-design-local-roadmap.md`. The upstream file `specs/current/ci.md` (CI scope confidence methodology for the two-layer GitHub Actions architecture) is intentionally retained for historical reference but is **not** a maintained set of rules for this repository — its guidance covers systems (`planner confidence`, `routes`, `convergence`) that the Local-First fork does not adopt.
 - Directory-level agent guidance: `.github/AGENTS.md`, `apps/AGENTS.md`, `packages/AGENTS.md`, `tools/AGENTS.md`, `e2e/AGENTS.md`, `apps/web/src/components/chat/AGENTS.md` (chat 组件分层、`--chat-*` 样式接缝、降级形态与测试规约).
 - Packaged auto-update architecture and high-confidence local harness: read `tools/pack/AGENTS.md` section "Packaged auto-update architecture and harness" before touching packaged updater code, release-channel identity, installer behavior, or updater UI.
 - Packaged build cache contract: `tools/pack/CACHE.md` (determinant rules, materialization-time parameters, confidence grading — required before changing any build-cache node key).
@@ -145,77 +145,13 @@ obvious, block the PR and request core-maintainer guidance.
 
 ## GitHub automation boundary
 
-Read `.github/AGENTS.md` before editing `.github/workflows/`, `.github/scripts/`, `.github/actions/`, PR follow-on automation, `workflow_run` trusted writes, CI handoff artifacts, or the workflow topology checks that guard those surfaces.
+Primary CI runs in **Woodpecker** via `.woodpecker.yml` at the repo root. The pipeline triggers on `pull_request` and on `push` to `main`; it runs `pnpm guard`, `pnpm typecheck`, the `@open-design/contracts` test scope, and a focused daemon test scope (`tests/origin-validation.test.ts`). No `pnpm build` on PR — full builds stay local via `pnpm tools-dev run web`. The remaining `@open-design/daemon` test surface stays local via `pnpm --filter @open-design/daemon test`.
 
-CI-related GitHub automation uses a two-layer architecture:
+The `.github/workflows/` directory is kept as a **transitional mirror** while Woodpecker stabilizes. The workflows there reflect the upstream two-layer architecture (atomic capability workflows, `handoff.py`, R2 convergence, scope routing) and are not the canonical CI for this fork. Do not introduce new GH Actions workflows; add new checks to Woodpecker (`.woodpecker.yml`) or to `pnpm guard` (`scripts/guard.ts`) instead. Removal of the GH Actions surface is a follow-up decision — do not delete `ci.yml` or any of the capability workflows without an explicit maintainer call.
 
-- Business layer workflows own product or validation decisions. `ci.yml` is the main low-privilege PR, merge-queue, and manual validation workflow. It detects scope, runs checks, and produces typed handoff artifacts.
-- Atomic capability workflows own reusable trusted operations. `comment.atom.yml` publishes pure text PR comments, `autofix.atom.yml` applies same-repository patches, and `report.atom.yml` materializes advanced comments that need trusted dependencies, secrets, or report generation before upsert.
+When the upstream's `specs/current/ci.md` (CI test-set orchestration guidance) is intentionally retained for historical reference but its guidance is **not** a maintained set of rules for this repository. Treat convergence, scope routing, and reusable workload results as concepts from the upstream codebase that this fork does not adopt; do not reintroduce the `.github/config/convergence.json` / `convergence.atom.yml` / `lib/r2.py` surface here.
 
-Do not add a new business-named follow-on workflow such as `foo.comment.atom.yml` or `bar.autofix.atom.yml` without first trying to express the flow as a `ci.yml` producer plus the existing `comment`, `autofix`, or `report` capability. Keep artifact naming, storage layout, and parser behavior centralized in `.github/scripts/handoff.py`; do not let individual workflows invent parallel handoff conventions.
-
-## CI test-set orchestration guidance
-
-Use the following as a recommended convergence model, not a repository-wide
-conformance gate. Existing workflows and coarse test lanes may remain while
-their boundaries are understood. Do not block an unrelated change or require it
-to repay adjacent orchestration debt solely because it touches an existing
-lane. Apply these recommendations incrementally when the local scope and
-measured scheduling benefit justify the migration.
-
-Prefer one selection direction: changed paths → source units → test sets →
-execution workloads. Because the `plan` job runs before and governs downstream
-jobs, new omission policy should live in the planner rather than rely on a
-downstream guard to justify it after scheduling has already occurred.
-
-When a CI area is being reorganized, prefer three named responsibilities:
-
-- **Source units** name stable ownership or behavior boundaries in production,
-  test, fixture, and control-plane paths. Prefer composing repeated selectors
-  under a named unit instead of copying prefixes into unrelated rules.
-- **Test sets** name independently useful semantic validation groups. Their
-  membership and execution contract should converge on one authoritative
-  declaration instead of accumulating more matrix or file-list copies across
-  planner configuration, workflow YAML, and framework-local registries.
-- **Routes** map source units to the test sets required to validate them. Routes
-  should express impact rather than runner mechanics; runner image, setup,
-  sharding, and job packing can remain execution concerns derived after
-  selection.
-
-Good split candidates have a stable boundary, change work that can actually be
-omitted, and carry enough runtime cost or diagnostic value to justify another
-scheduling identity. Directory size, file count, or the ability to write a
-narrower glob is weak evidence on its own. Prefer a small number of composable
-semantic units over per-file mappings, exception lists, or negative-rule
-forests. Treat existing duplicated or implicit declarations as migration
-surfaces without requiring every nearby change to remove them.
-
-Before promoting a new route from observation to active omission, retain
-conservative behavior such as:
-
-- unknown, mixed, unresolved, invalid, or below-threshold input selects the
-  conservative full plan;
-- editing a test, fixture, or suite manifest selects the test set that consumes
-  it; shared harness, contract, setup, or lockfile changes fan out to every
-  affected set;
-- making a selected test-set identifier that the executor cannot run fail
-  visibly instead of being ignored;
-- direct planner tests cover representative in-bound, out-of-bound, mixed, and
-  fallback inputs without reimplementing the evaluator in another language.
-
-Keep scope routing and reusable-result convergence conceptually orthogonal:
-scope answers which test sets are necessary for a change, while convergence
-answers whether an identically declared workload already has a validated,
-reusable successful result. New designs should not use result availability to
-weaken source-to-test coverage or copy route policy into
-`.github/config/convergence.json`. Prefer productless reusable workloads; when a
-workload owns products, declare the complete typed reuse manifest with it.
-
-For work whose purpose is CI orchestration, start by inventorying the current
-chain from changed path to match, effect, workload, job command, and concrete
-test cases. Prefer naming or removing implicit joins before making them finer.
-Changes under `.github/` must also follow `.github/AGENTS.md` and the current
-confidence methodology in `specs/current/ci.md`.
+Release artifacts are produced locally via `pnpm tools-pack`; no release CI workflows run from this fork.
 
 ## Release channel model
 
