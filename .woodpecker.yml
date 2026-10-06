@@ -23,9 +23,6 @@ when:
   - event: push
     branch: main
 
-clone:
-  depth: 1
-
 steps:
   install:
     name: install
