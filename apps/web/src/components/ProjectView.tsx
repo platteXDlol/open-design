@@ -415,11 +415,8 @@ import { effectiveAgentModelChoice, effectiveAgentModelId } from './agentModelSe
 import { mediaExecutionPolicyForProjectMetadata } from '../media/execution-policy';
 import { mediaModelProviderId } from '../media/models';
 import { byokProviderRequiresApiKey } from '../utils/byokProvider';
-import {
-  useByokImageModelOptions,
-  useByokVideoModelOptions,
-  useByokSpeechModelOptions,
-} from '../media/aihubmix-image-models';
+// Local-First fork v0.3: aihubmix-image-models.ts was deleted. The
+// 3 useByok*ModelOptions hooks were aihubmix-only.
 import {
   buildFinalizeCredentialsMissingToast,
   buildFinalizeRequest,
@@ -2783,13 +2780,9 @@ export function ProjectView({
       ? projectMediaVoiceSeed(project.metadata)
       : undefined) ?? config.byokSpeechVoice ?? '',
   );
-  // Live model option lists (same hooks the composer/Settings pickers use) so
-  // the chat "default" (no explicit pick) resolves to the FIRST catalogue model
-  // shown in the dropdown — not a hardcoded id. The daemon keeps its own
-  // fallback for when the catalogue hasn't loaded.
-  const byokImageModelOptionsPV = useByokImageModelOptions(config.apiProtocol);
-  const byokVideoModelOptionsPV = useByokVideoModelOptions(config.apiProtocol);
-  const byokSpeechModelOptionsPV = useByokSpeechModelOptions(config.apiProtocol);
+  // Local-First fork v0.3: 3 hooks removed along with their
+  // aihubmix-image-models.ts source. The chat "default" fallback
+  // is handled by the daemon (no client-side model lookup needed).
   // PR #974 round 7 (mrcfps @ useDesignMdState.ts:131): counter that
   // bumps on file-changed SSE events, live_artifact* events, and the
   // chat streaming-completion edge so the staleness chip stays in sync
@@ -10265,9 +10258,13 @@ export function ProjectView({
                   speechModelOverride: byokSpeechModelOverride,
                   speechVoiceOverride: byokSpeechVoiceOverride,
                   config,
-                  imageModelOptions: byokImageModelOptionsPV,
-                  videoModelOptions: byokVideoModelOptionsPV,
-                  speechModelOptions: byokSpeechModelOptionsPV,
+                  // Local-First fork v0.3: option arrays are empty since
+                  // the useByok*ModelOptions hooks were removed along
+                  // with their aihubmix source. byokMediaDefaultsForRun
+                  // falls through to `config.byokImageModel` / etc.
+                  imageModelOptions: [],
+                  videoModelOptions: [],
+                  speechModelOptions: [],
                 }),
               }
             : {}),
@@ -10501,9 +10498,10 @@ export function ProjectView({
             speechModelOverride: byokSpeechModelOverride,
             speechVoiceOverride: byokSpeechVoiceOverride,
             config,
-            imageModelOptions: byokImageModelOptionsPV,
-            videoModelOptions: byokVideoModelOptionsPV,
-            speechModelOptions: byokSpeechModelOptionsPV,
+            // Local-First fork v0.3: empty option arrays (see note above).
+            imageModelOptions: [],
+            videoModelOptions: [],
+            speechModelOptions: [],
           }),
           titleGeneration: isFirstTurn ? { enabled: true } : undefined,
           locale,
@@ -10660,9 +10658,12 @@ export function ProjectView({
       byokVideoModelOverride,
       byokSpeechModelOverride,
       byokSpeechVoiceOverride,
-      byokImageModelOptionsPV,
-      byokVideoModelOptionsPV,
-      byokSpeechModelOptionsPV,
+      // Local-First fork v0.3: 3 options arrays removed along with
+      // aihubmix-image-models.ts. byokMediaDefaultsForRun falls through
+      // to config.byokImageModel / etc.
+      [],
+      [],
+      [],
       projectRunAuthorityKey,
       registerManualFileWrites,
       projectRunPreflightContext,

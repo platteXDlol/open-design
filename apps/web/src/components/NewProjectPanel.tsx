@@ -50,12 +50,9 @@ import {
   VIDEO_LENGTHS_SEC,
   VIDEO_MODELS,
 } from '../media/models';
-import {
-  mergeAihubmixModels,
-  useAIHubMixImageModels,
-  useAIHubMixVideoModels,
-  useAIHubMixAudioModels,
-} from '../media/aihubmix-image-models';
+// Local-First fork v0.3: aihubmix-image-models.ts was deleted. The
+// new-project media picker now uses IMAGE_MODELS / VIDEO_MODELS
+// directly. mergeAihubmixModels + useAIHubMix* hooks are gone.
 import { formatPickAndImportFailure } from '../utils/pickAndImportError';
 import { useBrandsByDesignSystemId } from '../runtime/brands';
 import { BrandPreviewCard } from './BrandPreviewCard';
@@ -2670,16 +2667,13 @@ function MediaProjectOptions(props:
     }
 ) {
   const t = useT();
-  const aihubmixImageModels = useAIHubMixImageModels();
-  const aihubmixVideoModels = useAIHubMixVideoModels();
-  const aihubmixAudioModels = useAIHubMixAudioModels();
 
   if (props.surface === 'image') {
     return (
       <div className="newproj-media-options">
         <MediaModelCards
           label={t('newproj.modelLabel')}
-          models={supportedModels('image', mergeAihubmixModels(IMAGE_MODELS, aihubmixImageModels))}
+          models={supportedModels('image', IMAGE_MODELS)}
           mediaProviders={props.mediaProviders}
           value={props.imageModel}
           onChange={props.onImageModel}
@@ -2698,7 +2692,7 @@ function MediaProjectOptions(props:
       <div className="newproj-media-options">
         <MediaModelCards
           label={t('newproj.modelLabel')}
-          models={supportedModels('video', mergeAihubmixModels(VIDEO_MODELS, aihubmixVideoModels))}
+          models={supportedModels('video', VIDEO_MODELS)}
           mediaProviders={props.mediaProviders}
           value={props.videoModel}
           onChange={props.onVideoModel}
@@ -2720,11 +2714,11 @@ function MediaProjectOptions(props:
     );
   }
 
-  // AIHubMix's live catalogue is speech (TTS) only; music/sfx stay static.
-  const audioBase =
-    props.audioKind === 'speech'
-      ? mergeAihubmixModels(AUDIO_MODELS_BY_KIND.speech, aihubmixAudioModels)
-      : AUDIO_MODELS_BY_KIND[props.audioKind];
+  // Local-First fork v0.3: AIHubMix's live catalogue is gone; audio
+  // models are sourced from the static registry only. (Speech models
+  // for the 3 retained providers come from MEDIA_PROVIDERS, not from
+  // aihubmix.)
+  const audioBase = AUDIO_MODELS_BY_KIND[props.audioKind];
   const models = supportedModels('audio', audioBase);
   const audioDurations = props.audioKind === 'sfx'
     ? SFX_AUDIO_DURATIONS_SEC
