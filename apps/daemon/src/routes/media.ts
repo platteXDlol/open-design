@@ -174,6 +174,12 @@ function mediaProviderId(model: string): string | undefined {
 const AIHUBMIX_CATALOG_TTL_MS = 5 * 60 * 1000;
 const aihubmixCatalogCache = new Map<string, { at: number; models: Array<{ id: string; label: string }> }>();
 
+// Local-First fork v0.3: the AIHubMix media catalogue route + cache
+// stay in place for now — the media layer (apps/daemon/src/media/) is
+// part of the deferred v0.3b+ cleanup, not this PR. Removing the
+// chat-side aihubmix references (byok-tools.ts, memory-llm.ts,
+// routes/chat.ts) is the v0.3b scope.
+
 export interface RegisterMediaRoutesDeps extends RouteDeps<'db' | 'design' | 'http' | 'paths' | 'ids' | 'auth' | 'media' | 'appConfig' | 'orbit' | 'nativeDialogs' | 'projectStore' | 'projectFiles' | 'conversations' | 'research'> {
   authorizeProjectRequest: AuthorizeProjectRequest;
   authorizeProjectToolRequest: AuthorizeProjectToolRequest;
@@ -688,13 +694,10 @@ export function registerMediaRoutes(app: Express, ctx: RegisterMediaRoutesDeps) 
     });
   });
 
-  // Live AIHubMix media catalogue. The static IMAGE_MODELS registry only
-  // seeds a couple of AIHubMix entries; the picker calls this to list the full
-  // image-generation catalogue straight from AIHubMix
-  // (GET /api/v1/models?type=image_generation, public). Ids are prefixed
-  // `aihubmix-` so they stay unique and route through the AIHubMix renderer
-  // (which strips the prefix to the wire name). Falls back to the cached copy
-  // on upstream failure so a transient blip doesn't empty the picker.
+  // Local-First fork v0.3: the AIHubMix media catalogue route stays
+  // for now — the media layer (apps/daemon/src/media/) is part of
+  // the deferred v0.3b+ cleanup. This PR removes only the chat-side
+  // aihubmix references (byok-tools.ts, memory-llm.ts, routes/chat.ts).
   app.get('/api/media/providers/aihubmix/models', async (req, res) => {
     if (!isLocalSameOrigin(req, getResolvedPort())) {
       return res.status(403).json({ error: 'cross-origin request rejected' });
