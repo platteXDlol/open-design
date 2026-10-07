@@ -41,7 +41,6 @@ import {
   validateProjectPath,
 } from '../projects.js';
 import { exportProjectTranscript } from '../transcript-export.js';
-import { googleGenerateContentUrl } from '../integrations/google-models.js';
 
 // Re-export the request/response types so existing daemon-internal
 // imports (and the route handler) keep their referenced names. The
@@ -58,8 +57,6 @@ export type {
 const DEFAULT_BASE_URL_BY_PROTOCOL: Record<FinalizeProviderProtocol, string> = {
   anthropic: 'https://api.anthropic.com',
   openai: 'https://api.openai.com',
-  azure: '',
-  google: 'https://generativelanguage.googleapis.com',
   ollama: 'https://ollama.com',
 };
 const DEFAULT_MAX_TOKENS = 16000;
@@ -70,8 +67,6 @@ export const DEFAULT_TIMEOUT_MS = 120_000;
 const FINALIZE_PROVIDER_PROTOCOLS = new Set<FinalizeProviderProtocol>([
   'anthropic',
   'openai',
-  'azure',
-  'google',
   'ollama',
 ]);
 
@@ -595,29 +590,10 @@ function buildFinalizeProviderRequest(params: FinalizeProviderCallParams): Final
     };
   }
 
-  if (params.protocol === 'google') {
-    return {
-      url: googleGenerateContentUrl(params.baseUrl, params.model),
-      headers: {
-        'content-type': 'application/json',
-        'x-goog-api-key': params.apiKey,
-      },
-      body: {
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: params.userPrompt }],
-          },
-        ],
-        systemInstruction: {
-          parts: [{ text: params.systemPrompt }],
-        },
-        generationConfig: {
-          maxOutputTokens: params.maxTokens,
-        },
-      },
-    };
-  }
+  // Local-First fork v0.3: Google Gemini was dropped from
+  // FinalizeProviderProtocol in v0.2; the dedicated 'google' branch
+  // for Gemini's `generateContent` envelope is gone. The final
+  // fallback below handles openai/anthropic/ollama uniformly.
 
   const clean = params.baseUrl.replace(/\/+$/, '').replace(/\/api\/?$/, '');
   return {
@@ -636,9 +612,10 @@ function buildFinalizeProviderRequest(params: FinalizeProviderCallParams): Final
 }
 
 function providerLabel(protocol: FinalizeProviderProtocol): string {
-  if (protocol === 'google') return 'Google Gemini';
+  // Local-First fork v0.3: 'google' and 'azure' dropped. (The
+  // 'azure' branch above was already unreachable in v0.2 since
+  // FinalizeProviderProtocol no longer includes azure.)
   if (protocol === 'openai') return 'OpenAI';
-  if (protocol === 'azure') return 'Azure OpenAI';
   if (protocol === 'ollama') return 'Ollama';
   return 'Anthropic';
 }
@@ -754,24 +731,6 @@ export function extractDesignMd(
         out += (choice as { text: string }).text;
       }
     }
-  } else if (protocol === 'google') {
-    const candidates = (payload as { candidates?: unknown }).candidates;
-    if (!Array.isArray(candidates)) {
-      throw new FinalizeUpstreamError(
-        502,
-        '',
-        'upstream Google Gemini response had no candidates array',
-      );
-    }
-    for (const candidate of candidates) {
-      const parts = (candidate as { content?: { parts?: unknown } } | null)?.content?.parts;
-      if (!Array.isArray(parts)) continue;
-      for (const part of parts) {
-        if (part && typeof part === 'object' && typeof (part as { text?: unknown }).text === 'string') {
-          out += (part as { text: string }).text;
-        }
-      }
-    }
   } else {
     const message = (payload as { message?: { content?: unknown } }).message;
     if (typeof message?.content === 'string') out += message.content;
@@ -808,16 +767,6 @@ function extractTokenUsage(
     return {
       inputTokens: typeof usage?.prompt_tokens === 'number' ? usage.prompt_tokens : 0,
       outputTokens: typeof usage?.completion_tokens === 'number' ? usage.completion_tokens : 0,
-    };
-  }
-
-  if (protocol === 'google') {
-    const usage = (payload as {
-      usageMetadata?: { promptTokenCount?: unknown; candidatesTokenCount?: unknown };
-    }).usageMetadata;
-    return {
-      inputTokens: typeof usage?.promptTokenCount === 'number' ? usage.promptTokenCount : 0,
-      outputTokens: typeof usage?.candidatesTokenCount === 'number' ? usage.candidatesTokenCount : 0,
     };
   }
 

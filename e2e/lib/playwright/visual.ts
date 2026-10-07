@@ -20,7 +20,7 @@ type VisualConfig = {
   apiKey: string;
   baseUrl: string;
   model: string;
-  apiProtocol?: 'anthropic' | 'openai' | 'azure' | 'google' | 'ollama' | 'senseaudio' | 'aihubmix';
+  apiProtocol?: 'anthropic' | 'openai' | 'ollama';
   agentId: string | null;
   skillId: string | null;
   designSystemId: string | null;

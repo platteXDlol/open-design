@@ -3,7 +3,6 @@ import type {
   ReasoningExecutionMode,
   ReasoningExecutionPolicy,
 } from '@open-design/contracts/api/reasoningExecution';
-import { normalizeGoogleModelId } from './integrations/google-models.js';
 
 export type ReasoningEgressRouteKind =
   | 'proxy'
@@ -134,9 +133,12 @@ function allowedBaseUrlSet(policy: Partial<ReasoningExecutionPolicy>): Set<strin
 }
 
 function normalizeReasoningModelId(provider: string, model: string): string {
-  const trimmed = model.trim();
-  if (provider === 'google') return normalizeGoogleModelId(trimmed);
-  return trimmed;
+  // Local-First fork v0.3: Google Gemini was dropped in v0.2. The
+  // 'google' branch used normalizeGoogleModelId to strip the
+  // 'models/' prefix from Gemini IDs. With Google gone, the helper
+  // is just `model.trim()`.
+  void provider;
+  return model.trim();
 }
 
 function allowedModelSet(policy: Partial<ReasoningExecutionPolicy>, provider: string): Set<string> {

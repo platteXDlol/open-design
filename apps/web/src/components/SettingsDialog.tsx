@@ -140,7 +140,11 @@ import {
   openExternalUrl,
 } from '../providers/registry';
 import { MEDIA_PROVIDERS } from '../media/models';
-import { useByokImageModelOptions, useByokVideoModelOptions, useByokSpeechModelOptions } from '../media/aihubmix-image-models';
+// Local-First fork v0.3: aihubmix-image-models.ts was deleted. The 3 hooks
+// (useByokImageModelOptions, useByokVideoModelOptions, useByokSpeechModelOptions)
+// were aihubmix-only and have no replacement. The BYOK media pickers
+// for the 3 retained protocols (anthropic / openai / ollama) come from
+// MEDIA_PROVIDERS directly, which is already imported above.
 import { isVisualStabilityMode } from '../utils/visualStability';
 import { byokProviderRequiresApiKey } from '../utils/byokProvider';
 import { XaiOAuthControl } from './XaiOAuthControl';
@@ -3779,11 +3783,11 @@ export function SettingsDialog({
     ),
     [fetchedApiModelOptions, suggestedApiModelIds],
   );
-  // Shared hook: live AIHubMix catalogue for aihubmix, static registry for
-  // other providers (same list the chat composer's image picker uses).
-  const byokImageModelOptions = useByokImageModelOptions(apiProtocol);
-  const byokVideoModelOptions = useByokVideoModelOptions(apiProtocol);
-  const byokSpeechModelOptions = useByokSpeechModelOptions(apiProtocol);
+  // Local-First fork v0.3: 3 hooks (useByokImageModelOptions,
+  // useByokVideoModelOptions, useByokSpeechModelOptions) were removed
+  // along with their aihubmix-image-models.ts source. The BYOK media
+  // pickers for the 3 retained protocols come from MEDIA_PROVIDERS
+  // directly.
   const apiModelIds = useMemo(
     () => apiModelOptions.map((m) => m.id),
     [apiModelOptions],

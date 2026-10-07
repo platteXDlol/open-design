@@ -72,10 +72,9 @@ import {
 } from '../i18n/content';
 import { fetchElevenLabsVoiceOptions } from '../providers/elevenlabs-voices';
 import { IMAGE_MODELS } from '../media/models';
-import {
-  mergeAihubmixImageModels,
-  useAIHubMixImageModels,
-} from '../media/aihubmix-image-models';
+// Local-First fork v0.3: aihubmix-image-models.ts was deleted. The
+// home media composer's image-model picker now uses the static
+// IMAGE_MODELS list directly (no live AIHubMix catalogue merge).
 import {
   daemonIsLive,
   dirExists,
@@ -829,13 +828,11 @@ export function HomeView({
   const [sending, setSending] = useState(false);
   const [elevenLabsVoices, setElevenLabsVoices] = useState<AudioVoiceOption[]>([]);
   const [elevenLabsVoicesLoading, setElevenLabsVoicesLoading] = useState(false);
-  // Live AIHubMix image catalogue merged into the home media composer's model
-  // picker (replaces the static aihubmix seeds when the fetch resolves).
-  const aihubmixImageModels = useAIHubMixImageModels();
-  const composerImageModels = useMemo(
-    () => mergeAihubmixImageModels(IMAGE_MODELS, aihubmixImageModels),
-    [aihubmixImageModels],
-  );
+  // Local-First fork v0.3: composerImageModels is just the static
+  // IMAGE_MODELS list now (no aihubmix merge). The home media
+  // composer's image-model picker shows the 3 retained providers'
+  // static seed list.
+  const composerImageModels = useMemo(() => IMAGE_MODELS, []);
   const [elevenLabsVoicesLoaded, setElevenLabsVoicesLoaded] = useState(false);
   const [elevenLabsVoicesError, setElevenLabsVoicesError] = useState<string | null>(null);
   const [detailsRecord, setDetailsRecord] = useState<InstalledPluginRecord | null>(null);
