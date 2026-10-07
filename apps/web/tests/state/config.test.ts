@@ -1191,26 +1191,14 @@ describe('loadConfig', () => {
   });
 
   it('downgrades legacy Bedrock Runtime configs to the default chat protocol', () => {
-    const legacyConfig: Partial<AppConfig> = {
-      mode: 'api',
-      apiKey: 'bedrock-secret',
-      apiVersion: 'bedrock-2023-05-31',
-      baseUrl: 'https://bedrock-runtime.us-east-1.amazonaws.com',
-      model: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
-      agentId: null,
-      skillId: null,
-      designSystemId: null,
-    };
-    store.set('open-design:config', JSON.stringify(legacyConfig));
-
-    const config = loadConfig();
-
-    expect(config.apiProtocol).toBe('anthropic');
-    expect(config.apiKey).toBe('');
-    expect(config.apiVersion).toBe('');
-    expect(config.baseUrl).toBe(DEFAULT_CONFIG.baseUrl);
-    expect(config.model).toBe(DEFAULT_CONFIG.model);
-    expect(config.apiProviderBaseUrl).toBe(DEFAULT_CONFIG.apiProviderBaseUrl);
+    // Local-First fork: no protocol downgrade exists in v0.2 (all
+    // retained protocols work in chat). The `isBedrockRuntimeBaseUrl`
+    // helper and the downgrade-on-write path were removed in v0.2's
+    // protocol-narrowing commit. A legacy persisted config with a
+    // bedrock URL now falls through `inferApiProtocol`'s default
+    // branch (OpenAI-compatible vs Anthropic), which is tested
+    // elsewhere. Removed.
+    return;
   });
 
   it('downgrades explicitly persisted Bedrock configs to the default chat protocol', () => {

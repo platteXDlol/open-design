@@ -335,3 +335,64 @@ The full 8-stage design is in this repository's chat history (the brainstorming 
 - **Stage 6** — Export and handoff: PDF (multi-artboard), PPTX (hybrid default), standalone HTML publish, ZIP packaging, coding-agent handoff bundle, share link view-only.
 - **Stage 7** — Collaboration, auth, deployment, security: OIDC SSO via Authentik/Keycloak, quota tracking, admin settings, sandboxing + CSP, prompt-injection defenses, homelab deployment, backup strategy.
 - **Stage 8** — This document. Roadmap, milestones, test/eval, risks, "this weekend" first slice.
+
+## 9. Status & retrospectives
+
+### v0.1 — Foundation (closed 2026-10-05)
+
+- **PRs #1–#5**: planning docs, LAN toggle (`OD_ALLOW_PRIVATE_NETWORKS`), Woodpecker CI bootstrap, deploy config.
+- **M0 hit** — daemon runs in Docker, llama-swap integration works, BYOK provider config saves, first chat returns a streaming response.
+- **Tag**: `v0.1.0-mvp-foundation` (per `claude-design-local-this-weekend.md` §7).
+
+### v0.2 — Provider scoping (closed 2026-10-07)
+
+- **PRs #6–#9**: Woodpecker YAML linter + runtime fixes; `ConnectionTestProtocol` narrowed from 8 to 3 members (`openai`, `anthropic`, `ollama`); web app + daemon BYOK cascade.
+- **What landed in `ConnectionTestProtocol`**: openai, anthropic, ollama. Aliases in `packages/contracts/src/api/{chat,finalize}.ts` make `ByokChatProtocol` and `FinalizeProviderProtocol` agree on the same 3.
+- **What landed in web app**: `ApiProtocol` aliased to `ConnectionTestProtocol`; 5 dead records/preset entries dropped from `state/apiProtocols.ts`, `state/config.ts`, `SettingsDialog.tsx`; 4 BYOK media pickers (image/video/speech/voice) removed.
+- **What landed in daemon**: `apps/daemon/src/connectionTest.ts` dispatch (5 branches removed); `apps/daemon/src/integrations/provider-models.ts`; `apps/daemon/src/runtimes/byok-opencode.ts` (5 npm-package cases removed).
+- **Tests**: contracts `CONNECTION_TEST_PROTOCOLS` runtime constant added as red spec (1 new test, 732 total); 23 daemon test cases deleted; 11 web test files updated.
+- **CI**: `pnpm typecheck` clean, `pnpm --filter @open-design/contracts test` 732/732, `pnpm --filter @open-design/daemon test tests/origin-validation.test.ts` 64/64 (Woodpecker step scope), `pnpm guard` passed.
+- **Diff stat**: 2 commits, +287 / -2073 across 33 files. The web app cleanup was roughly the same magnitude as the daemon-side commit.
+
+### v0.2 explicitly deferred to v0.3 (the "finish the job" arc)
+
+Not in PR #9. Cleanup arc continues:
+
+| File | Why deferred |
+|---|---|
+| `apps/web/src/providers/{azure,google,senseaudio,aihubmix}-compatible.ts` | No source-code importers; orphan after the chat-route drop |
+| `apps/web/src/media/aihubmix-image-models.ts` (220 lines) | Still imported by 3 active components (`NewProjectPanel`, `SettingsDialog`, `HomeView`); needs caller rewire |
+| `apps/daemon/src/byok-tools.ts` (1693 lines, 106 dropped-protocol references) | Chat route still references dropped providers via separate code paths |
+| `apps/daemon/src/memory-llm.ts` (1500 lines, 21 dropped-protocol references) | Memory-extraction provider routing still lists dropped providers |
+| `apps/daemon/src/media-adapters/` (5 files, 13 references) | AIHubMix video seed registry |
+| `apps/daemon/src/integrations/google-models.ts` (only used by `finalize-design.ts`) | Migrate the single consumer, then delete |
+| `apps/daemon/src/design/finalize-design.ts` | `googleGenerateContentUrl` + `google` finalize case |
+| `e2e/lib/playwright/visual.ts` | Protocol enum at line 23 has 5 dropped values |
+| `apps/web/src/state/config.ts`'s `BYOK_PROVIDER_PRESET_SPECS` (closed mid-PR) | Cloud-only preset labels (`azure-openai`, `google-ai-studio`) deleted; remaining 22 presets retained |
+
+Total: ~12 files, ~3000 lines reviewed, ~500 / -2000 line diff expected. The smaller half (orphans + aihubmix-image-models + e2e visual + finalize-design + media-adapters) is a single ~10-file PR. The bigger half (`byok-tools.ts` + `memory-llm.ts`) is the 3000-line refactor.
+
+### Known v0.2 limitations (not bugs, design edges)
+
+- The 4 BYOK media pickers (image/video/speech/voice) are gone from the UI but their fields still exist on the config object. Existing saved configs don't break on load — they just don't surface in the UI.
+- `apps/web/src/media/models.ts` `MediaProviderId` still includes `senseaudio` and `aihubmix` for media (image/video) generation, parallel to but distinct from the chat LLM routing. The media side was not in v0.2 scope.
+- `apps/daemon/src/{byok-tools,memory-llm,media-adapters}.ts` still dispatch to dropped providers through separate code paths. The chat route is out-of-band with the connection-test surface; v0.3 will close this.
+
+### Milestone status
+
+| # | Milestone | Status |
+|---|---|---|
+| **M0** | "This weekend" — daemon runs, llama-swap serves, BYOK config saves, first chat streams | ✅ closed 2026-10-05 |
+| **M1** | A user can configure 6 providers and a model route, with a single design system bound | **re-stated**: 3 providers (openai/anthropic/ollama) + LAN toggle; vLLM/openai-custom/anthropic-custom labels were deferred (pure-label wrapper, no functional value). The 6-provider framing in §2 is now 3 in practice. |
+| **M2** | Slide-deck artifact (3+ artboards) streamed + validated | not started |
+| **M3** | v1 ships — `docker compose up` + user generates, exports, shares | not started |
+| **M4** | Canvas pan/zoom + tweaks + undo | not started |
+| **M5** | Comments end-to-end | not started |
+| **M6** | Handoff bundle consumed by Claude Code | not started |
+| **M7** | OIDC SSO via Authentik/Keycloak | not started |
+
+### Next concrete steps (in order)
+
+1. **v0.3 cleanup arc** (finish the protocol narrowing).
+2. **Slide deck renderer (Q1, first output type)** — design conversation first, no code in the first turn.
+3. **Per-protocol quirks** — moot (vllm/openai-custom/anthropic-custom labels were rejected in the v0.2 design call).
