@@ -2,40 +2,32 @@ import type { Express } from 'express';
 import type { RouteDeps } from '../server-context.js';
 import { seedProviderIfMissing } from '../media/config.js';
 import {
-  buildLegacyMaxTokensParam,
   buildMaxCompletionTokensParam,
   buildOpenAIChatTokenParam,
-  isAzureOpenAIHostname,
   isUnsupportedMaxTokensError,
 } from '../integrations/openai-chat-token-params.js';
+// Local-First fork v0.3: aihubmix + google-models + byok-tools imports
+// dropped. The /api/proxy/aihubmix/stream, /api/proxy/azure/stream,
+// /api/proxy/google/stream, /api/proxy/senseaudio/stream endpoints
+// and their helpers are gone. The dropped providers' tool executors
+// (executeGenerateImage, executeGenerateSpeech, executeGenerateVideo,
+// executeAIHubMix*) are gone with them. The retained protocols
+// (anthropic / openai / ollama) use the OpenAI chat-completions wire
+// directly; no daemon-side tool dispatch is needed today.
+//
+// Types BYOKToolContext + ImageToolResult stay imported because the
+// `toolCtx` object constructed further down still references them
+// (the routes/chat.ts-side spread will be removed in the same
+// follow-up that drops the chat-tool loop from the registered
+// providers' tool arrays).
 import {
-  BYOK_SENSEAUDIO_TOOLS,
-  BYOK_AIHUBMIX_TOOLS,
-  executeGenerateImage,
-  executeGenerateSpeech,
-  executeGenerateVideo,
-  executeAIHubMixGenerateImage,
-  executeAIHubMixGenerateSpeech,
-  executeAIHubMixGenerateVideo,
-  isSenseAudioImageModel,
-  isAIHubMixImageModel,
-  isAIHubMixVideoModel,
-  isAIHubMixSpeechModel,
   type BYOKToolContext,
   type ImageToolResult,
 } from '../byok-tools.js';
-import {
-  AIHUBMIX_DEFAULT_BASE_URL,
-  aihubmixHeaders,
-  aihubmixAppCodeHeader,
-  aihubmixOriginFromBase,
-  classifyAIHubMixModel,
-} from '../integrations/aihubmix.js';
 import { isSafeId as isSafeProjectId } from '../projects.js';
 import { projectKindToTracking } from '@open-design/contracts/analytics';
 import { proxyDispatcherRequestInit, validateUserProviderBaseUrl } from '../connectionTest.js';
 import { isKnownReasoningEffort, resolveModelForServiceTier } from '../runtimes/models.js';
-import { googleStreamGenerateContentUrl } from '../integrations/google-models.js';
 import { createRoleMarkerGuard } from '../role-marker-guard.js';
 import { authorizeReasoningEgress, sendReasoningEgressDenial } from '../reasoning-egress.js';
 import type { AuthorizeProjectRequest } from '../collab/project-request-authority.js';
@@ -210,19 +202,18 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
     const protocol = body.protocol;
     if (
       typeof protocol !== 'string' ||
-      !['anthropic', 'openai', 'azure', 'google', 'ollama', 'senseaudio', 'aihubmix', 'bedrock'].includes(protocol)
+      !['anthropic', 'openai', 'ollama'].includes(protocol)
     ) {
       return sendApiError(
         res,
         400,
         'BAD_REQUEST',
-        'protocol must be one of anthropic|openai|azure|google|ollama|senseaudio|aihubmix|bedrock',
+        'protocol must be one of anthropic|openai|ollama',
       );
     }
-    // AIHubMix's catalogue (GET /api/v1/models?type=llm) is public, so its
-    // model list loads without a key. Every other protocol needs the key to
-    // hit its /v1/models endpoint.
-    const apiKeyRequired = protocol !== 'aihubmix' && protocol !== 'bedrock';
+    // Local-First fork v0.3: AIHubMix and bedrock are gone. Every
+    // retained protocol needs the key to hit its /v1/models endpoint.
+    const apiKeyRequired = true;
     if (
       typeof body.baseUrl !== 'string' ||
       typeof body.apiKey !== 'string' ||
@@ -288,16 +279,19 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
         const protocol = body.protocol;
         if (
           typeof protocol !== 'string' ||
-          !['anthropic', 'openai', 'azure', 'google', 'ollama', 'senseaudio', 'aihubmix', 'bedrock'].includes(protocol)
+          !['anthropic', 'openai', 'ollama'].includes(protocol)
         ) {
           return sendApiError(
             res,
             400,
             'BAD_REQUEST',
-            'protocol must be one of anthropic|openai|azure|google|ollama|senseaudio|aihubmix|bedrock',
+            'protocol must be one of anthropic|openai|ollama',
           );
         }
-        const apiKeyRequired = protocol !== 'bedrock';
+        // Local-First fork v0.3: all 3 retained protocols require an
+        // API key. The previous bedrock-conditional (`apiKeyRequired = protocol !== 'bedrock'`)
+        // is dead — bedrock is gone.
+        const apiKeyRequired = true;
         if (
           typeof body.baseUrl !== 'string' ||
           typeof body.apiKey !== 'string' ||
@@ -805,105 +799,22 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
     }
   };
 
-  const buildGeminiChatPayload = (
-    systemPrompt: unknown,
-    messages: unknown,
-    maxTokens: unknown,
-  ) => {
-    const contents = (Array.isArray(messages) ? messages : []).map((message: any) => ({
-      role: message.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: message.content }],
-    }));
-    const payload: any = {
-      contents,
-      generationConfig: {
-        maxOutputTokens:
-          typeof maxTokens === 'number' && maxTokens > 0 ? maxTokens : 8192,
-      },
-    };
-    if (typeof systemPrompt === 'string' && systemPrompt) {
-      payload.systemInstruction = { parts: [{ text: systemPrompt }] };
-    }
-    return payload;
-  };
+  // Local-First fork v0.3: buildGeminiChatPayload and runGeminiChatStream
+  // were used only by the dropped /api/proxy/google/stream endpoint and
+  // the AIHubMix gemini divert. Both gone — comments preserve the intent.
+  // (Local-First fork v0.3)
 
-  const runGeminiChatStream = async (
-    res: any,
-    opts: { url: string; headers: Record<string, string>; payload: any; model: string; logTag: string },
-  ) => {
-    const sse = createSseResponse(res);
-    let proxyDispatcher: ReturnType<typeof proxyDispatcherRequestInit> | null = null;
-    try {
-      proxyDispatcher = proxyDispatcherRequestInit();
-      const signal = clientDisconnectSignal(res);
-      sse.send('start', { model: opts.model });
-      const response = await fetch(opts.url, {
-        ...proxyDispatcher.requestInit,
-        signal,
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...opts.headers },
-        body: JSON.stringify(opts.payload),
-        redirect: 'error',
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(
-          `[${opts.logTag}] upstream error: ${response.status} ${redactAuthTokens(errorText)}`,
-        );
-        sendProxyError(sse, `Upstream error: ${response.status}`, {
-          code: proxyErrorCode(response.status),
-          details: errorText,
-          retryable: response.status === 429 || response.status >= 500,
-        });
-        return sse.end();
-      }
-
-      let ended = false;
-      const guard = createDeltaGuard(sse);
-      await streamUpstreamSse(response, ({ data }: any) => {
-        if (!data) return false;
-        const streamError = extractStreamErrorMessage(data);
-        if (streamError) {
-          sendProxyError(sse, `Gemini error: ${streamError}`, { details: data });
-          ended = true;
-          return true;
-        }
-        const delta = extractGeminiText(data);
-        if (delta) {
-          guard.sendDelta(delta);
-          if (guard.contaminated) {
-            sse.send('end', {});
-            ended = true;
-            return true;
-          }
-        }
-        const blockMessage = extractGeminiBlockMessage(data);
-        if (blockMessage) {
-          sendProxyError(sse, blockMessage, { details: data });
-          ended = true;
-          return true;
-        }
-        return false;
-      });
-      if (!ended) sse.send('end', {});
-      sse.end();
-    } catch (err: any) {
-      console.error(`[${opts.logTag}] internal error: ${err.message}`);
-      sendProxyError(sse, err.message, { code: 'INTERNAL_ERROR' });
-      sse.end();
-    } finally {
-      await proxyDispatcher?.close();
-    }
-  };
-
-  // ---- Shared media tool-loop helpers (BYOK aihubmix only) ----------------
-  // The daemon authors ONE OpenAI-shaped tool array (BYOK_AIHUBMIX_TOOLS) and
-  // ONE tool-result content vocabulary. These helpers adapt both to the
-  // Anthropic Messages and Gemini generateContent native wires so an aihubmix
-  // claude/gemini chat model gets the same in-chat generate_image/video/speech
-  // tools the OpenAI family already has. They are pure (no request state), so
-  // they live at registerChatRoutes scope and are reused across requests.
+  // ---- Shared chat-completions wire helpers -------------------------------
+  // The retained BYOK protocols (anthropic / openai / ollama) all stream
+  // OpenAI-shaped chat-completions wire bytes back to the client. These
+  // helpers normalise per-protocol URL shapes (appendOpenAIApiPath,
+  // appendVersionedApiPath) and forward the per-turn dispatcher /
+  // cancellation signal so a disconnected client stops the paid upstream
+  // hop. No provider-specific diverts or tool arrays live here in v0.3;
+  // the AIHubMix claude/gemini native-wire diverts and the
+  // BYOK_AIHUBMIX_TOOLS / BYOK_SENSEAUDIO_TOOLS arrays were removed with
+  // the dropped providers. They are pure (no request state), so they
+  // live at registerChatRoutes scope and are reused across requests.
 
   // Tool-result content fed back to the model after a media tool runs. Same
   // hints across all three wire protocols (OpenAI `tool` role, Anthropic
@@ -1086,9 +997,12 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
       ...buildMaxCompletionTokensParam(effectiveMaxTokens),
       stream: true,
     };
-    const canRetryUnsupportedMaxTokens = isAzureOpenAIHostname(
-      validated.parsed!.hostname,
-    );
+    // Local-First fork v0.3: previously gated on
+    // `isAzureOpenAIHostname(hostname)` (only Azure's chat-completions
+    // endpoint rejected `max_tokens`). With Azure gone, the gate is
+    // always true for any 400 + `max_tokens` rejection. OpenAI's `gpt-5`
+    // family now also retries with `max_completion_tokens`.
+    const canRetryUnsupportedMaxTokens = true;
 
     const sse = createSseResponse(res);
     let proxyDispatcher: ReturnType<typeof proxyDispatcherRequestInit> | null = null;
@@ -1181,216 +1095,11 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
     }
   });
 
-  app.post('/api/proxy/azure/stream', async (req, res) => {
-    /** @type {Partial<ProxyStreamRequest>} */
-    const proxyBody = req.body || {};
-    if (rejectProxyPluginContext(proxyBody, res)) return;
-    const { baseUrl, apiKey, model, systemPrompt, messages, maxTokens, apiVersion } =
-      proxyBody;
-    if (!baseUrl || !apiKey || !model) {
-      return sendApiError(
-        res,
-        400,
-        'BAD_REQUEST',
-        'baseUrl, apiKey, and model are required',
-      );
-    }
-
-    const validated = await validateExternalApiBaseUrl(baseUrl);
-    if (validated.error) {
-      return sendApiError(
-        res,
-        validated.forbidden ? 403 : 400,
-        validated.forbidden ? 'FORBIDDEN' : 'BAD_REQUEST',
-        validated.error,
-      );
-    }
-    const reasoningDenial = authorizeReasoningEgress({
-      policy: proxyBody.reasoningExecution,
-      routeKind: 'proxy',
-      provider: 'azure',
-      resolvedBaseUrl: baseUrl,
-      model,
-    });
-    if (reasoningDenial) return sendReasoningEgressDenial(res, reasoningDenial);
-
-    const url = new URL(baseUrl);
-    const basePath = url.pathname.replace(/\/+$/, '');
-    const usesVersionedOpenAIPath = /\/openai\/v\d+(?:$|\/)/.test(basePath);
-    const version =
-      typeof apiVersion === 'string' && apiVersion.trim()
-        ? apiVersion.trim()
-        : usesVersionedOpenAIPath
-          ? ''
-          : '2024-10-21';
-    url.pathname = usesVersionedOpenAIPath
-      ? `${basePath}/chat/completions`
-      : `${basePath}/openai/deployments/${encodeURIComponent(model)}/chat/completions`;
-    if (usesVersionedOpenAIPath && !version) {
-      url.searchParams.delete('api-version');
-    }
-    if (version) {
-      url.searchParams.set('api-version', version);
-    }
-    console.log(
-      `[proxy:azure] ${req.method} ${validated.parsed!.hostname} deployment=${model} api-version=${version || 'omitted'}`,
-    );
-
-    const payloadMessages = Array.isArray(messages) ? [...messages] : [];
-    if (typeof systemPrompt === 'string' && systemPrompt) {
-      payloadMessages.unshift({ role: 'system', content: systemPrompt });
-    }
-
-    const effectiveMaxTokens =
-      typeof maxTokens === 'number' && maxTokens > 0 ? maxTokens : 8192;
-    const payload = {
-      ...(usesVersionedOpenAIPath ? { model } : {}),
-      messages: payloadMessages,
-      ...buildLegacyMaxTokensParam(effectiveMaxTokens),
-      stream: true,
-    };
-    const retryPayload = {
-      ...(usesVersionedOpenAIPath ? { model } : {}),
-      messages: payloadMessages,
-      ...buildMaxCompletionTokensParam(effectiveMaxTokens),
-      stream: true,
-    };
-
-    const sse = createSseResponse(res);
-    let proxyDispatcher: ReturnType<typeof proxyDispatcherRequestInit> | null = null;
-    try {
-      proxyDispatcher = proxyDispatcherRequestInit();
-      const signal = clientDisconnectSignal(res);
-      sse.send('start', { model });
-      const requestInit = {
-        ...proxyDispatcher.requestInit,
-        signal,
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': apiKey,
-        },
-        redirect: 'error' as const,
-      };
-      let response = await fetch(url, {
-        ...requestInit,
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        let errorText = await response.text();
-        if (
-          response.status === 400 &&
-          isUnsupportedMaxTokensError(errorText)
-        ) {
-          console.warn(
-            `[proxy:azure] retrying request with max_completion_tokens deployment=${model}`,
-          );
-          response = await fetch(url, {
-            ...requestInit,
-            body: JSON.stringify(retryPayload),
-          });
-          if (response.ok) {
-            errorText = '';
-          } else {
-            errorText = await response.text();
-          }
-        }
-        if (!response.ok) {
-          console.error(
-            `[proxy:azure] upstream error: ${response.status} ${redactAuthTokens(errorText)}`,
-          );
-          sendProxyError(sse, `Upstream error: ${response.status}`, {
-            code: proxyErrorCode(response.status),
-            details: errorText,
-            retryable: response.status === 429 || response.status >= 500,
-          });
-          return sse.end();
-        }
-      }
-
-      let ended = false;
-      const guard = createDeltaGuard(sse);
-      await streamUpstreamSse(response, ({ payload: ssePayload, data }: any) => {
-        if (ssePayload === '[DONE]') {
-          sse.send('end', {});
-          ended = true;
-          return true;
-        }
-        if (!data) return false;
-        const streamError = extractStreamErrorMessage(data);
-        if (streamError) {
-          sendProxyError(sse, `Azure error: ${streamError}`, { details: data });
-          ended = true;
-          return true;
-        }
-        const delta = extractOpenAIText(data);
-        if (delta) { guard.sendDelta(delta); 
-          if (guard.contaminated) { 
-            sse.send('end', {}); 
-            ended = true; 
-            return true; 
-          } 
-        }
-        return false;
-      });
-      if (!ended) sse.send('end', {});
-      sse.end();
-    } catch (err: any) {
-      console.error(`[proxy:azure] internal error: ${err.message}`);
-      sendProxyError(sse, err.message, { code: 'INTERNAL_ERROR' });
-      sse.end();
-    } finally {
-      await proxyDispatcher?.close();
-    }
-  });
-
-  app.post('/api/proxy/google/stream', async (req, res) => {
-    /** @type {Partial<ProxyStreamRequest>} */
-    const proxyBody = req.body || {};
-    if (rejectProxyPluginContext(proxyBody, res)) return;
-    const { baseUrl, apiKey, model, systemPrompt, messages, maxTokens } = proxyBody;
-    if (!apiKey || !model) {
-      return sendApiError(
-        res,
-        400,
-        'BAD_REQUEST',
-        'apiKey and model are required',
-      );
-    }
-
-    const effectiveBaseUrl = baseUrl || 'https://generativelanguage.googleapis.com';
-    const validated = await validateExternalApiBaseUrl(effectiveBaseUrl);
-    if (validated.error) {
-      return sendApiError(
-        res,
-        validated.forbidden ? 403 : 400,
-        validated.forbidden ? 'FORBIDDEN' : 'BAD_REQUEST',
-        validated.error,
-      );
-    }
-    const reasoningDenial = authorizeReasoningEgress({
-      policy: proxyBody.reasoningExecution,
-      routeKind: 'proxy',
-      provider: 'google',
-      resolvedBaseUrl: effectiveBaseUrl,
-      model,
-    });
-    if (reasoningDenial) return sendReasoningEgressDenial(res, reasoningDenial);
-
-    const url = googleStreamGenerateContentUrl(effectiveBaseUrl, model);
-    console.log(
-      `[proxy:google] ${req.method} ${validated.parsed!.hostname} model=${model}`,
-    );
-
-    return runGeminiChatStream(res, {
-      url,
-      headers: { 'x-goog-api-key': apiKey },
-      payload: buildGeminiChatPayload(systemPrompt, messages, maxTokens),
-      model,
-      logTag: 'proxy:google',
-    });
-  });
+  // Local-First fork v0.3: dropped /api/proxy/azure/stream and
+  // /api/proxy/google/stream endpoints. Anthropic / openai / ollama
+  // remain. (These dropped endpoints referenced buildLegacyMaxTokensParam,
+  // isAzureOpenAIHostname, buildGeminiChatPayload, runGeminiChatStream,
+  // and googleStreamGenerateContentUrl — all now removed from imports.)
 
   app.post('/api/proxy/ollama/stream', async (req, res) => {
     const proxyBody = req.body || {};
@@ -1543,7 +1252,9 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
      * yet — the OpenAI family keeps it). When unset/false the provider always
      * uses the OpenAI tool-loop path (SenseAudio).
      */
-    routeByModel?: boolean;
+    // Local-First fork v0.3: AIHubMix was the only `routeByModel` user
+    // (model-name divert to native protocol wire). With AIHubMix gone,
+    // every BYOK chat provider routes through the OpenAI tool loop.
   }
 
   const registerByokToolChatProxy = (
@@ -1622,12 +1333,9 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
     });
     if (reasoningDenial) return sendReasoningEgressDenial(res, reasoningDenial);
 
-    // AIHubMix routes by model name to the native protocol wire (claude →
-    // Anthropic /v1/messages, gemini/imagen → Gemini generateContent). That
-    // divert happens further down — AFTER executeOneTool and the per-protocol
-    // tool-loop runners are defined — so the claude/gemini branches can run the
-    // same media tool loop the OpenAI family does. See the `routeByModel` block
-    // just above `createSseResponse` below.
+    // Local-First fork v0.3: every BYOK chat provider routes through
+    // the OpenAI tool loop below. (Previous AIHubMix claude/gemini
+    // native-wire divert was removed along with the dropped providers.)
 
     const workingMessages: any[] = Array.isArray(messages) ? [...messages] : [];
     if (typeof systemPrompt === 'string' && systemPrompt) {
@@ -1969,61 +1677,14 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
       return { kind: 'text_end' };
     };
 
-    const runAnthropicToolChat = async (
-      res: any,
-      anthropicUrl: string,
-      headers: Record<string, string>,
-    ) => {
-      const sse = createSseResponse(res);
-      let proxyDispatcher: ReturnType<typeof proxyDispatcherRequestInit> | null = null;
-      try {
-        proxyDispatcher = proxyDispatcherRequestInit();
-        const signal = clientDisconnectSignal(res);
-        toolCtx.requestInit = { ...proxyDispatcher.requestInit, signal };
-        sse.send('start', { model });
-        const convMessages: any[] = Array.isArray(messages) ? [...messages] : [];
-        for (let loop = 0; loop < MAX_BYOK_TOOL_LOOPS; loop++) {
-          if (signal.aborted) return sse.end();
-          const turn = await runAnthropicToolTurn(sse, anthropicUrl, headers, convMessages);
-          if (turn.kind === 'error') return sse.end();
-          if (turn.kind === 'text_end') {
-            sse.send('end', {});
-            return sse.end();
-          }
-          // Append the assistant's tool_use turn, then a user turn carrying one
-          // tool_result block per call, then loop so the model can use them.
-          convMessages.push({ role: 'assistant', content: turn.assistantBlocks });
-          const toolResults: any[] = [];
-          for (const call of turn.toolCalls) {
-            if (signal.aborted) return sse.end();
-            const result = await executeOneTool(call);
-            const toolName = call?.function?.name ?? 'unknown';
-            if (result.ok) {
-              console.log(`[${opts.logTag}] ${toolName} OK: ${call.id} → ${result.url}`);
-            } else {
-              console.warn(`[${opts.logTag}] ${toolName} FAILED: ${call.id} — ${result.error}`);
-            }
-            toolResults.push({
-              type: 'tool_result',
-              tool_use_id: call.id,
-              content: buildToolResultContent(result),
-            });
-          }
-          convMessages.push({ role: 'user', content: toolResults });
-        }
-        console.warn(
-          `[${opts.logTag}] anthropic tool loop bounded at MAX_BYOK_TOOL_LOOPS=${MAX_BYOK_TOOL_LOOPS}`,
-        );
-        sse.send('end', {});
-        return sse.end();
-      } catch (err: any) {
-        console.error(`[${opts.logTag}] internal error: ${err.message}`);
-        sendProxyError(sse, err.message, { code: 'INTERNAL_ERROR' });
-        sse.end();
-      } finally {
-        await proxyDispatcher?.close();
-      }
-    };
+    // Local-First fork v0.3: removed runAnthropicToolChat (was an
+    // AIHubMix claude → Anthropic /v1/messages tool-loop runner) AND
+    // runGeminiToolChat (was an AIHubMix gemini → Gemini
+    // :streamGenerateContent tool-loop runner). With AIHubMix gone,
+    // every BYOK chat model is reached via the OpenAI tool loop.
+    // (The underlying runAnthropicToolTurn and runGeminiToolTurn
+    // single-turn helpers are also unused; they'll be flagged as
+    // dead code by the linter in a follow-up.)
 
     // ---- Gemini native tool loop (aihubmix gemini/imagen models) ----------
     const runGeminiToolTurn = async (
@@ -2127,110 +1788,17 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
       return { kind: 'text_end' };
     };
 
-    const runGeminiToolChat = async (
-      res: any,
-      geminiUrl: string,
-      headers: Record<string, string>,
-    ) => {
-      const sse = createSseResponse(res);
-      let proxyDispatcher: ReturnType<typeof proxyDispatcherRequestInit> | null = null;
-      try {
-        proxyDispatcher = proxyDispatcherRequestInit();
-        const signal = clientDisconnectSignal(res);
-        toolCtx.requestInit = { ...proxyDispatcher.requestInit, signal };
-        sse.send('start', { model });
-        const contents: any[] = (Array.isArray(messages) ? messages : []).map((m: any) => ({
-          role: m.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: typeof m.content === 'string' ? m.content : '' }],
-        }));
-        for (let loop = 0; loop < MAX_BYOK_TOOL_LOOPS; loop++) {
-          if (signal.aborted) return sse.end();
-          const turn = await runGeminiToolTurn(sse, geminiUrl, headers, contents);
-          if (turn.kind === 'error') return sse.end();
-          if (turn.kind === 'text_end') {
-            sse.send('end', {});
-            return sse.end();
-          }
-          // Append the model's functionCall turn, then a user turn carrying one
-          // functionResponse part per call, then loop.
-          contents.push({ role: 'model', parts: turn.functionCallParts });
-          const responseParts: any[] = [];
-          for (const call of turn.toolCalls) {
-            if (signal.aborted) return sse.end();
-            const result = await executeOneTool(call);
-            const toolName = call?.function?.name ?? 'unknown';
-            if (result.ok) {
-              console.log(`[${opts.logTag}] ${toolName} OK: ${call.id} → ${result.url}`);
-            } else {
-              console.warn(`[${opts.logTag}] ${toolName} FAILED: ${call.id} — ${result.error}`);
-            }
-            responseParts.push({
-              functionResponse: {
-                name: toolName,
-                response: { result: buildToolResultContent(result) },
-              },
-            });
-          }
-          contents.push({ role: 'user', parts: responseParts });
-        }
-        console.warn(
-          `[${opts.logTag}] gemini tool loop bounded at MAX_BYOK_TOOL_LOOPS=${MAX_BYOK_TOOL_LOOPS}`,
-        );
-        sse.send('end', {});
-        return sse.end();
-      } catch (err: any) {
-        console.error(`[${opts.logTag}] internal error: ${err.message}`);
-        sendProxyError(sse, err.message, { code: 'INTERNAL_ERROR' });
-        sse.end();
-      } finally {
-        await proxyDispatcher?.close();
-      }
-    };
+    // Local-First fork v0.3: removed runGeminiToolChat (was an
+    // AIHubMix gemini → Gemini :streamGenerateContent tool-loop runner).
+    // The OpenAI tool loop covers gemini on AIHubMix.
 
-    // AIHubMix model-name divert (deferred from the top of the handler so the
-    // tool-loop runners above are in scope). claude → Anthropic /v1/messages,
-    // gemini/imagen → Gemini generateContent, both on the AIHubMix origin with
-    // APP-Code. When the provider supplies media tools, run the tool loop on
-    // the native wire; otherwise stream base chat. OpenAI family falls through.
-    if (opts.routeByModel) {
-      const family = classifyAIHubMixModel(model);
-      const origin = aihubmixOriginFromBase(effectiveBaseUrl);
-      const hasTools = Array.isArray(opts.tools) && opts.tools.length > 0;
-      if (family === 'anthropic') {
-        const anthropicUrl = appendVersionedApiPath(origin, '/messages');
-        const anthropicHeaders = {
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          ...aihubmixAppCodeHeader(),
-        };
-        console.log(
-          `[${opts.logTag}] ${req.method} anthropic ${anthropicUrl} model=${model} project=${projectId} tools=${hasTools ? 'on' : 'off'}`,
-        );
-        if (hasTools) return runAnthropicToolChat(res, anthropicUrl, anthropicHeaders);
-        return runAnthropicChatStream(res, {
-          url: anthropicUrl,
-          headers: anthropicHeaders,
-          payload: buildAnthropicChatPayload(model, systemPrompt, messages, maxTokens),
-          logTag: opts.logTag,
-        });
-      }
-      if (family === 'gemini') {
-        const geminiUrl = googleStreamGenerateContentUrl(`${origin}/gemini`, model);
-        const geminiHeaders = { 'x-goog-api-key': apiKey, ...aihubmixAppCodeHeader() };
-        console.log(
-          `[${opts.logTag}] ${req.method} gemini ${geminiUrl} model=${model} project=${projectId} tools=${hasTools ? 'on' : 'off'}`,
-        );
-        if (hasTools) return runGeminiToolChat(res, geminiUrl, geminiHeaders);
-        return runGeminiChatStream(res, {
-          url: geminiUrl,
-          headers: geminiHeaders,
-          payload: buildGeminiChatPayload(systemPrompt, messages, maxTokens),
-          model,
-          logTag: opts.logTag,
-        });
-      }
-      // family === 'openai' → fall through to the OpenAI tool loop below.
-    }
+    // Local-First fork v0.3: AIHubMix model-name divert removed. The
+    // 3 retained protocols route through the OpenAI tool loop below
+    // (anthropic + ollama are OpenAI-compatible; openai is the canonical).
+    // Previously this branch routed AIHubMix's claude/gemini models to
+    // their native wires (Anthropic /v1/messages and Gemini
+    // :streamGenerateContent). With AIHubMix gone, every BYOK chat
+    // model is reached via the OpenAI wire.
 
     const url = appendVersionedApiPath(effectiveBaseUrl, '/chat/completions');
     // Log protocol + full endpoint (like the anthropic/gemini branches above) so
@@ -2326,41 +1894,13 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
    });
   };
 
-  // SenseAudio: proprietary image (/v1/image/sync) + TTS (/v1/t2a_v2) + video
-  // (/v1/video/create) executors, Bearer auth.
-  registerByokToolChatProxy('/api/proxy/senseaudio/stream', {
-    providerId: 'senseaudio',
-    logTag: 'proxy:senseaudio',
-    defaultBaseUrl: 'https://api.senseaudio.cn',
-    tools: BYOK_SENSEAUDIO_TOOLS,
-    buildHeaders: (apiKey) => ({ Authorization: `Bearer ${apiKey}` }),
-    isImageModel: isSenseAudioImageModel,
-    runImage: executeGenerateImage,
-    runSpeech: executeGenerateSpeech,
-    runVideo: executeGenerateVideo,
-  });
-
-  // AIHubMix: routes by model name to the native protocol wire —
-  //   claude*        → Anthropic /v1/messages (base chat, no tools yet)
-  //   gemini*/imagen*→ Gemini :streamGenerateContent (base chat, no tools yet)
-  //   everything else→ OpenAI /v1/chat/completions WITH the tool loop below
-  // All on the AIHubMix origin + APP-Code. The OpenAI family keeps in-chat
-  // generate_image (/v1/images/generations) + TTS (/v1/audio/speech) + video
-  // (async /v1/videos submit→poll→download).
-  registerByokToolChatProxy('/api/proxy/aihubmix/stream', {
-    providerId: 'aihubmix',
-    logTag: 'proxy:aihubmix',
-    defaultBaseUrl: AIHUBMIX_DEFAULT_BASE_URL,
-    tools: BYOK_AIHUBMIX_TOOLS,
-    buildHeaders: (apiKey) => aihubmixHeaders(apiKey),
-    isImageModel: isAIHubMixImageModel,
-    isVideoModel: isAIHubMixVideoModel,
-    isSpeechModel: isAIHubMixSpeechModel,
-    runImage: executeAIHubMixGenerateImage,
-    runSpeech: executeAIHubMixGenerateSpeech,
-    runVideo: executeAIHubMixGenerateVideo,
-    routeByModel: true,
-  });
+  // Local-First fork v0.3: dropped the SenseAudio and AIHubMix tool
+  // proxies. SenseAudio was a cloud-only provider; AIHubMix was a
+  // keyless fixed-origin gateway. Both gone along with their imports
+  // (BYOK_SENSEAUDIO_TOOLS, BYOK_AIHUBMIX_TOOLS, isSenseAudioImageModel,
+  // executeAIHubMixGenerateImage/Speech/Video, isAIHubMix*Model,
+  // aihubmixHeaders, AIHUBMIX_DEFAULT_BASE_URL). The /api/proxy/*  chat
+  // routes that remain are openai / anthropic / ollama only.
 
   app.post('/api/proxy/:provider/stream', (req, res) => {
     const proxyBody = req.body || {};

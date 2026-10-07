@@ -63,7 +63,9 @@ import {
   markFailed,
 } from './memory-extractions.js';
 import { resolveProviderConfig } from './media/config.js';
-import { AIHUBMIX_APP_CODE } from './integrations/aihubmix.js';
+// Local-First fork v0.3: AIHUBMIX_APP_CODE import removed along
+// with the provider itself. OpenAI wire handles the 3 retained
+// protocols.
 import { spawn } from 'node:child_process';
 import os from 'node:os';
 import { createHash } from 'node:crypto';
@@ -159,15 +161,9 @@ const PROVIDER_DEFAULTS = {
     model: 'gpt-4o-mini',
     baseUrl: 'https://api.openai.com',
   },
-  azure: {
-    model: 'gpt-4o-mini',
-    baseUrl: '',
-    apiVersion: '2024-10-21',
-  },
-  google: {
-    model: 'gemini-3.5-flash',
-    baseUrl: 'https://generativelanguage.googleapis.com',
-  },
+  // Local-First fork v0.3: azure / google / senseaudio / aihubmix were
+  // dropped. The memory extractor now falls through to callOpenAI for
+  // every retained protocol (anthropic, openai, ollama).
   // Ollama Cloud speaks OpenAI-compatible chat-completions, so the
   // extractor just routes through callOpenAI with the ollama base URL
   // and the user's Ollama Cloud API key. The default model is a small
@@ -177,22 +173,6 @@ const PROVIDER_DEFAULTS = {
   ollama: {
     model: 'gemma3:4b',
     baseUrl: 'https://ollama.com',
-  },
-  // SenseAudio's chat API is OpenAI-compatible (POST /v1/chat/completions,
-  // Bearer auth), so the extractor falls through to callOpenAI with this
-  // base URL and the user's SenseAudio API key. The default model is the
-  // small/fast variant so auto-pick stays cheap; users can swap in
-  // senseaudio-s2 or any gateway model via the picker.
-  senseaudio: {
-    model: 'senseaudio-s2-flash',
-    baseUrl: 'https://api.senseaudio.cn',
-  },
-  // AIHubMix is OpenAI-wire-compatible, so the extractor falls through to
-  // callOpenAI with this base URL and the user's AIHubMix key (plus the fixed
-  // APP-Code header callOpenAI injects). Default to a small/fast model.
-  aihubmix: {
-    model: 'gpt-4o-mini',
-    baseUrl: 'https://aihubmix.com/v1',
   },
 };
 
@@ -208,18 +188,10 @@ const MEDIA_MEMORY_PROVIDER_FALLBACKS = [
     model: 'MiniMax-M2.7-highspeed',
     baseUrl: 'https://api.minimax.io/v1',
   },
-  {
-    mediaProviderId: 'aihubmix',
-    memoryProvider: 'aihubmix',
-    model: PROVIDER_DEFAULTS.aihubmix.model,
-    baseUrl: PROVIDER_DEFAULTS.aihubmix.baseUrl,
-  },
-  {
-    mediaProviderId: 'senseaudio',
-    memoryProvider: 'senseaudio',
-    model: PROVIDER_DEFAULTS.senseaudio.model,
-    baseUrl: PROVIDER_DEFAULTS.senseaudio.baseUrl,
-  },
+  // Local-First fork v0.3: aihubmix + senseaudio fallbacks were
+  // cloud-only providers that v0.2 dropped from the union. The 3
+  // retained providers (anthropic / openai / ollama) all fall through
+  // to the callOpenAI helper via the protocol switch.
 ];
 
 const MEDIA_MEMORY_PROVIDER_IDS = new Set(
@@ -231,39 +203,15 @@ const MEDIA_MEMORY_PROVIDER_IDS = new Set(
 // chain stays the same as before for anthropic/openai; azure uses the
 // AZURE_OPENAI_API_KEY convention; google uses GOOGLE_API_KEY (matching
 // the gemini SDK's expectation, with GEMINI_API_KEY as a secondary).
+// Local-First fork v0.3: azure / google / senseaudio / aihubmix were
+// dropped from the union. The retained protocols' env-var conventions
+// stay; the dropped-provider branches (azure / google / senseaudio /
+// aihubmix) are removed.
 function envKeyFor(provider) {
   if (provider === 'anthropic') return process.env.ANTHROPIC_API_KEY?.trim() || '';
   if (provider === 'openai') return process.env.OPENAI_API_KEY?.trim() || '';
-  if (provider === 'azure') {
-    return (
-      process.env.AZURE_OPENAI_API_KEY?.trim()
-      || process.env.AZURE_API_KEY?.trim()
-      || ''
-    );
-  }
-  if (provider === 'google') {
-    return (
-      process.env.GOOGLE_API_KEY?.trim()
-      || process.env.GEMINI_API_KEY?.trim()
-      || ''
-    );
-  }
   if (provider === 'ollama') {
     return process.env.OLLAMA_API_KEY?.trim() || '';
-  }
-  if (provider === 'senseaudio') {
-    return (
-      process.env.OD_SENSEAUDIO_API_KEY?.trim()
-      || process.env.SENSEAUDIO_API_KEY?.trim()
-      || ''
-    );
-  }
-  if (provider === 'aihubmix') {
-    return (
-      process.env.OD_AIHUBMIX_API_KEY?.trim()
-      || process.env.AIHUBMIX_API_KEY?.trim()
-      || ''
-    );
   }
   return '';
 }
@@ -281,10 +229,12 @@ function chatProtocolFromAgentId(agentId) {
   if (!agentId || typeof agentId !== 'string') return null;
   const id = agentId.trim().toLowerCase();
   if (id === 'claude') return 'anthropic';
-  if (id === 'gemini') return 'google';
+  // Local-First fork v0.3: 'gemini' is no longer routed separately
+  // (Google Gemini BYOK was dropped). All non-claude agents route
+  // through the OpenAI chat-completions wire shape — that covers
   // Codex, OpenCode, Qwen, DeepSeek, Kimi, Copilot, Pi, Kiro, Kilo,
-  // Vibe, Devin, Hermes, Cursor-Agent, Qoder all use the OpenAI chat-
-  // completions wire format.
+  // Vibe, Devin, Hermes, Cursor-Agent, Qoder, and the openai /
+  // ollama BYOK providers.
   if (
     id === 'codex'
     || id === 'opencode'
@@ -463,7 +413,7 @@ async function pickProvider(projectRoot, dataDir, chatAgentId, chatProvider, cha
     // today.
     if (
       !resolvedKey
-      && (override.provider === 'openai' || override.provider === 'azure')
+      && override.provider === 'openai'
       && projectRoot
     ) {
       try {
@@ -488,11 +438,6 @@ async function pickProvider(projectRoot, dataDir, chatAgentId, chatProvider, cha
     const baseUrl =
       (typeof override.baseUrl === 'string' && override.baseUrl.trim())
       || defaults.baseUrl;
-    if (override.provider === 'azure' && !baseUrl) {
-      // Azure with no resource URL is unrecoverable — bail rather than
-      // logging a confusing 404 from `https:///openai/deployments/...`.
-      return null;
-    }
     return {
       kind: override.provider,
       apiKey: resolvedKey,
@@ -500,11 +445,7 @@ async function pickProvider(projectRoot, dataDir, chatAgentId, chatProvider, cha
         (typeof override.model === 'string' && override.model.trim())
         || defaults.model,
       baseUrl,
-      apiVersion:
-        override.provider === 'azure'
-          ? (typeof override.apiVersion === 'string' && override.apiVersion.trim())
-            || PROVIDER_DEFAULTS.azure.apiVersion
-          : '',
+      apiVersion: '',
       credentialSource,
     };
   }
@@ -536,7 +477,7 @@ async function pickProvider(projectRoot, dataDir, chatAgentId, chatProvider, cha
           (chatProtocol === 'anthropic' && process.env.ANTHROPIC_BASE_URL)
           || (chatProtocol === 'openai' && process.env.OPENAI_BASE_URL)
           || defaults.baseUrl,
-        apiVersion: chatProtocol === 'azure' ? defaults.apiVersion : '',
+        apiVersion: '',
         credentialSource: 'env',
       };
     }
@@ -600,9 +541,10 @@ async function pickProvider(projectRoot, dataDir, chatAgentId, chatProvider, cha
       const baseUrl =
         (typeof chatProvider.baseUrl === 'string' && chatProvider.baseUrl.trim())
         || defaults.baseUrl;
-      // Azure with no resource URL is unrecoverable — same guard as
-      // the override path above. (Azure is never keyless.)
-      if (chatProvider.provider !== 'azure' || baseUrl) {
+      // Local-First fork v0.3: the 'azure' guard (no resource URL
+      // = unrecoverable) was dropped with azure. Every retained
+      // provider falls through to the callOpenAI helper.
+      if (chatProvider.provider !== 'openai' || baseUrl) {
         const explicitModel =
           typeof chatProvider.model === 'string' && chatProvider.model.trim()
             ? chatProvider.model.trim()
@@ -612,12 +554,7 @@ async function pickProvider(projectRoot, dataDir, chatAgentId, chatProvider, cha
           apiKey,
           model: envOverrideModel || explicitModel || defaults.model,
           baseUrl,
-          apiVersion:
-            chatProvider.provider === 'azure'
-              ? (typeof chatProvider.apiVersion === 'string'
-                  && chatProvider.apiVersion.trim())
-                || PROVIDER_DEFAULTS.azure.apiVersion
-              : '',
+          apiVersion: '',
           credentialSource: 'chat-byok',
           // Preserve the keyless signal for the HTTP call layer so it
           // omits the Authorization header instead of sending `Bearer `
@@ -823,11 +760,8 @@ async function callOpenAI(provider, system, user) {
           ...(provider.apiKey
             ? { authorization: `Bearer ${provider.apiKey}` }
             : {}),
-          // AIHubMix routes through this same OpenAI-compatible path but wants
-          // the fixed APP-Code attribution header on every request.
-          ...(provider.kind === 'aihubmix' && AIHUBMIX_APP_CODE
-            ? { 'APP-Code': AIHUBMIX_APP_CODE }
-            : {}),
+          // Local-First fork v0.3: AIHubMix's APP-Code header was
+          // dropped along with the provider.
         },
         body: JSON.stringify({
           model: provider.model,
@@ -850,79 +784,14 @@ async function callOpenAI(provider, system, user) {
   return json?.choices?.[0]?.message?.content ?? '';
 }
 
-// Azure OpenAI speaks the same chat-completions JSON as OpenAI, but on
-// a per-deployment URL and with `api-key:` instead of `Authorization:`.
-// `provider.model` here is the Azure deployment name (the user typed it
-// into the model field — that's what the chat picker calls "Deployment
-// (Model)" too), not the underlying model family.
-async function callAzure(provider, system, user) {
-  const base = String(provider.baseUrl || '').replace(/\/+$/, '');
-  const deployment = encodeURIComponent(provider.model);
-  const apiVersion = encodeURIComponent(
-    provider.apiVersion || PROVIDER_DEFAULTS.azure.apiVersion,
-  );
-  const url = `${base}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
-  let resp;
-  try {
-    resp = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'api-key': provider.apiKey,
-      },
-      body: JSON.stringify({
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: user },
-        ],
-      }),
-      signal: withTimeout(FETCH_TIMEOUT_MS),
-    });
-  } catch (err) {
-    throw new Error(describeFetchError(err));
-  }
-  if (!resp.ok) {
-    throw new Error(`azure ${resp.status}: ${await resp.text().catch(() => '')}`);
-  }
-  const json = await resp.json();
-  return json?.choices?.[0]?.message?.content ?? '';
-}
+// Local-First fork v0.3: removed callAzure and callGoogle (azure
+// and google were dropped from the protocol union). The retained
+// providers (anthropic, openai, ollama) all funnel through the
+// callOpenAI / callAnthropic helpers.
 
-// Google Gemini's REST surface uses a different request shape:
-// system instructions go in `systemInstruction`, the conversation is
-// `contents[]` with `role` + `parts`, and the API key is a query
-// parameter rather than a header. `responseMimeType: application/json`
-// gets us the strict JSON output the parser expects.
-async function callGoogle(provider, system, user) {
-  const base = String(provider.baseUrl || '').replace(/\/+$/, '');
-  const model = encodeURIComponent(provider.model);
-  const url = `${base}/v1beta/models/${model}:generateContent?key=${encodeURIComponent(provider.apiKey)}`;
-  let resp;
-  try {
-    resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { role: 'system', parts: [{ text: system }] },
-        contents: [{ role: 'user', parts: [{ text: user }] }],
-        generationConfig: { responseMimeType: 'application/json' },
-      }),
-      signal: withTimeout(FETCH_TIMEOUT_MS),
-    });
-  } catch (err) {
-    throw new Error(describeFetchError(err));
-  }
-  if (!resp.ok) {
-    throw new Error(`google ${resp.status}: ${await resp.text().catch(() => '')}`);
-  }
-  const json = await resp.json();
-  const parts = json?.candidates?.[0]?.content?.parts;
-  if (Array.isArray(parts)) {
-    return parts.map((p) => (p && typeof p.text === 'string' ? p.text : '')).join('');
-  }
-  return '';
-}
+// Local-First fork v0.3: callGoogle removed (google was dropped
+// from the protocol union). The retained providers funnel through
+// callOpenAI / callAnthropic helpers.
 
 const LOCAL_CLI_TIMEOUT_MS = 60_000;
 
@@ -1320,14 +1189,11 @@ async function collectProposedEntries(dataDir, input, options) {
       });
     } else if (provider.kind === 'anthropic') {
       raw = await callAnthropic(provider, systemPrompt, userPayload);
-    } else if (provider.kind === 'azure') {
-      raw = await callAzure(provider, systemPrompt, userPayload);
-    } else if (provider.kind === 'google') {
-      raw = await callGoogle(provider, systemPrompt, userPayload);
     } else {
-      // openai or ollama — both speak the OpenAI chat-completions
-      // wire shape, so callOpenAI handles them with just a different
-      // base URL.
+      // Local-First fork v0.3: azure / google / senseaudio / aihubmix
+      // were dropped from the protocol union. The retained providers
+      // (anthropic / openai / ollama) all fall through to the
+      // openai-shaped callOpenAI helper with a different base URL.
       raw = await callOpenAI(provider, systemPrompt, userPayload);
     }
   } catch (err) {
