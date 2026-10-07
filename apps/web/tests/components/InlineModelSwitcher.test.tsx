@@ -817,72 +817,11 @@ describe('InlineModelSwitcher AMR row', () => {
   });
 
   it('warms the shared provider-models cache from the home picker for keyless AIHubMix', async () => {
-    // Regression: the home picker only READ the cache, so on a fresh load (no
-    // Settings/onboarding fetch yet) the AIHubMix BYOK list fell back to the
-    // small static seed list. It must fetch the live catalogue itself. AIHubMix
-    // is keyless, so the fetch fires with an empty apiKey.
-    const fetchMock = vi.mocked(fetchProviderModels);
-    fetchMock.mockResolvedValue({
-      ok: true,
-      kind: 'success',
-      latencyMs: 1,
-      models: [
-        { id: 'claude-opus-4-8', label: 'claude-opus-4-8' },
-        { id: 'gemini-3.5-flash', label: 'gemini-3.5-flash' },
-        { id: 'minimax-m3', label: 'minimax-m3' },
-      ],
-    });
-    const onProviderModelsCacheChange = vi.fn();
-    render(
-      <InlineModelSwitcher
-        config={{
-          ...baseConfig,
-          mode: 'api',
-          apiProtocol: 'openai',
-          baseUrl: 'https://aihubmix.com/v1',
-          apiProviderBaseUrl: 'https://aihubmix.com/v1',
-          apiKey: '',
-          model: 'claude-opus-4-8',
-        }}
-        agents={[amrAgent, codexAgent]}
-        daemonLive={true}
-        onModeChange={vi.fn()}
-        onAgentChange={vi.fn()}
-        onAgentModelChange={vi.fn()}
-        onApiProtocolChange={vi.fn()}
-        onApiModelChange={vi.fn()}
-        providerModelsCache={{}}
-        onProviderModelsCacheChange={onProviderModelsCacheChange}
-        onOpenSettings={vi.fn()}
-      />,
-    );
-
-    // No fetch until the user opens the switcher panel.
-    expect(fetchMock).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByTestId('inline-model-switcher-chip'));
-
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith({
-        protocol: 'aihubmix',
-        baseUrl: 'https://aihubmix.com/v1',
-        apiKey: '',
-      });
-      expect(onProviderModelsCacheChange).toHaveBeenCalled();
-    });
-
-    // The updater populates the slot under the Settings-shared cache key, so
-    // one fetch serves both surfaces.
-    const updater = onProviderModelsCacheChange.mock.calls[0]![0] as (
-      current: Record<string, ProviderModelOption[]>,
-    ) => Record<string, ProviderModelOption[]>;
-    const key = providerModelsCacheKey('openai', 'https://aihubmix.com/v1', '', '');
-    const next = updater({});
-    expect(next[key]?.map((m) => m.id)).toEqual([
-      'claude-opus-4-8',
-      'gemini-3.5-flash',
-      'minimax-m3',
-    ]);
+    // Local-First fork: AIHubMix was a keyless fixed-origin gateway that
+    // was dropped in v0.2. The fixed-origin set is now empty so every
+    // retained protocol requires an API key. This regression test no
+    // longer applies.
+    return;
   });
 
   it('does not fetch from the home picker for a keyed protocol with no API key', async () => {
@@ -915,35 +854,6 @@ describe('InlineModelSwitcher AMR row', () => {
       await Promise.resolve();
     });
     expect(fetchMock).not.toHaveBeenCalled();
-  });
-
-  it('lists AIHubMix as a BYOK provider chip and marks it active when selected', () => {
-    const onApiProtocolChange = vi.fn();
-    render(
-      <InlineModelSwitcher
-        config={{
-          ...baseConfig,
-          mode: 'api',
-          apiProtocol: 'openai',
-          baseUrl: 'https://aihubmix.com/v1',
-          apiProviderBaseUrl: 'https://aihubmix.com/v1',
-          apiKey: '',
-          model: 'gemini-3.5-flash',
-        }}
-        agents={[amrAgent, codexAgent]}
-        daemonLive={true}
-        onModeChange={vi.fn()}
-        onAgentChange={vi.fn()}
-        onAgentModelChange={vi.fn()}
-        onApiProtocolChange={onApiProtocolChange}
-        onApiModelChange={vi.fn()}
-        providerModelsCache={{}}
-        onOpenSettings={vi.fn()}
-      />,
-    );
-    fireEvent.click(screen.getByTestId('inline-model-switcher-chip'));
-    const chip = screen.getByTestId('inline-model-switcher-provider-aihubmix');
-    expect(chip.getAttribute('aria-selected')).toBe('true');
   });
 
   it('keeps the panel open and applies the choice when picking a BYOK model from the portaled list', async () => {

@@ -236,10 +236,12 @@ describe('评审拦截 · S05 只给 Open Design 管理的 API key', () => {
   });
 
   // BYOK 那一档不只有 `byok-opencode`:`mode === 'api'` 的一轮,消息上记的是
-  // `API_PROTOCOL_AGENT_IDS` 里那八个 `*-api` 之一
+  // `API_PROTOCOL_AGENT_IDS` 里那三个 `*-api` 之一
   // (`ProjectView` 的 `apiProtocolAgentId(config.apiProtocol)`)。收窄不能把
   // 它们一起关在门外 —— 它们的 key 就填在设置页那一屏。
-  it.each(['anthropic-api', 'openai-api', 'bedrock-api'])(
+  // (Local-First fork v0.2: dropped bedrock-api; only the 3 retained
+  // protocols — anthropic, openai, ollama — are in the BYOK map now.)
+  it.each(['anthropic-api', 'openai-api'])(
     '%s 保留 S05 文案，并把原失败交给固定 Cloud 入口',
     (agentId) => {
       const { container, onOpenSettings, onSwitchToAmrAndRetry } = renderChat(

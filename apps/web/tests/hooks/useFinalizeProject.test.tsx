@@ -16,11 +16,11 @@ const REQUEST = {
   maxTokens: 8192,
 };
 
-const GOOGLE_REQUEST = {
-  protocol: 'google',
-  apiKey: 'AIza-test',
-  baseUrl: 'https://generativelanguage.googleapis.com',
-  model: 'gemini-2.0-flash',
+const OPENAI_REQUEST = {
+  protocol: 'openai',
+  apiKey: 'sk-openai-test',
+  baseUrl: 'https://api.openai.com/v1',
+  model: 'gpt-4o',
   maxTokens: 8192,
 };
 
@@ -104,18 +104,18 @@ describe('useFinalizeProject', () => {
   it('routes provider-aware requests to the matching finalize endpoint', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(jsonResponse({
       ...SUCCESS_BODY,
-      model: 'gemini-2.0-flash',
+      model: 'gpt-4o',
     }));
     const { result } = renderHook(() => useFinalizeProject('p1'));
 
     await act(async () => {
-      await result.current.trigger(GOOGLE_REQUEST as any);
+      await result.current.trigger(OPENAI_REQUEST as any);
     });
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     const [url, init] = fetchSpy.mock.calls[0]!;
-    expect(url).toBe('/api/projects/p1/finalize/google');
-    expect(JSON.parse((init as RequestInit).body as string)).toEqual(GOOGLE_REQUEST);
+    expect(url).toBe('/api/projects/p1/finalize/openai');
+    expect(JSON.parse((init as RequestInit).body as string)).toEqual(OPENAI_REQUEST);
   });
 
   const ERROR_TABLE: Array<{ code: string; expected: string }> = [

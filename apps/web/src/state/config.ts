@@ -476,9 +476,7 @@ const BYOK_PROVIDER_PRESET_SPECS = [
   { id: 'anthropic', title: 'Anthropic', providerLabel: 'Anthropic (Claude)' },
   { id: 'openai', title: 'OpenAI', providerLabel: 'OpenAI' },
   { id: 'atlascloud', title: 'Atlas Cloud', providerLabel: 'Atlas Cloud' },
-  { id: 'google-ai-studio', title: 'Google Gemini', providerLabel: 'Google Gemini' },
   { id: 'ollama', title: 'Ollama Cloud', providerLabel: 'Ollama Cloud (managed)' },
-  { id: 'azure', title: 'Azure OpenAI', providerLabel: 'Azure OpenAI' },
   { id: 'siliconflow-cn', title: 'SiliconFlow (CN)', providerLabel: 'SiliconFlow (CN)' },
   {
     id: 'siliconflow-global',

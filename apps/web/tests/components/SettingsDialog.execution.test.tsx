@@ -656,12 +656,10 @@ describe('SettingsDialog execution settings BYOK interactions', () => {
     expect(screen.getByRole('tablist', { name: en['settings.protocolAria'] })).toBeTruthy();
     expect(screen.getByRole('tab', { name: 'Anthropic' }).getAttribute('aria-selected')).toBe('true');
     expect(screen.getByRole('tab', { name: 'OpenAI' })).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'Azure OpenAI' })).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'Google Gemini' })).toBeTruthy();
+    // Local-First fork v0.2: only the 3 retained protocols are surfaced.
+    // Azure OpenAI / Google Gemini / SenseAudio / AIHubMix / AWS Bedrock
+    // tabs were all removed.
     expect(screen.getByRole('tab', { name: 'Ollama Cloud' })).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'SenseAudio' })).toBeTruthy();
-    expect(screen.getByRole('tab', { name: 'AIHubMix' })).toBeTruthy();
-    expect(screen.queryByRole('tab', { name: 'AWS Bedrock' })).toBeNull();
     expect(screen.getByLabelText('Provider preset')).toBeTruthy();
     expect(screen.getByLabelText('Model')).toBeTruthy();
     const baseUrlInput = screen.getByLabelText('Base URL') as HTMLInputElement;
@@ -830,8 +828,9 @@ describe('SettingsDialog execution settings BYOK interactions', () => {
     fireEvent.click(screen.getByRole('tab', { name: 'OpenAI' }));
     expect(screen.getByTestId('settings-byok-no-file-tools-trigger')).toBeTruthy();
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Google Gemini' }));
-    expect(screen.getByTestId('settings-byok-no-file-tools-trigger')).toBeTruthy();
+    // Local-First fork v0.2: Google Gemini was dropped. The notice
+    // assertion below is satisfied by the OpenAI tab itself; the
+    // Gemini-tab assertion is removed.
   });
 
   it('hides the BYOK no-file-tools notice when Local CLI mode is selected', () => {
@@ -887,20 +886,18 @@ describe('SettingsDialog execution settings BYOK interactions', () => {
     });
   });
 
-  it('lets Anthropic and Google users customize the default base URL', () => {
+  it('lets Anthropic users customize the default base URL', () => {
     renderSettingsDialog();
 
     expect((screen.getByLabelText('Base URL') as HTMLInputElement).readOnly).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'Customize URL' }));
     expect((screen.getByLabelText('Base URL') as HTMLInputElement).readOnly).toBe(false);
 
-    cleanup();
-    renderSettingsDialog();
-    fireEvent.click(screen.getByRole('tab', { name: 'Google Gemini' }));
-    expect((screen.getByLabelText('Base URL') as HTMLInputElement).value).toBe(
-      'https://generativelanguage.googleapis.com',
-    );
-    expect((screen.getByLabelText('Base URL') as HTMLInputElement).readOnly).toBe(true);
+    // Local-First fork v0.2: Google Gemini was dropped. The
+    // "fixed-origin gateway" UI hint is now an empty set (no
+    // retained protocol is a fixed-origin gateway), so the second
+    // half of this test (switching to a different tab and
+    // asserting a readOnly baseUrl) is gone.
   });
 
   it('updates model and base URL when quick fill provider changes', () => {
@@ -1370,67 +1367,12 @@ describe('SettingsDialog execution settings BYOK interactions', () => {
   });
 
   it('shows Azure-specific fields and autosaves an Azure config', async () => {
-    const { onPersist } = renderSettingsDialog();
-
-    fireEvent.click(screen.getByRole('tab', { name: 'Azure OpenAI' }));
-
-    expect(screen.getByRole('heading', { name: 'Azure OpenAI' })).toBeTruthy();
-    expect(screen.getByLabelText('Deployment name')).toBeTruthy();
-    expect(screen.getByLabelText('API version')).toBeTruthy();
-    expect((screen.getByLabelText('Base URL') as HTMLInputElement).placeholder).toBe(
-      'Paste Azure endpoint URL',
-    );
-    expect(
-      screen.getByText('Find this in Azure portal → your resource → Endpoint.'),
-    ).toBeTruthy();
-
-    fireEvent.change(screen.getByLabelText('API key'), {
-      target: { value: 'azure-key' },
-    });
-    expect(screen.queryByLabelText('Custom deployment name')).toBeNull();
-    fireEvent.change(screen.getByLabelText('Deployment name'), {
-      target: { value: 'deployment-one' },
-    });
-    fireEvent.change(screen.getByLabelText('Base URL'), {
-      target: { value: 'https://example.openai.azure.com' },
-    });
-    fireEvent.change(screen.getByLabelText('API version'), {
-      target: { value: '2024-10-21' },
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Ready to test')).toBeTruthy();
-    });
-
-    await waitForPersist(
-      onPersist,
-      expect.objectContaining({
-        mode: 'api',
-        apiProtocol: 'azure',
-        apiKey: 'azure-key',
-        model: 'deployment-one',
-        baseUrl: 'https://example.openai.azure.com',
-        apiVersion: '2024-10-21',
-        apiProviderBaseUrl: '',
-      }),
-      {},
-    );
-
-    const persistedConfig = onPersist.mock.calls.at(-1)?.[0] as AppConfig;
-    cleanup();
-
-    renderSettingsDialog(persistedConfig);
-
-    expect((screen.getByLabelText('Deployment name') as HTMLInputElement).value).toBe(
-      'deployment-one',
-    );
-    expect((screen.getByLabelText('Base URL') as HTMLInputElement).value).toBe(
-      'https://example.openai.azure.com',
-    );
-    expect((screen.getByLabelText('API version') as HTMLInputElement).value).toBe(
-      '2024-10-21',
-    );
-    expect(screen.queryByLabelText('Custom deployment name')).toBeNull();
+    // Local-First fork: Azure was dropped in v0.2. The Azure-specific
+    // fields (Deployment name, API version, Find this in Azure portal
+    // hint) and the Azure tab itself are gone. Replaced by the OpenAI
+    // tab which now accepts any OpenAI-compatible URL including Azure
+    // endpoints via its baseUrl field. The test no longer applies.
+    return;
   });
 
   it('does not fetch provider models while the API key edit is still uncommitted', async () => {
@@ -1505,10 +1447,10 @@ describe('SettingsDialog execution settings BYOK interactions', () => {
       undefined,
     );
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Azure OpenAI' }));
-    expect(screen.queryByRole('button', { name: 'Fetch models' })).toBeNull();
-    expect(screen.getByText(/Azure deployments can’t be fetched automatically/)).toBeTruthy();
-
+    // Local-First fork v0.2: Azure was dropped, so the "Azure
+    // deployments can't be fetched" UI hint is gone. The
+    // "model discovery not available" check below covers the
+    // equivalent state for ollama.
     fireEvent.click(screen.getByRole('tab', { name: 'Ollama Cloud' }));
     expect(screen.queryByRole('button', { name: 'Fetch models' })).toBeNull();
     expect(screen.getByText('Model discovery is not available for this protocol.')).toBeTruthy();
