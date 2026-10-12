@@ -3876,7 +3876,9 @@ export function SettingsDialog({
   const activeHeader = sectionHeader[activeSection];
   const visibleAgents = agents.filter(isVisibleLocalCliAgent);
   const installedAgents = orderAgentsWithOpenDesignFirst(
-    visibleAgents.filter((agent) => agent.available || deepSeekHarnessNeedsSetup(agent)),
+    visibleAgents
+      .filter((agent) => agent.available || deepSeekHarnessNeedsSetup(agent))
+      .filter((agent) => agent.id !== 'amr'),
   );
   const unavailableAgents = visibleAgents.filter(
     (agent) => !agent.available && !deepSeekHarnessNeedsSetup(agent),
