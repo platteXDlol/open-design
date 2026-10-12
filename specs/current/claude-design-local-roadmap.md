@@ -372,6 +372,35 @@ Not in PR #9. Cleanup arc continues:
 
 Total: ~12 files, ~3000 lines reviewed, ~500 / -2000 line diff expected. The smaller half (orphans + aihubmix-image-models + e2e visual + finalize-design + media-adapters) is a single ~10-file PR. The bigger half (`byok-tools.ts` + `memory-llm.ts`) is the 3000-line refactor.
 
+### v0.3 — Finish the protocol-narrowing arc (closed 2026-10-08)
+
+- **PRs #10, #11, #12**: `byok-tools.ts` (1693 lines) `memory-llm.ts`
+  (1500 lines) `media-adapters/` (5 files) and the orphan
+  `integrations/google-models.ts` all dropped the cloud-only
+  protocols. `apps/daemon/src/routes/chat.ts` lost 5 executor imports
+  and the model-name divert. `apps/daemon/src/proxy-routes.test.ts`
+  dropped from 46 failed tests to 5 (the 5 remaining reproduce on
+  `origin/main`).
+- **Net diff**: +211 / -5810 across 8 files. The drop
+  `apps/daemon/src/byok-tools.ts` was the bulk: 1637 lines removed.
+- **What landed**: `byok-tools.ts` is now a thin facade — `BYOKToolContext`
+  + `ImageToolResult` interfaces + `withToolRequestInit` +
+  `appendOpenAIApiPath` only. The 5 npm-package executor cases
+  (senseaudio + aihubmix) are gone.
+- **What landed**: `routes/chat.ts` lost the `isAzureOpenAIHostname`
+  gate, the `buildGeminiChatPayload` + `runGeminiChatStream` helpers,
+  the `routeByModel` divert, and the 5 dropped `.includes(protocol)`
+  membership checks.
+- **Tests**: contracts `CONNECTION_TEST_PROTOCOLS` runtime constant
+  still red spec (732/732), origin-validation still 64/64.
+- **CI**: `pnpm typecheck` clean, `pnpm --filter @open-design/daemon
+  test tests/origin-validation.test.ts` 64/64, `pnpm guard` passed.
+- **Deferred to v0.4+**: the 5 web provider modules
+  (`aihubmix/azure/google/senseaudio-compatible.ts` +
+  `aihubmix-image-models.ts`) — already touched by the v0.2 surface
+  drop, no source-code importers, dead code that is no longer worth
+  its own PR.
+
 ### Known v0.2 limitations (not bugs, design edges)
 
 - The 4 BYOK media pickers (image/video/speech/voice) are gone from the UI but their fields still exist on the config object. Existing saved configs don't break on load — they just don't surface in the UI.
