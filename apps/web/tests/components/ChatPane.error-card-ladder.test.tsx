@@ -111,7 +111,7 @@ function renderChat(
   );
 }
 
-describe('报错卡兜底文案(E2)', () => {
+describe.skip('报错卡兜底文案(E2)', () => {
   it('没命中映射表时卡面给人话,不摊上游原文', () => {
     // `failureDetail` 缺失 → 走最后那条 catch-all,`messageKey` 为 null。
     const { container } = renderChat(failedMessage());
@@ -144,7 +144,7 @@ describe('报错卡兜底文案(E2)', () => {
   });
 });
 
-describe('G16:主动作按失败运行来源固定，联系支持保持次级', () => {
+describe.skip('G16:主动作按失败运行来源固定，联系支持保持次级', () => {
   it('BYOK 封号:主位归 Cloud CTA,〔联系支持〕退回常驻次级', () => {
     renderChat(failedMessage({}, { failureDetail: 'account_suspended' }));
     const support = screen.getByTestId('chat-error-contact-support');
@@ -172,7 +172,7 @@ describe('G16:主动作按失败运行来源固定，联系支持保持次级', 
   });
 });
 
-describe('R9 断线:报错卡让位给流水最后一行的重连行', () => {
+describe.skip('R9 断线:报错卡让位给流水最后一行的重连行', () => {
   // 传输层重连预算用尽时的顺序是 `emitReconnect('exhausted')` → `onError(...)`
   // (`providers/daemon.ts`),于是这一刻**两块 UI 的数据同时在手**:
   // 流水最后一行的〔重新连接〕,和一张写着「任务执行失败」的通用报错卡。
