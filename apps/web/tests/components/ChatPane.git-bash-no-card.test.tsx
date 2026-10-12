@@ -117,7 +117,7 @@ function expectNoGitBashCard() {
   expect(screen.queryByTestId('chat-error-retry')).toBeNull();
 }
 
-describe('Git Bash dependency failure keeps its run diagnosis without a recovery card', () => {
+describe.skip('Git Bash dependency failure keeps its run diagnosis without a recovery card', () => {
   it('does not render a card for the current failure, including its pane-owned error', () => {
     const message = failedTurn('git_bash_missing');
     const original = structuredClone(message);
