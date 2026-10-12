@@ -36,7 +36,6 @@ import {
   type OptimisticProjectCreationHandoff,
   type ProjectTitleHint,
 } from './EntryShell';
-import type { HomeAmrBalanceGateBlock } from './HomeAmrBalanceGateDialogs';
 import type { IntegrationTab } from './IntegrationsView';
 import type { CreateInput, ImportClaudeDesignOutcome } from './NewProjectPanel';
 import {
@@ -127,7 +126,6 @@ interface Props {
   onCreateProject: (input: EntryCreateProjectInput) => Promise<boolean> | boolean | void;
   /** Forwarded to EntryShell — see the prop docs there. */
   onBeginProjectCreation: (input: EntryCreateProjectInput) => OptimisticProjectCreationHandoff;
-  onAmrBalanceGateBlockChange: (block: HomeAmrBalanceGateBlock | null) => void;
   onCreatePluginShareProject: (
     pluginId: string,
     action: PluginShareAction,
@@ -296,7 +294,6 @@ export function EntryView({
   promptTemplatesLoading: _promptTemplatesLoading = false,
   onCreateProject,
   onBeginProjectCreation,
-  onAmrBalanceGateBlockChange,
   onCreatePluginShareProject,
   onImportClaudeDesign,
   onImportFolder,
@@ -424,7 +421,6 @@ export function EntryView({
           onRefreshAgents={onRefreshAgents}
       onCreateProject={onCreateProject}
       onBeginProjectCreation={onBeginProjectCreation}
-      onAmrBalanceGateBlockChange={onAmrBalanceGateBlockChange}
       onCreatePluginShareProject={onCreatePluginShareProject}
       onImportClaudeDesign={onImportClaudeDesign}
       {...(onImportFolder ? { onImportFolder } : {})}

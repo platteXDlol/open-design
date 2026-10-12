@@ -100,31 +100,13 @@ import {
   ProjectSearchModal,
 } from './ProjectSearchModal';
 import {
-  CloudSignInTip,
-  RailAccountRecoveryTip,
-  RailAccountSyncTip,
-} from './CloudSignInTip';
-import {
   resolveEntryRailAccountFooterState,
-  requiresAmrReauthentication,
 } from './entry-rail-account-state';
 import { LibrarySection } from './LibrarySection';
 import { UpdaterPopup } from './UpdaterPopup';
 import { WhatsNewPopup } from './WhatsNewPopup';
 import { DeepSeekHarnessSetupDialog } from './DeepSeekHarnessSetupDialog';
-import type { HomeAmrBalanceGateBlock } from './HomeAmrBalanceGateDialogs';
-import {
-  amrBalanceBlockedDialog,
-  amrBalanceDialogUpgradeIntent,
-  resolveAmrBalanceBranch,
-} from '../runtime/amr-balance-branch';
 import { installDeepSeekHarnessCompanion } from '../providers/agent-companion';
-import {
-  amrBalanceGateScopeForWorkspaceContext,
-  checkAmrBalanceGate,
-  retryUnavailableAmrBalanceGate,
-  type AmrBalanceGateScope,
-} from '../runtime/amr-balance-gate';
 import { HomeView, seedHomeComposerPrompt } from './HomeView';
 import { entryStrategyRoutingFields } from './entry-strategy-routing';
 import { EntryBlankState } from './EntryBlankState';
@@ -226,7 +208,6 @@ import {
   isAmrSessionAuthenticated,
   notifyAmrLoginStatusChanged,
 } from './amrLoginPolling';
-import { closeAmrActivationWindowBestEffort } from './AmrLoginPill';
 import { isMacPlatform } from '../utils/platform';
 import { smoothScrollToTop } from '../utils/smoothScrollToTop';
 import { summarizeProjectNameFromPrompt } from '../utils/projectName';
@@ -347,8 +328,6 @@ type EntryCreateProjectInput = Omit<CreateInput, 'metadata'> & {
   initialRunContext?: RunContextSelection | null;
   conversationMode?: ChatSessionMode;
   autoSendFirstMessage?: boolean;
-  /** Exact workspace/member authority checked by the Home AMR preflight. */
-  amrGatePrecheckWitness?: AmrBalanceGateScope;
   /**
    * The optimistic project already flushed by `onBeginProjectCreation`. The
    * create reuses this id (the daemon accepts a caller-minted id) instead of
@@ -529,13 +508,6 @@ interface Props {
    * Home route (and unmounts this shell).
    */
   onBeginProjectCreation: (input: EntryCreateProjectInput) => OptimisticProjectCreationHandoff;
-  /**
-   * Publish (or clear) the AMR balance-gate hard block for App to render. The
-   * dialog cannot live here: by the time the gate answers, the send is already
-   * on the project route and this shell is unmounted (see
-   * `HomeAmrBalanceGateDialogs`).
-   */
-  onAmrBalanceGateBlockChange: (block: HomeAmrBalanceGateBlock | null) => void;
   onCreatePluginShareProject: (
     pluginId: string,
     action: PluginShareAction,
@@ -661,7 +633,6 @@ export function EntryShell({
   onRefreshAgents,
   onCreateProject,
   onBeginProjectCreation,
-  onAmrBalanceGateBlockChange,
   onImportClaudeDesign,
   onImportFolder,
   onImportFolderResponse,
@@ -698,6 +669,9 @@ export function EntryShell({
   // unresolved or unavailable authority into an anonymous, unbound create.
   const workspaceContextState = useWorkspaceContext();
   const { context: workspaceContext, loading: workspaceLoading } = workspaceContextState;
+  // Local-First fork: the entry rail never reflects a Cloud account state. The
+  // helper still computes the four-state verdict (so the type and call site
+  // stay valid), but the shell never reads it back into a sign-in CTA.
   const accountFooterState = resolveEntryRailAccountFooterState(
     workspaceContextState,
     amrLoggedIn,
@@ -708,29 +682,6 @@ export function EntryShell({
     : workspaceContext;
   const usesOpenDesignCloud = config.mode === 'daemon' && config.agentId === 'amr';
   const amrProfile = config.agentCliEnv?.amr?.OPEN_DESIGN_AMR_PROFILE ?? null;
-  const amrAuthRequired =
-    workspaceContextState.failure === 'reauth-required'
-    || (
-      usesOpenDesignCloud
-      && requiresAmrReauthentication(amrSessionState, workspaceContextState.failure)
-    );
-  useEffect(() => {
-    // The entry shell is an authenticated surface. Both an explicit signed-out
-    // status and a definitive credential rejection return to the existing
-    // Cloud identity gate. Passive reauthentication preserves the saved model
-    // source and Home's locally persisted, not-yet-sent draft.
-    const selectedCloudIdentityRejected = usesOpenDesignCloud && amrLoggedIn === false;
-    if ((!selectedCloudIdentityRejected && !amrAuthRequired) || view === 'onboarding') return;
-    navigate({ kind: 'home', view: 'onboarding' }, { replace: true });
-  }, [amrAuthRequired, amrLoggedIn, usesOpenDesignCloud, view]);
-  let accountFooterNotice: ReactNode = null;
-  if (accountFooterState === 'syncing') {
-    accountFooterNotice = <RailAccountSyncTip />;
-  } else if (accountFooterState === 'recovering') {
-    accountFooterNotice = <RailAccountRecoveryTip />;
-  } else if (accountFooterState === 'sign-in') {
-    accountFooterNotice = <CloudSignInTip />;
-  }
   const workspaceContextRef = useRef(workspaceContext);
   workspaceContextRef.current = workspaceContext;
   const workspaceContextStateRef = useRef(workspaceContextState);
@@ -1427,140 +1378,27 @@ export function EntryShell({
   // projectKind='other', so the agent infers the task type and asks only
   // when the brief cannot be routed reliably.
   async function handlePluginLoopSubmit(payload: PluginLoopSubmit) {
-    if (amrAuthRequired) {
-      navigate({ kind: 'home', view: 'onboarding' }, { replace: true });
-      return 'blocked' as const;
-    }
+    // Local-First fork: the AMR/vela Cloud sign-in redirect and pre-run balance
+    // gate were removed. There is no cloud identity for this submit to
+    // discover, and no `amrGatePrecheckWitness` to attach to the create call —
+    // the Local-First daemon's project-create route is a local create.
     const createInput = pluginLoopCreateInput(payload);
-    const isAmrSend = config.mode === 'daemon' && config.agentId === 'amr';
-    const amrModelId = isAmrSend
-      ? effectiveAgentModelId(
-          agents.find((agent) => agent.id === 'amr'),
-          config.agentModels?.amr,
-        )
-      : undefined;
     // OPEND-2614: the project frame opens on the click tick for EVERY agent,
     // before any admission check. Everything below runs behind that frame —
     // this shell is unmounted the moment the hand-off navigates, so nothing
     // after this line may rely on this instance's state or DOM. App owns the
     // hand-off and the way back.
     const handoff = onBeginProjectCreation(createInput);
-    // OpenDesign Cloud pre-run balance gate: hard blocks (empty wallet or
-    // signed out) fire BEFORE the project is created — the dialog now sits over
-    // the pending frame, and a dismiss rolls the hand-off back to Home with the
-    // composer draft intact. In-project sends are gated separately in
-    // ProjectView.handleSend.
-    let amrGatePrecheckWitness: AmrBalanceGateScope | undefined;
-    let amrGatePrecheckPassed = false;
-    if (isAmrSend) {
-      // PRODUCT INVARIANT: Send never starts Workspace identity discovery.
-      // Billing consumes the shell's current in-memory snapshot; if it has not
-      // arrived yet, the existing account-scoped gate is used. The daemon's
-      // ordinary project-create route is local and does not need live Workspace
-      // authority. Account/scope generation checks below only prevent a result
-      // from being reused after the user switches identity while the balance
-      // request or dialog is in flight.
-      for (let scopeAttempt = 0; scopeAttempt < 2; scopeAttempt += 1) {
-        const gateAccountGeneration = currentWorkspaceAccountGeneration();
-        const gateWorkspaceState = workspaceContextStateRef.current;
-        const gateWorkspaceContext = gateWorkspaceState.failure === 'unsupported'
-          ? null
-          : workspaceResourceReadContext(gateWorkspaceState);
-        const gateWorkspaceIdentity = workspaceIdentityCacheKey(gateWorkspaceContext);
-        const gateScope = amrBalanceGateScopeForWorkspaceContext(gateWorkspaceContext);
-        let gate = await retryUnavailableAmrBalanceGate(
-          () => checkAmrBalanceGate(gateScope, amrModelId),
-        );
-        // Hard blocks hold THIS submit open: the dialog resolves 'retry' when
-        // its blocking condition clears (sign-in completed, recharge landed)
-        // and the gate re-runs, so the task auto-continues through the normal
-        // accept path. Still hard after the re-check (e.g. signed in but the
-        // wallet is empty) → the dialog re-shows with the fresh snapshot.
-        while (gate.kind === 'hard') {
-          const blocked = gate;
-          // 「哪张弹窗」和「它的主按钮去哪」问的是同一个 branch 快照,免得两次
-          // 分别求值之间的一次工作区切换让两者各说各话(规格 §6.V / T58)。
-          const blockedBranch = resolveAmrBalanceBranch({
-            context: gateWorkspaceContext,
-            billing: workspaceBilling,
-          });
-          const decision = await new Promise<'retry' | 'dismiss'>((resolve) => {
-            onAmrBalanceGateBlockChange({
-              reason: blocked.reason,
-              // 被登出说的是登录不是钱,无条件走原来那张(主按钮是应用内登录,
-              // 落点那一位那时用不上)。余额耗尽才按身份 × 订阅分支。
-              dialog:
-                blocked.reason === 'signed_out'
-                  ? 'upgrade'
-                  : amrBalanceBlockedDialog(blockedBranch),
-              upgradeIntent:
-                blocked.reason === 'signed_out'
-                  ? 'pricing'
-                  : amrBalanceDialogUpgradeIntent(blockedBranch),
-              snapshot: blocked.snapshot,
-              modelId: amrModelId,
-              fundingScope: gateScope,
-              resolve,
-            });
-          });
-          onAmrBalanceGateBlockChange(null);
-          if (decision === 'dismiss') {
-            // The dialog was the feedback; the composer gets its draft back
-            // without a second error on top.
-            handoff.rollback();
-            return 'blocked' as const;
-          }
-          gate = await retryUnavailableAmrBalanceGate(
-            () => checkAmrBalanceGate(gateScope, amrModelId),
-          );
-        }
-        if (gate.kind === 'unavailable') {
-          handoff.rollback({ notice: t('home.amrGateUnavailable') });
-          return false;
-        }
-        // Everything else falls through and the run starts. Home used to hold
-        // the submit open behind a centered reminder dialog ("额度不多了" + 仍要
-        // 发起任务 / 去充值). Product ruled it away on 2026-09-06 — "软提醒弹窗
-        // 就是产品告诉我不要这个的" — and ruled Home's replacement to be nothing
-        // at all: "什么都不显示,有余额就允许运行" (T53). T66 (2026-09-07) then
-        // retired the low-balance tier everywhere, so there is no longer even a
-        // result kind here to consider handling. `empty_not_blocked` also falls
-        // through on purpose: it is a stood-down hard block, and Home has no
-        // conversation to hang its card on. Do not re-add a branch here.
-        if (
-          currentWorkspaceAccountGeneration() !== gateAccountGeneration
-          || workspaceIdentityCacheKey(
-            workspaceContextStateRef.current.failure === 'unsupported'
-              ? null
-              : workspaceResourceReadContext(workspaceContextStateRef.current),
-          ) !== gateWorkspaceIdentity
-        ) {
-          continue;
-        }
-        amrGatePrecheckWitness = gateScope;
-        amrGatePrecheckPassed = true;
-        break;
-      }
-      if (!amrGatePrecheckPassed) {
-        handoff.rollback({ notice: t('home.createFailed') });
-        return false;
-      }
-    }
     const create = () => Promise.resolve(onCreateProject({
       ...createInput,
       optimisticProjectId: handoff.projectId,
-      ...(amrGatePrecheckWitness ? { amrGatePrecheckWitness } : {}),
     }));
     try {
       return await create();
     } catch (error) {
-      if (
-        error instanceof ProjectCreateError
-        && error.code === 'AMR_AUTH_REQUIRED'
-      ) {
-        navigate({ kind: 'home', view: 'onboarding' }, { replace: true });
-        return 'blocked' as const;
-      }
+      // Local-First fork: there is no AMR/vela Cloud sign-in to redirect to.
+      // The daemon's project-create route is local; the only way this throws
+      // is a real, surfaced failure. Re-throw so the caller's catch path runs.
       throw error;
     }
   }
@@ -1658,9 +1496,9 @@ export function EntryShell({
    * Onboarding is where a signed-out user signs IN, so the workspace context
    * the shell resolved before it is stale by definition. Without this the rail
    * came back in its signed-out shape — no workspace switcher, no 草稿 / 全部项目
-   * / Workspace 设置, and the "sign in to OpenDesign Cloud" callout still in
-   * the bottom-left corner (#140) — until a focus or the 30s poll happened to
-   * re-read it. `CloudSignInTip` fires the same three after its own sign-in.
+   * / Workspace 设置 — until a focus or the 30s poll happened to
+   * re-read it. The previous `CloudSignInTip` sign-in path (removed in this
+   * PR) fired the same three refreshes after its own completion.
    *
    * EVERY exit from onboarding must call this. It used to live inline in
    * `finishOnboarding` only, so the "go build a design system" door left the
@@ -1833,11 +1671,12 @@ export function EntryShell({
           onSignInCloud={() => navigate({ kind: 'home', view: 'onboarding' })}
           onSignedOut={onSignedOut}
           updaterSlot={updaterSlot}
-          // A loading or unavailable workspace read is not proof of sign-out.
-          // Keep the account slot neutral until Cloud answers successfully;
-          // only a successful null context (or known local sign-out) may show
-          // the sign-in card.
-          footerNotice={accountFooterNotice}
+          // Local-First fork: the rail footer is always empty. The Local-First
+          // daemon has no Cloud sign-in to surface here, and the
+          // `CloudSignInTip` / `RailAccountSyncTip` / `RailAccountRecoveryTip`
+          // were all removed in this PR. The prop is kept (the rail still
+          // takes a footerNotice slot) so the type signature stays intact.
+          footerNotice={null}
           /* Same catalog and same opener the 全部项目 grid uses below, so the
              rail's 最近浏览过 list and that view's 最近浏览过 tab are two views of
              ONE list rather than two sorts of two lists. */
@@ -3127,7 +2966,8 @@ function OnboardingView({
             resolveAmrAuthTracking(analytics.track, 'cancelled', undefined, {
               authAttemptId,
             });
-            closeAmrActivationWindowBestEffort();
+            // Local-First fork: the AMR activation window lives in AmrLoginPill,
+            // which was removed. There is nothing to close here.
             notifyAmrLoginStatusChanged('login-canceled');
             amrLoginCancelRequestedRef.current = false;
             amrLoginPollCancelledRef.current = true;
@@ -3217,7 +3057,8 @@ function OnboardingView({
         authAttemptId,
       });
     }
-    closeAmrActivationWindowBestEffort();
+    // Local-First fork: the AMR activation window lives in AmrLoginPill,
+    // which was removed. There is nothing to close here.
     setAmrStatus((current) => (
       current
         ? { ...current, loggedIn: false, loginInFlight: false, user: null }

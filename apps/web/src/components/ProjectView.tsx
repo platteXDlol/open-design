@@ -186,7 +186,6 @@ import {
   resolveAmrBalanceBranch,
   type AmrBalanceBlockedDialogKind,
 } from '../runtime/amr-balance-branch';
-import { AmrBalanceDialog } from './AmrBalanceDialog';
 import { AmrOwnerTopUpDialog } from './chat/AmrOwnerTopUpDialog';
 import { markHistoryReplayLanded } from './chat/useCharReveal';
 import { workspaceAutoRechargeUrl, workspaceUpgradeUrl } from './EntryNavRail';
@@ -14153,52 +14152,23 @@ export function ProjectView({
       {onboardingEntryRef.current && hasPreviewableArtifact && !currentConversationStreaming ? (
         <FirstArtifactHint />
       ) : null}
-      {amrBalanceGateBlock?.dialog === 'ask_owner' || amrOwnerTopUpFromCard ? (
-        /*
-         * 非 owner 的成员。他拿不到账单动作,所以这张弹窗不外跳,而是给他一句
-         * 可以直接发给所有者的话 —— 在此之前这一档只有一颗「暂不需要」(§6.Y)。
-         */
+      {false ? (
+        // Local-First fork: the AMR ask-owner dialog (`AmrOwnerTopUpDialog`)
+        // mounted from the pre-run balance gate. The dialog file still
+        // exists but the gate it answered is gone. Forced to `false` so it
+        // never renders; the JSX is kept as a historical reference until
+        // PR #2 retires it with the rest of the gate plumbing.
         <AmrOwnerTopUpDialog
-          onClose={() => {
-            setAmrOwnerTopUpFromCard(false);
-            // 和现有弹窗的「暂不需要」同义:任务留在队列里,只是不再是唯一选项。
-            setAmrBalanceGateBlock(null);
-          }}
+          onClose={() => undefined}
         />
       ) : null}
-      {amrBalanceGateBlock?.dialog === 'upgrade' ? (
-        <AmrBalanceDialog
-          reason={amrBalanceGateBlock.reason}
-          modelId={amrBalanceGateBlock.modelId}
-          fundingScope={amrBalanceGateBlock.fundingScope}
-          balanceUsd={amrBalanceGateBlock.snapshot.balanceUsd}
-          profile={amrBalanceGateBlock.snapshot.profile}
-          entrySource="chat_balance_gate_upgrade"
-          upgradeIntent={amrBalanceGateBlock.upgradeIntent}
-          // 弹窗和卡上那颗必须从**同一份**上下文算落点。默认那条(环境里选中
-          // 的工作区)对首页是对的,对项目页不是:这一笔钱是项目那个工作区出的,
-          // 环境里未必就是它。两处不同源正是产品文档说的「卡和弹窗跳去不同的
-          // 地方是缺陷而不是特性」。
-          workspaceContext={projectRunBillingAuthorityContext}
-          metricsConsent={config.telemetry?.metrics === true}
-          installationId={config.installationId}
-          onClose={() => setAmrBalanceGateBlock(null)}
-          onResolved={() => {
-            // Sign-in completed or the recharge landed: lift the balance
-            // pause and kick the drain so anything parked starts on its own
-            // (it still re-gates, so a half-measure recharge surfaces the
-            // soft reminder rather than silently failing mid-run).
-            //
-            // ⚠️ Since OPEND-2719 the exhausted-wallet block no longer parks
-            // its own send — that draft went back to the composer. What this
-            // still drains is whatever the OTHER blocked states (signed out,
-            // unreadable billing) parked earlier in this conversation.
-            const conversationId = amrBalanceGateBlock.conversationId;
-            setAmrBalanceGateBlock(null);
-            amrGatePausedQueueConversationsRef.current.delete(conversationId);
-            setQueuedAutoStartTick((tick) => tick + 1);
-          }}
-        />
+      {false ? (
+        // Local-First fork: the AMR balance upgrade dialog
+        // (`AmrBalanceDialog`) was deleted in this PR. The pre-run balance
+        // gate that mounted it is gone, and the dialog component itself
+        // ships no longer. The `if (false)` block is a no-op placeholder
+        // to document the historical mount point.
+        null
       ) : null}
       <AnimatePresence>
         {projectActionsToast && !projectActionsToastInChatPane ? projectActionsToastNode : null}
