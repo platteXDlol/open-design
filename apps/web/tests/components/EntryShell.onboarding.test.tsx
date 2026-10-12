@@ -740,7 +740,14 @@ describe('EntryShell Home submit handoff', () => {
   });
 });
 
-describe('EntryShell onboarding OpenDesign AMR runtime', () => {
+// Local-First fork: the OpenDesign Cloud (AMR/vela) sign-in landing and
+// the AMR chooser card have been removed from the default first-run flow.
+// The AMR code path (handleCloudSignIn, startVelaLogin, etc.) is still in
+// EntryShell.tsx and the vela endpoints are still exposed by the daemon, so
+// the underlying behavior tests are preserved here as a regression net for
+// any future opt-in toggle that re-exposes the cloud path. Skipped because
+// the AMR card is no longer reachable from the UI.
+describe.skip('EntryShell onboarding OpenDesign AMR runtime', () => {
   it('gates Home on an authoritative signed-out Cloud session without clearing saved setup', async () => {
     globalThis.fetch = vi.fn(async () =>
       jsonResponse({ loggedIn: false, profile: 'prod', configPath: '/x', user: null }),

@@ -213,7 +213,7 @@ function projectView(extra: Partial<ComponentProps<typeof ProjectView>> = {}) {
   );
 }
 
-describe('ProjectView Cloud retry across authority confirmation', () => {
+describe.skip('ProjectView Cloud retry across authority confirmation', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
     window.localStorage.clear();

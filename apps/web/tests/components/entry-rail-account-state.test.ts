@@ -10,8 +10,8 @@ const SIGNED_IN_CONTEXT = {
   workspaceId: 'workspace-1',
 } as WorkspaceContextState['context'];
 
-describe('resolveEntryRailAccountFooterState', () => {
-  it('keeps the resolved account row when a workspace context exists', () => {
+describe('resolveEntryRailAccountFooterState (Local-First fork)', () => {
+  it('always returns "hidden" while a workspace context is present', () => {
     expect(resolveEntryRailAccountFooterState({
       context: SIGNED_IN_CONTEXT,
       loading: false,
@@ -19,66 +19,62 @@ describe('resolveEntryRailAccountFooterState', () => {
     }, true)).toBe('hidden');
   });
 
-  it('shows the neutral syncing state while the workspace identity is loading', () => {
+  it('always returns "hidden" while the workspace identity is still loading', () => {
     expect(resolveEntryRailAccountFooterState({
       context: null,
       loading: true,
-    }, null)).toBe('syncing');
+    }, null)).toBe('hidden');
   });
 
-  it.each([true, null] as const)(
-    'shows automatic recovery during an outage when local login is %s',
+  it.each([true, null, false] as const)(
+    'always returns "hidden" during a workspace outage regardless of the AMR login state (%s)',
     (amrLoggedIn) => {
       expect(resolveEntryRailAccountFooterState({
         context: null,
         loading: false,
         failure: 'unavailable',
-      }, amrLoggedIn)).toBe('recovering');
+      }, amrLoggedIn)).toBe('hidden');
     },
   );
 
-  it('still offers sign-in during an outage after an explicit local logout', () => {
-    expect(resolveEntryRailAccountFooterState({
-      context: null,
-      loading: false,
-      failure: 'unavailable',
-    }, false)).toBe('sign-in');
-  });
-
-  it('offers the existing sign-in card when authoritative auth has expired', () => {
+  it('always returns "hidden" even when authoritative auth has expired', () => {
     expect(resolveEntryRailAccountFooterState({
       context: null,
       loading: false,
       failure: 'reauth-required',
-    }, true, 'reauth_required')).toBe('sign-in');
+    }, true, 'reauth_required')).toBe('hidden');
   });
 
-  it('does not keep a stale cached account row above the sign-in card after auth expires', () => {
+  it('always returns "hidden" even when a workspace identity is loaded and reauth is required', () => {
     expect(resolveEntryRailAccountFooterState({
       context: SIGNED_IN_CONTEXT,
       loading: false,
       failure: 'reauth-required',
-    }, true, 'reauth_required')).toBe('sign-in');
+    }, true, 'reauth_required')).toBe('hidden');
   });
 
-  it('accepts the next successful null response as authoritative sign-out', () => {
+  it('always returns "hidden" for a next successful null response', () => {
     expect(resolveEntryRailAccountFooterState({
       context: null,
       loading: false,
-    }, true)).toBe('sign-in');
+    }, true)).toBe('hidden');
   });
 
-  it('preserves the legacy unsupported-daemon behavior', () => {
+  it('always returns "hidden" for the legacy unsupported-daemon failure mode', () => {
     expect(resolveEntryRailAccountFooterState({
       context: null,
       loading: false,
       failure: 'unsupported',
-    }, true)).toBe('sign-in');
+    }, true)).toBe('hidden');
   });
 });
 
-describe('requiresAmrReauthentication', () => {
-  it('requires reauthentication when workspace authority detects expiry before status polling', () => {
+describe('requiresAmrReauthentication (Local-First fork)', () => {
+  it('still reports reauth-required when the AMR session is in the reauth_required state', () => {
+    // `requiresAmrReauthentication` is kept for type-compat with the existing
+    // call sites in `entry-rail-account-state`'s wider module surface. The
+    // rail no longer reads its return value, but the function still
+    // computes the same boolean it always did.
     expect(requiresAmrReauthentication('authenticated', 'reauth-required')).toBe(true);
   });
 });

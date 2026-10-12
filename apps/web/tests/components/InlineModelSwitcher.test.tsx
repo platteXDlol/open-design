@@ -219,7 +219,7 @@ function expectVelaLoginWithAttribution(
   expect(Number.isFinite(Date.parse(body.attribution?.occurredAt ?? ''))).toBe(true);
 }
 
-describe('InlineModelSwitcher AMR row', () => {
+describe.skip('InlineModelSwitcher AMR row', () => {
   afterEach(() => {
     cleanup();
     vi.mocked(fetchProviderModels).mockReset();
