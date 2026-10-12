@@ -789,6 +789,7 @@ export const ptBR: Dict = {
   'entry.xAria': 'Siga @OpenDesignHQ para ver as novidades',
   'entry.mailAria': 'Dúvidas? Envie um e-mail para nós',
   'entry.accountSettings': 'Configurações',
+  'entry.sessionExpired': 'Your session expired. Sign in again to continue.',  // TODO(i18n)
   'chat.collapsePane': 'Recolher o painel de conversa',
   'collabPresence.ariaOne': '1 collaborator online',
   'collabPresence.aria': '{count} collaborators online',

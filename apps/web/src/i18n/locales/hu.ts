@@ -789,6 +789,7 @@ export const hu: Dict = {
   'entry.xAria': 'Kövesd az @OpenDesignHQ-t az újdonságokért',
   'entry.mailAria': 'Kérdésed van? Írj nekünk e-mailt',
   'entry.accountSettings': 'Beállítások',
+  'entry.sessionExpired': 'Your session expired. Sign in again to continue.',  // TODO(i18n)
   'chat.collapsePane': 'Beszélgetéspanel összecsukása',
   'collabPresence.ariaOne': '1 collaborator online',
   'collabPresence.aria': '{count} collaborators online',

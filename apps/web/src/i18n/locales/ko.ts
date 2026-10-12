@@ -789,6 +789,7 @@ export const ko: Dict = {
   'entry.xAria': '@OpenDesignHQ 팔로우하고 새 소식 받기',
   'entry.mailAria': '궁금한 점은 이메일로 문의하기',
   'entry.accountSettings': '설정',
+  'entry.sessionExpired': 'Your session expired. Sign in again to continue.',  // TODO(i18n)
   'chat.collapsePane': '대화 패널 접기',
   'collabPresence.ariaOne': '1 collaborator online',
   'collabPresence.aria': '{count} collaborators online',

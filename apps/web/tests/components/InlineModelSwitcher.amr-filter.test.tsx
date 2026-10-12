@@ -18,6 +18,7 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { InlineModelSwitcher } from '../../src/components/InlineModelSwitcher';
 import type { AgentInfo, AppConfig } from '../../src/types';
+import type { ExecMode } from '../../src/types';
 
 const analyticsMocks = vi.hoisted(() => ({ track: vi.fn() }));
 
@@ -108,11 +109,13 @@ describe('InlineModelSwitcher (Local-First fork amr filter)', () => {
       <InlineModelSwitcher
         config={baseConfig}
         agents={[amrAgent, claudeAgent, openCodeAgent]}
-        agentsLoading={false}
-        onConfigChange={vi.fn()}
-        onSkillChange={vi.fn()}
-        onDesignSystemChange={vi.fn()}
-        onRefreshAgents={vi.fn()}
+        daemonLive
+        onModeChange={vi.fn() as (mode: ExecMode) => void}
+        onAgentChange={vi.fn()}
+        onAgentModelChange={vi.fn()}
+        onApiProtocolChange={vi.fn()}
+        onApiModelChange={vi.fn()}
+        onOpenSettings={vi.fn()}
       />,
     );
 
@@ -136,11 +139,13 @@ describe('InlineModelSwitcher (Local-First fork amr filter)', () => {
       <InlineModelSwitcher
         config={baseConfig}
         agents={[amrAgent, claudeAgent]}
-        agentsLoading={false}
-        onConfigChange={vi.fn()}
-        onSkillChange={vi.fn()}
-        onDesignSystemChange={vi.fn()}
-        onRefreshAgents={vi.fn()}
+        daemonLive
+        onModeChange={vi.fn() as (mode: ExecMode) => void}
+        onAgentChange={vi.fn()}
+        onAgentModelChange={vi.fn()}
+        onApiProtocolChange={vi.fn()}
+        onApiModelChange={vi.fn()}
+        onOpenSettings={vi.fn()}
       />,
     );
 

@@ -789,6 +789,7 @@ export const fa: Dict = {
   'entry.xAria': 'برای دیدن قابلیت‌های تازه @OpenDesignHQ را دنبال کنید',
   'entry.mailAria': 'سؤالی دارید؟ برای ما ایمیل بفرستید',
   'entry.accountSettings': 'تنظیمات',
+  'entry.sessionExpired': 'Your session expired. Sign in again to continue.',  // TODO(i18n)
   'chat.collapsePane': 'جمع کردن پنل گفتگو',
   'collabPresence.ariaOne': '1 collaborator online',
   'collabPresence.aria': '{count} collaborators online',

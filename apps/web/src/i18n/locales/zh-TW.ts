@@ -795,6 +795,7 @@ export const zhTW: Dict = {
   "entry.xAria": "追蹤 @OpenDesignHQ，掌握新功能",
   "entry.mailAria": "有問題？寫信給我們",
   "entry.accountSettings": "設定",
+  "entry.sessionExpired": 'Your session expired. Sign in again to continue.',  // TODO(i18n)
   "chat.collapsePane": "收起對話欄",
   "collabPresence.ariaOne": "1 位協作者在線",
   "collabPresence.aria": "{count} 位協作者在線",
