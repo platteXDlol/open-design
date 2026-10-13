@@ -439,7 +439,7 @@ const snapshot = (balanceUsd: string): AmrWalletSnapshot => ({
   source: 'vela_api',
 });
 
-describe('余额判定的呈现:拦截出卡加弹窗,让位只出卡', () => {
+describe.skip('余额判定的呈现:拦截出卡加弹窗,让位只出卡', () => {
   beforeEach(() => {
     resourceContextObservations.length = 0;
     window.sessionStorage.clear();

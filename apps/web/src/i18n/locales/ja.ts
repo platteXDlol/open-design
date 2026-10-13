@@ -789,6 +789,7 @@ export const ja: Dict = {
   'entry.xAria': '@OpenDesignHQ をフォローして最新情報をチェック',
   'entry.mailAria': 'ご質問はメールでどうぞ',
   'entry.accountSettings': '設定',
+  'entry.sessionExpired': 'Your session expired. Sign in again to continue.',  // TODO(i18n)
   'chat.collapsePane': '会話パネルを折りたたむ',
   'collabPresence.ariaOne': '1 collaborator online',
   'collabPresence.aria': '{count} collaborators online',

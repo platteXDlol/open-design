@@ -686,7 +686,13 @@ describe('重试请求归属在确认/拒绝时释放，失败历史始终保留
   });
 });
 
-describe('OPEND-2719 余额不足是终局:不进队列,不起任务,弹窗和卡照出', () => {
+// Local-First fork: the AMR balance-gate hard block is the surface this
+// describe exercises. The gate was removed in PR #1 and the daemon-side
+// `amr` runtime goes away in PR #2 — neither the dialog nor the `hard`
+// branch of the preflight answer exists anymore. Kept here as a
+// historical reference for any future opt-in toggle that re-exposes the
+// Cloud sign-in path.
+describe.skip('OPEND-2719 余额不足是终局:不进队列,不起任务,弹窗和卡照出', () => {
   const insufficient = {
     kind: 'hard' as const,
     reason: 'insufficient' as const,

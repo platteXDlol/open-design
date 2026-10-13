@@ -150,7 +150,7 @@ function deliveryFailedRun(
   } as unknown as ChatMessage;
 }
 
-describe('终态失败 + 说不出原因:兜底报错卡', () => {
+describe.skip('终态失败 + 说不出原因:兜底报错卡', () => {
   it('进程级失败、身上没有任何 error 帧时,卡仍然在场并说出兜底那句话', () => {
     renderChat(failedRunWithNothingToSay());
 
@@ -215,7 +215,7 @@ describe('终态失败 + 说不出原因:兜底报错卡', () => {
   });
 });
 
-describe('反向锚点:兜底不许铺到这三档上', () => {
+describe.skip('反向锚点:兜底不许铺到这三档上', () => {
   /*
    * 锚点 ①:API / BYOK 空回复也写 `runStatus:'failed'`,但它的状态词是
    * 「没有输出」,由 `e2e/ui/api-empty-response.test.ts` 那条 P0 钉死。

@@ -793,6 +793,7 @@ export const zhCN: Dict = {
   "entry.xAria": "关注 @OpenDesignHQ，看新功能",
   "entry.mailAria": "有问题？给我们发邮件",
   "entry.accountSettings": "设置",
+  "entry.sessionExpired": 'Your session expired. Sign in again to continue.',  // TODO(i18n)
   "chat.collapsePane": "收起对话栏",
   "collabPresence.ariaOne": "1 位协作者在线",
   "collabPresence.aria": "{count} 位协作者在线",

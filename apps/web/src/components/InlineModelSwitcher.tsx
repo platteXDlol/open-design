@@ -683,10 +683,12 @@ export function InlineModelSwitcher({
     () => agents.find((a) => a.id === config.agentId) ?? null,
     [agents, config.agentId],
   );
-  const amrInstalled = installedAgents.some((a) => a.id === 'amr');
-  const shouldOfferAmrReminder =
-    config.mode === 'daemon' && config.agentId !== 'amr' && amrInstalled;
-  const showAmrReminder = shouldOfferAmrReminder && !amrReminderSeen;
+  // Local-First fork: the AMR/Cloud agent was the only runtime that could
+  // host a sign-in card. With it gone, neither the "amr reminder" prompt
+  // (above) nor the AMR account row (below) has a runtime to point at. The
+  // reminder is forced off; the agent-list filter on `installedAgents` keeps
+  // `amr` out of the radio grid.
+  const showAmrReminder = false;
 
   const currentChoice =
     (config.agentId && config.agentModels?.[config.agentId]) || {};
@@ -1575,124 +1577,13 @@ export function InlineModelSwitcher({
                   </div>
                 )}
 
-              {amrInstalled ? (
-                <div
-                  className={
-                    'inline-switcher__account' +
-                    (config.agentId === 'amr' ? ' is-active' : '')
-                  }
-                >
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={config.agentId === 'amr'}
-                    aria-label={`OpenDesign ${amrInlineStatus}`}
-                    className="inline-switcher__account-id inline-switcher__account-select"
-                    data-testid="inline-model-switcher-agent-amr"
-                    title={amrLoginPending ? amrPendingHoverLabel : undefined}
-                    onClick={() => void handleAgentButtonClick('amr')}
-                  >
-                    <span className="inline-switcher__account-id-icon">
-                      <AgentIcon id="amr" size={24} />
-                      {showAmrReminderInPopover && config.agentId !== 'amr' ? (
-                        <span
-                          className="inline-switcher__amr-reminder-dot inline-switcher__amr-reminder-dot--account"
-                          data-testid="inline-model-switcher-account-amr-reminder"
-                          aria-hidden="true"
-                        />
-                      ) : null}
-                    </span>
-                    <span className="inline-switcher__account-text">
-                      <span className="inline-switcher__account-name-row">
-                        <span className="inline-switcher__account-name">
-                          OpenDesign
-                        </span>
-                        {amrLoggedIn ? (
-                          <PlanBadge plan={amrPlanLabel} size="md" />
-                        ) : null}
-                      </span>
-                      {amrLoggedIn && amrBalanceDisplayLabel ? (
-                        <span className="inline-switcher__account-subtitle">
-                          <span className="inline-switcher__account-stat">
-                            <span className="inline-switcher__account-stat-label">
-                              {t('settings.amrBalance')}
-                            </span>
-                            <span className="inline-switcher__account-stat-value">
-                              {amrBalanceDisplayLabel}
-                            </span>
-                          </span>
-                        </span>
-                      ) : null}
-                    </span>
-                  </button>
-                  {amrLoginError ? (
-                    <span className="inline-switcher__account-status is-error">
-                      {amrLoginError}
-                    </span>
-                  ) : amrLoggedIn ? (
-                    amrCanUpgrade ? (
-                      <button
-                        type="button"
-                        className="inline-switcher__account-upgrade"
-                        data-testid="inline-model-switcher-account-upgrade"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const attribution = recordAmrEntry(
-                            analytics.track,
-                            'inline_amr_upgrade',
-                            new Date(),
-                            { metricsConsent: config.telemetry?.metrics === true },
-                          );
-                          const deviceId = amrHandoffDeviceId({
-                            metricsConsent: config.telemetry?.metrics === true,
-                            resolvedDeviceId: getResolvedDeviceId(),
-                            installationId: config.installationId,
-                          });
-                          window.open(
-                            attributedAmrUrl(
-                              amrPlansUrlForProfile(
-                                amrStatus?.profile ??
-                                  config.agentCliEnv?.amr?.OPEN_DESIGN_AMR_PROFILE,
-                              ),
-                              attribution,
-                              deviceId,
-                            ),
-                            '_blank',
-                            'noopener,noreferrer',
-                          );
-                        }}
-                      >
-                        {t('settings.amrUpgrade')}
-                      </button>
-                    ) : null
-                  ) : (
-                    <button
-                      type="button"
-                      className="inline-switcher__account-action"
-                      data-testid="inline-model-switcher-account-action"
-                      title={amrLoginPending ? amrPendingHoverLabel : undefined}
-                      onClick={() => {
-                        if (amrLoginPending) {
-                          void handleAmrCancelLogin();
-                          return;
-                        }
-                        const attribution = recordAmrEntry(
-                          analytics.track,
-                          'inline_model_switcher_amr_row',
-                          new Date(),
-                          { metricsConsent: config.telemetry?.metrics === true },
-                        );
-                        void handleAmrSignIn(attribution);
-                      }}
-                    >
-                      {amrStatusIconName ? (
-                        <Icon name={amrStatusIconName} size={13} />
-                      ) : null}
-                      {amrActionLabel}
-                    </button>
-                  )}
-                </div>
-              ) : null}
+              {/* Local-First fork: the AMR/Cloud account row was the second
+                  amr host in the model switcher (the radio grid above
+                  already filters amr out; this was the dedicated row with
+                  the sign-in / upgrade / balance card). The runtime and
+                  sign-in pill are gone, so the row never has anything to
+                  render. The block is removed entirely; PR #2 will retire
+                  the helpers and analytics it referenced. */}
               </div>
 
               {currentAgent &&

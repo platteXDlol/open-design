@@ -219,7 +219,13 @@ afterEach(() => {
   cleanup(); vi.unstubAllGlobals(); vi.clearAllTimers(); vi.useRealTimers(); vi.clearAllMocks();
 });
 
-describe('approved access copy on the real ProjectView and ChatPane', () => {
+// Local-First fork: the `confirmed read-only` recovery card the test
+// exercises was the AMR-vela access-uncertainty surface. The Cloud
+// identity authority was removed in PR #1; PR #2 will retire the
+// remaining AMR runtime. The test is preserved here as a historical
+// reference for any future opt-in toggle that re-exposes the Cloud
+// authority check.
+describe.skip('approved access copy on the real ProjectView and ChatPane', () => {
   it('confirmed read-only replaces the blocked recovery card title/body without enabling run actions', async () => {
     authority.viewerOnly = true; authority.writerAuthority = 'denied';
     render(view()); await tick();

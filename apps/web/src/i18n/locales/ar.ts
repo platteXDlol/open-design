@@ -789,6 +789,7 @@ export const ar: Dict = {
   'entry.xAria': 'تابع @OpenDesignHQ لمعرفة كل جديد',
   'entry.mailAria': 'لديك سؤال؟ راسلنا عبر البريد',
   'entry.accountSettings': 'الإعدادات',
+  'entry.sessionExpired': 'Your session expired. Sign in again to continue.',  // TODO(i18n)
   'chat.collapsePane': 'طيّ لوحة المحادثة',
   'collabPresence.ariaOne': '1 collaborator online',
   'collabPresence.aria': '{count} collaborators online',

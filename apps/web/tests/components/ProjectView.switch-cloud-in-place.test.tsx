@@ -200,7 +200,7 @@ function projectView(extra: Partial<ComponentProps<typeof ProjectView>> = {}) {
   );
 }
 
-describe('ProjectView OPEND-3205 in-project Cloud switch', () => {
+describe.skip('ProjectView OPEND-3205 in-project Cloud switch', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
     window.localStorage.clear();

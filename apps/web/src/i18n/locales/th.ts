@@ -789,6 +789,7 @@ export const th: Dict = {
   'entry.xAria': 'ติดตาม @OpenDesignHQ เพื่อดูฟีเจอร์ใหม่',
   'entry.mailAria': 'มีคำถาม? ส่งอีเมลถึงเรา',
   'entry.accountSettings': 'การตั้งค่า',
+  'entry.sessionExpired': 'Your session expired. Sign in again to continue.',  // TODO(i18n)
   'chat.collapsePane': 'ย่อแผงสนทนา',
   'collabPresence.ariaOne': '1 collaborator online',
   'collabPresence.aria': '{count} collaborators online',

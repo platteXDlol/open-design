@@ -789,6 +789,7 @@ export const esES: Dict = {
   'entry.xAria': 'Sigue a @OpenDesignHQ para ver las novedades',
   'entry.mailAria': '¿Dudas? Escríbenos un correo',
   'entry.accountSettings': 'Ajustes',
+  'entry.sessionExpired': 'Your session expired. Sign in again to continue.',  // TODO(i18n)
   'chat.collapsePane': 'Contraer el panel de conversación',
   'collabPresence.ariaOne': '1 collaborator online',
   'collabPresence.aria': '{count} collaborators online',

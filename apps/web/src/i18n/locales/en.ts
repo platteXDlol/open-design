@@ -789,6 +789,11 @@ export const en: Dict = {
   'entry.xAria': 'Follow @OpenDesignHQ for updates',
   'entry.mailAria': 'Questions? Email our team',
   'entry.accountSettings': 'Settings',
+  // Local-First fork: the AMR/vela "session expired" copy used to be the
+  // gateway to a cloud sign-in. The Local-First daemon has no remote
+  // identity, so a generic "your session expired" message stands in
+  // wherever a surface used to redirect to AMR sign-in.
+  'entry.sessionExpired': 'Your session expired. Sign in again to continue.',
   'chat.collapsePane': 'Collapse the conversation pane',
   'collabPresence.ariaOne': '1 collaborator online',
   'collabPresence.aria': '{count} collaborators online',

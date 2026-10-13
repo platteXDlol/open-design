@@ -1144,6 +1144,13 @@ export interface Dict {
   'entry.mailAria': string;
   /** Label beside the mail glyph in the rail's account dock social row. */
   'entry.accountSettings': string;
+  /**
+   * Surface copy for any surface that used to render the AMR/vela sign-in
+   * flow but is no longer reachable. The Local-First daemon has no remote
+   * identity to redirect to, so a generic "session expired" message
+   * replaces the AMR-specific copy.
+   */
+  'entry.sessionExpired': string;
   'chat.collapsePane': string;
   'collabPresence.ariaOne': string;
   'collabPresence.aria': string;

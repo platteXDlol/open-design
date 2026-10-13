@@ -44,7 +44,6 @@ import type { Dict } from '../i18n/types';
 import { AgentIcon } from './AgentIcon';
 import { AgentDiagnosticRow } from './AgentDiagnosticRow';
 import { DeepSeekHarnessSetupDialog } from './DeepSeekHarnessSetupDialog';
-import { AmrLoginPill } from './AmrLoginPill';
 import { PlanBadge } from './PlanBadge';
 import { orderAgentsWithOpenDesignFirst } from './agentOrdering';
 import {
@@ -3877,7 +3876,9 @@ export function SettingsDialog({
   const activeHeader = sectionHeader[activeSection];
   const visibleAgents = agents.filter(isVisibleLocalCliAgent);
   const installedAgents = orderAgentsWithOpenDesignFirst(
-    visibleAgents.filter((agent) => agent.available || deepSeekHarnessNeedsSetup(agent)),
+    visibleAgents
+      .filter((agent) => agent.available || deepSeekHarnessNeedsSetup(agent))
+      .filter((agent) => agent.id !== 'amr'),
   );
   const unavailableAgents = visibleAgents.filter(
     (agent) => !agent.available && !deepSeekHarnessNeedsSetup(agent),
@@ -4455,37 +4456,10 @@ export function SettingsDialog({
                 </button>
               </div>
               </div>
-              {cfg.mode === 'daemon' && !amrCardSignedIn ? (
-                // Only prompt to sign into OpenDesign Cloud when NOT already
-                // signed in — the AMR/vela session IS the cloud identity (one
-                // session drives both), so a logged-in user has nothing to do
-                // here and the callout was showing spuriously.
-                <div className="settings-cloud-signin-callout">
-                  <div>
-                    <strong>{t('settings.cloudCalloutTitle')}</strong>
-                    <p>{t('settings.cloudCalloutBody')}</p>
-                  </div>
-                  {/* Same device-auth flow as the 授权 button on the OpenDesign
-                      agent card below — the AMR/vela session IS the cloud
-                      identity, so signing in here is that one flow. This used to
-                      navigate to onboarding, which walked the user through the
-                      whole first-run tour to reach the same authorization. */}
-                  <AmrLoginPill
-                    className="settings-cloud-signin-callout__button"
-                    hideSignedOutStatus
-                    hideSignedInStatus
-                    initialStatus={amrCardStatus}
-                    skipInitialRefresh
-                    signInLabel={t('settings.cloudCalloutButton')}
-                    signInIcon="log-in"
-                    amrEntrySourceDetail="settings_cloud_callout"
-                    metricsConsent={cfg.telemetry?.metrics === true}
-                    installationId={cfg.installationId}
-                    onStatusChange={setAmrCardStatus}
-                    onSignedOut={onAmrSignedOut}
-                  />
-                </div>
-              ) : null}
+              {/* Local-First fork: the "Use OpenDesign Cloud" callout is gone.
+                  The Local-First daemon has no remote identity to sign into,
+                  and `AmrLoginPill` (the only thing this callout mounted) was
+                  removed in this PR. */}
               {cfg.mode === 'api' ? (
                 <div
                   className="protocol-chips protocol-chips--providers"
@@ -4981,22 +4955,12 @@ export function SettingsDialog({
                                           {t('settings.amrUpgrade')}
                                         </button>
                                       ) : null}
-                                      <AmrLoginPill
-                                        className="agent-card-amr-auth"
-                                        hideSignedOutStatus
-                                        hideSignedInStatus
-                                        initialStatus={amrCardStatus}
-                                        skipInitialRefresh
-                                        signInLabel={t('settings.amrAuthorize')}
-                                        showConsoleAction={amrCardSignedIn}
-                                        iconOnlySignOut
-                                        amrEntrySourceDetail="settings_amr_authorize"
-                                        metricsConsent={cfg.telemetry?.metrics === true}
-                                        installationId={cfg.installationId}
-                                        revealPendingCancelAction={amrRevealPendingCancelAction}
-                                        onStatusChange={setAmrCardStatus}
-                                        onSignedOut={onAmrSignedOut}
-                                      />
+                                      {/* Local-First fork: the AMR card sign-in
+                                          pill was the second `AmrLoginPill` mount
+                                          in this file. The card is unreachable
+                                          because the agent list filter (commit 3)
+                                          excludes `amr`, and `AmrLoginPill` itself
+                                          was deleted. */}
                                     </span>
                                   ) : (
                                     <div

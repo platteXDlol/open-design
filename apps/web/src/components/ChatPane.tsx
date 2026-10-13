@@ -4533,7 +4533,15 @@ export function ChatPane({
                             {t(retryLabelKey)}
                           </RunErrorCardAction>
                         ) : null}
-                        {showCloudSwitchCta ? (
+                        {false ? (
+                          // Local-First fork: the "switch to OpenDesign Cloud" CTA
+                          // is gone. The button string (`chat.amrCard.switchCta`)
+                          // and the runtime `showCloudSwitchCta` flag both pointed
+                          // at the cloud sign-in; neither has a target now that
+                          // the Local-First daemon has no cloud identity to switch
+                          // to. Forced to `false` so the dead branch stays as a
+                          // historical reference until PR #3 removes the i18n
+                          // key.
                           <RunErrorCardAction
                             type="button"
                             variant="primary"

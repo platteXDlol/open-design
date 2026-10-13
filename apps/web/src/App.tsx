@@ -42,10 +42,6 @@ import type {
   OptimisticProjectCreationHandoff,
   ProjectTitleHint,
 } from './components/EntryShell';
-import {
-  HomeAmrBalanceGateDialogs,
-  type HomeAmrBalanceGateBlock,
-} from './components/HomeAmrBalanceGateDialogs';
 import type { IntegrationTab } from './components/IntegrationsView';
 import { MarketplaceView } from './components/MarketplaceView';
 import { PluginDetailView } from './components/PluginDetailView';
@@ -66,7 +62,6 @@ import {
 } from './components/ProjectView';
 import { ProjectCreationPendingView } from './components/ProjectCreationPendingView';
 import { projectsForWorkspaceChrome } from './runtime/workspace-chrome-projects';
-import { AmrArtifactUpgradeGate } from './components/AmrArtifactUpgradeGate';
 import { AmrArtifactUpgradeHomeCard } from './components/AmrArtifactUpgradeHomeCard';
 import { ExperienceSurvey } from './components/ExperienceSurvey';
 import { TooltipLayer } from './components/TooltipLayer';
@@ -78,7 +73,6 @@ import {
   WorkspaceTabsBar,
 } from './components/WorkspaceTabsBar';
 import { WorkspaceTopRightAccountCluster } from './components/EntryNavRail';
-import { ProjectWorkspaceRecoveryTip } from './components/ProjectWorkspaceRecoveryTip';
 import {
   DesignSystemCreationFlow,
   DesignSystemDetailView,
@@ -192,11 +186,6 @@ import {
   type AmrArtifactUpgradeHomeOffer,
 } from './runtime/amr-artifact-upgrade';
 import {
-  amrBalanceGateScopeForWorkspaceContext,
-  amrBalanceGateScopesMatch,
-  type AmrBalanceGateScope,
-} from './runtime/amr-balance-gate';
-import {
   AMR_AUTH_RETRY_CONTINUATION_TTL_MS,
   amrAuthRetryMatchesRouteContext,
   routeStillMatchesAmrAuthRetryContinuation,
@@ -286,8 +275,6 @@ type AppCreateProjectInput = Omit<CreateInput, 'metadata'> & {
   initialRunContext?: RunContextSelection | null;
   conversationMode?: ChatSessionMode;
   autoSendFirstMessage?: boolean;
-  /** Exact workspace/member authority checked by the Home AMR preflight. */
-  amrGatePrecheckWitness?: AmrBalanceGateScope;
   /**
    * The optimistic project `beginOptimisticProjectCreation` already flushed
    * for this send (Home hands off before its admission check). The create
@@ -1140,11 +1127,9 @@ function AppInner() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [pendingProjectCreation, setPendingProjectCreation] =
     useState<PendingProjectCreation | null>(null);
-  // Hard block from the Home pre-run balance gate. Hosted here, not in
-  // EntryShell: the gate answers behind the optimistic pending frame, where
-  // EntryShell is already unmounted (OPEND-2614).
-  const [homeAmrBalanceGateBlock, setHomeAmrBalanceGateBlock] =
-    useState<HomeAmrBalanceGateBlock | null>(null);
+  // Local-First fork: the AMR pre-run balance gate and its dialogs were
+  // removed. The state slot is gone too — there is no hard block to host
+  // here, and the Home composer has no gate to wait on.
   const [appliedProjectListWitness, setAppliedProjectListWitness] = useState<{
     scopeKey: string;
     generation: number;
@@ -3162,15 +3147,11 @@ function AppInner() {
         createWorkspaceContext = createWorkspaceState.failure === 'unsupported'
           ? null
           : workspaceResourceReadContext(createWorkspaceState);
-        if (
-          input.amrGatePrecheckWitness &&
-          !amrBalanceGateScopesMatch(
-            input.amrGatePrecheckWitness,
-            amrBalanceGateScopeForWorkspaceContext(createWorkspaceContext),
-          )
-        ) {
-          throw new Error('AMR_WORKSPACE_GATE_STALE');
-        }
+        // Local-First fork: the AMR workspace-gate stale-witness check was
+        // removed. The Home composer no longer carries a preflight witness,
+        // and the matching scope check would always be against a different
+        // shape of context. The Local-First daemon's project-create route is
+        // a local create — no balance gate to honor.
         // An auto-send create that did not come through Home's composer opens
         // its frame here; Home's own sends arrive with the frame already up.
         if (input.autoSendFirstMessage && !optimisticProjectId) {
@@ -3423,16 +3404,17 @@ function AppInner() {
                 `od:auto-send-prompt:${result.project.id}`,
               );
             }
-            if (input.amrGatePrecheckWitness) {
-              window.sessionStorage.setItem(
-                `od:auto-send-amr-gate-witness:${result.project.id}`,
-                JSON.stringify(input.amrGatePrecheckWitness),
-              );
-            } else {
-              window.sessionStorage.removeItem(
-                `od:auto-send-amr-gate-witness:${result.project.id}`,
-              );
-            }
+            // Local-First fork: the auto-send AMR gate witness was the
+            // serialized AmrBalanceGateScope checked at createProject time to
+            // guard against a stale workspace identity. The Home composer no
+            // longer carries a preflight witness (PR #1 removed
+            // `onAmrBalanceGateBlockChange` and the gate block), so the
+            // sessionStorage key is no longer written. The cleanup branch is
+            // kept so any pre-existing flag from an older Local-First install
+            // gets cleared on the next create.
+            window.sessionStorage.removeItem(
+              `od:auto-send-amr-gate-witness:${result.project.id}`,
+            );
             window.sessionStorage.removeItem(
               `od:auto-send-amr-gate-ok:${result.project.id}`,
             );
@@ -5598,7 +5580,6 @@ function AppInner() {
     appMain = (
       <EntryView
         onBeginProjectCreation={beginOptimisticProjectCreation}
-        onAmrBalanceGateBlockChange={setHomeAmrBalanceGateBlock}
         skills={enabledSkills}
         designTemplates={enabledDesignTemplates}
         designSystems={enabledDS}
@@ -5765,11 +5746,10 @@ function AppInner() {
             installationId={config.installationId}
           />
         ) : null}
-        {route.kind === 'project'
-          && activeProjectWorkspaceContext
-          && projectRouteWorkspaceContext.failure === 'unavailable' ? (
-          <ProjectWorkspaceRecoveryTip />
-        ) : null}
+        {/* Local-First fork: the project workspace recovery tip rendered the
+            rail's Cloud account recovery state, which is no longer reachable
+            in a Local-First install. The wrapper component was deleted; the
+            workspace outage indicator is no longer surfaced here. */}
         <div className="workspace-shell__body">
           {appMain}
         </div>
@@ -5809,28 +5789,6 @@ function AppInner() {
         onDismiss={() => trackExperienceSurveyDismissed(analytics.track)}
         onSubmit={(answers) => trackExperienceSurveySent(analytics.track, answers)}
       />
-      <AmrArtifactUpgradeGate
-        cloudModelSelected={config.mode === 'daemon' && config.agentId === 'amr'}
-        homeVisible={route.kind === 'home' && route.view === 'home'}
-        activeProjectId={route.kind === 'project' ? route.projectId : null}
-        activeConversationId={
-          route.kind === 'project' ? route.conversationId ?? null : null
-        }
-        activeFileName={route.kind === 'project' ? route.fileName : null}
-        plan={resolvedAmrPlan}
-        planResolved={
-          amrLoginStatus !== null
-          && (!isAmrSessionAuthenticated(amrLoginStatus) || resolvedAmrPlan !== null)
-        }
-        profile={amrLoginStatus?.profile ?? null}
-        metricsConsent={config.telemetry?.metrics === true}
-        installationId={config.installationId}
-        onHomeOfferChange={
-          amrArtifactUpgradeHomeMock
-            ? undefined
-            : setAmrArtifactUpgradeHomeOffer
-        }
-      />
       <AnimatePresence>
       {settingsOpen ? (
         renderSettingsSurface('modal')
@@ -5867,11 +5825,6 @@ function AppInner() {
           onDismiss={() => setProjectCreateError(null)}
         />
       ) : null}
-      <HomeAmrBalanceGateDialogs
-        block={homeAmrBalanceGateBlock}
-        metricsConsent={config.telemetry?.metrics === true}
-        installationId={config.installationId}
-      />
       {projectOpenError ? (
         <Toast
           message={projectOpenError}

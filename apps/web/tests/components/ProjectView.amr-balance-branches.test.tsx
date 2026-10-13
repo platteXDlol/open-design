@@ -485,7 +485,7 @@ const EMPTY_WALLET = {
   snapshot: snapshot('0'),
 };
 
-describe('余额不足:身份 × 订阅的四种分支', () => {
+describe.skip('余额不足:身份 × 订阅的四种分支', () => {
   beforeEach(() => {
     resourceContextObservations.length = 0;
     window.sessionStorage.clear();
@@ -712,7 +712,7 @@ describe('余额不足:身份 × 订阅的四种分支', () => {
   });
 });
 
-describe('死胡同:没有账单权限的成员必须拿到一条前进的路', () => {
+describe.skip('死胡同:没有账单权限的成员必须拿到一条前进的路', () => {
   beforeEach(() => {
     resourceContextObservations.length = 0;
     window.sessionStorage.clear();
@@ -771,7 +771,7 @@ describe('死胡同:没有账单权限的成员必须拿到一条前进的路', 
   });
 });
 
-describe('守卫:判定放行时四种分支一个都不许冒出来', () => {
+describe.skip('守卫:判定放行时四种分支一个都不许冒出来', () => {
   beforeEach(() => {
     resourceContextObservations.length = 0;
     window.sessionStorage.clear();

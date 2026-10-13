@@ -3060,7 +3060,12 @@ export function HomeView({
         err instanceof ProjectCreateError
         && err.code === 'AMR_AUTH_REQUIRED'
       ) {
-        setError(t('entry.authExpiredBody'));
+        // Local-First fork: the AMR_AUTH_REQUIRED error path used to render
+        // `entry.authExpiredBody` (a "your session expired" copy that pointed
+        // at the cloud sign-in flow). The Local-First daemon has no remote
+        // identity to redirect to; the message stands as a generic session
+        // expiry notice. The new key is the one added in this PR's commit 5.
+        setError(t('entry.sessionExpired'));
       } else {
         // A rolling model window is the one upstream failure whose own wording
         // must not reach the user: the gateway writes it in English for API

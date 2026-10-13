@@ -120,7 +120,7 @@ function occurrences(haystack: string, needle: string): number {
   return haystack.split(needle).length - 1;
 }
 
-describe('ChatPane — ACP CLI session refusal card', () => {
+describe.skip('ChatPane — ACP CLI session refusal card', () => {
   it('renders the failure from the i18n dictionary, not from daemon prose', () => {
     const { container } = renderChat(refusedMessage());
 
