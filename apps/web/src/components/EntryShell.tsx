@@ -1560,7 +1560,6 @@ export function EntryShell({
             onApiModelChange={onApiModelChange}
             onConfigPersist={onConfigPersist}
             onRefreshAgents={onRefreshAgents}
-            onAmrLoginStatusChange={onAmrLoginStatusChange}
             onFinish={finishOnboarding}
           />
         </main>
@@ -2050,7 +2049,7 @@ function OnboardingView({
 }) {
   const t = useT();
   const analytics = useAnalytics();
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(1);
   const [runtime, setRuntime] = useState<'amr' | 'local' | 'byok' | null>(null);
   const [runtimeSetupEntry, setRuntimeSetupEntry] = useState<'cloud' | 'chooser'>('chooser');
   const [modelSource, setModelSource] = useState<'amr' | 'local' | 'byok'>('amr');
@@ -3465,170 +3464,8 @@ function OnboardingView({
 
   const primaryActionLabel = t('settings.onboardingContinue');
 
-  // Cloud remains the primary identity path. Local CLI and BYOK are independent
-  // direct setup paths; authenticated users keep the full source chooser.
-  if (step === 0) {
-    const cloudBusy = amrLoginBusy;
-    const amrStatusResolving = !amrStatusResolved;
-    return (
-      <section
-        className="onboarding-view onboarding-view--cloud"
-        aria-label={t('settings.welcomeTitle')}
-      >
-        <div className="onboarding-cloud__pane">
-          <div className="onboarding-cloud__center">
-            <h1 className="onboarding-cloud__title">{t('settings.onboardingCloudTitle')}</h1>
-            <p className="onboarding-cloud__body">{t('settings.onboardingCloudBody')}</p>
-            <div className={onboardingWelcomeStyles.signInAction}>
-              {!amrSignedIn && !amrStatusResolving && !cloudBusy ? (
-                <span className={onboardingWelcomeStyles.creditCorner}>
-                  <span
-                    className={`${onboardingWelcomeStyles.credits} od-tooltip`}
-                    data-tooltip={t('settings.onboardingFreeCreditsHint')}
-                    aria-label={t('settings.onboardingFreeCreditsHint')}
-                    tabIndex={0}
-                  >
-                    <span className={onboardingWelcomeStyles.creditLabel}>
-                      {t('settings.onboardingFreeCredits')}
-                    </span>
-                  </span>
-                </span>
-              ) : null}
-              <button
-                type="button"
-                className="onboarding-cloud__primary"
-                onClick={() => {
-                  if (amrStatusResolving) return;
-                  if (amrSignedIn) {
-                    recordAmrEntry(analytics.track, 'onboarding_amr_card', new Date(), {
-                      metricsConsent: config.telemetry?.metrics === true,
-                    });
-                    recordAmrEntry(
-                      analytics.track,
-                      'onboarding_amr_sign_in_continue',
-                      new Date(),
-                      {
-                        metricsConsent: config.telemetry?.metrics === true,
-                        reuseExistingFrom: ['onboarding_amr_card'],
-                      },
-                    );
-                    continueAfterCloudSignIn();
-                    return;
-                  }
-                  void handleCloudSignIn();
-                }}
-                disabled={cloudBusy || amrLoginCancelPending || amrStatusResolving}
-                aria-busy={cloudBusy || amrStatusResolving ? true : undefined}
-              >
-                <Icon name="log-in" size={17} />
-                <span>
-                  {cloudBusy
-                    ? t('settings.amrSigningIn')
-                    : amrStatusResolving
-                      ? t('common.loading')
-                      : amrSignedIn
-                        ? t('settings.onboardingCloudContinue')
-                        : t('settings.onboardingCloudSignIn')}
-                </span>
-              </button>
-            </div>
-            {amrLoginError ? (
-              <span className="onboarding-cloud__error" role="alert">
-                {amrLoginError}
-              </span>
-            ) : null}
-            {/* Manual device-auth fallback, mirroring Settings' AmrLoginPill:
-                vela auto-opens the browser, but when that fails silently (e.g.
-                corp-managed hosts) the pending login otherwise looks like a
-                dead button — surface the activation link the status poll
-                already carries. */}
-            {cloudBusy && amrStatus?.activationUrl && !activationHintClosed ? (
-              <div className="amr-login-activation onboarding-cloud__activation" role="group">
-                <span className="amr-login-activation__hint">
-                  {amrStatus.browserOpenFailed
-                    ? t('settings.amrActivationBrowserFailed')
-                    : t('settings.amrActivationHint')}
-                </span>
-                <div className="amr-login-activation__actions">
-                  <a
-                    className="amr-login-activation__open"
-                    href={amrStatus.activationUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {t('settings.amrActivationOpen')}
-                  </a>
-                  <button
-                    type="button"
-                    className="onboarding-cloud__activation-dismiss"
-                    onClick={() => setActivationHintClosed(true)}
-                  >
-                    {t('common.cancel')}
-                  </button>
-                </div>
-              </div>
-            ) : null}
-            {cloudBusy ? (
-              <button
-                type="button"
-                className="onboarding-cloud__cancel"
-                onClick={handleCancelAmrLogin}
-                disabled={amrLoginCancelPending}
-              >
-                {t('settings.amrCancelSignIn')}
-              </button>
-            ) : (
-              <div className={onboardingWelcomeStyles.alternatives}>
-                <div className={onboardingWelcomeStyles.divider}>
-                  {t('settings.onboardingOwnAi')}
-                </div>
-                <div className={`onboarding-cloud__alts ${onboardingWelcomeStyles.options}`}>
-                  <Button
-                    variant="subtle"
-                    className="onboarding-cloud__alt-btn"
-                    onClick={() => {
-                      emitOnboardingClick('local_coding_agent', 'select_runtime', {
-                        runtime_type: 'local_cli',
-                      });
-                      setRuntime('local');
-                      setRuntimeSetupEntry('cloud');
-                      void scanCliAgents({ preferExisting: true });
-                      setStep(2);
-                    }}
-                  >
-                    <Icon name="robot" size={16} />
-                    {t('settings.onboardingLocalAi')}
-                  </Button>
-                  <Button
-                    variant="subtle"
-                    className="onboarding-cloud__alt-btn"
-                    onClick={() => {
-                      emitOnboardingClick('byok', 'select_runtime', { runtime_type: 'byok' });
-                      setRuntime('byok');
-                      setRuntimeSetupEntry('cloud');
-                      setStep(2);
-                    }}
-                  >
-                    <Icon name="key" size={16} />
-                    {t('settings.onboardingApiKey')}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-          <footer className="onboarding-cloud__footer">
-            <LanguageMenu placement="up" align="start" />
-            <span>
-              © {new Date().getFullYear()} OpenDesign · {t('settings.onboardingCloudRights')}
-            </span>
-          </footer>
-        </div>
-        <div className="onboarding-cloud__art" aria-hidden="true">
-          <img src="/onboarding/onboarding-cloud-art.webp" alt="" />
-        </div>
-      </section>
-    );
-  }
+  // Local-First fork: the cloud-first sign-in landing is gone. The chooser
+  // (step === 1) is now the first thing a fresh user sees.
 
   if (step === 1) {
     return (
@@ -3649,38 +3486,6 @@ function OnboardingView({
               role="radiogroup"
               aria-label={t('settings.onboardingExecutionTitle')}
             >
-              <Button
-                ref={(node) => {
-                  modelSourceOptionRefs.current.amr = node;
-                }}
-                variant="subtle"
-                role="radio"
-                aria-checked={modelSource === 'amr'}
-                tabIndex={modelSource === 'amr' ? 0 : -1}
-                className={`${onboardingSourceStyles.option} ${
-                  onboardingSourceStyles.hostedOption
-                } ${modelSource === 'amr' ? onboardingSourceStyles.optionActive : ''}`}
-                onClick={() => setModelSource('amr')}
-                onKeyDown={(event) => handleModelSourceKeyDown(event, 'amr')}
-              >
-                <span className={onboardingSourceStyles.optionIcon}>
-                  <Icon name="sparkles" size={17} />
-                </span>
-                <span className={onboardingSourceStyles.optionCopy}>
-                  <span className={onboardingSourceStyles.optionHeading}>
-                    <strong className={onboardingSourceStyles.optionTitle}>
-                      {t('settings.onboardingAmrModelSourceLabel')}
-                    </strong>
-                    <span className={onboardingSourceStyles.recommendedBadge}>
-                      {t('settings.onboardingRecommended')}
-                    </span>
-                  </span>
-                  <span className={onboardingSourceStyles.optionBody}>
-                    {t('settings.onboardingAmrCloudBenefitModels')}
-                  </span>
-                </span>
-                <span className={onboardingSourceStyles.radio} aria-hidden="true" />
-              </Button>
               <Button
                 ref={(node) => {
                   modelSourceOptionRefs.current.local = node;
