@@ -24,7 +24,7 @@ services:
       OD_ALLOW_PRIVATE_NETWORKS: ${OD_ALLOW_PRIVATE_NETWORKS:-1}
       OD_CODEX_SANDBOX: ${OD_CODEX_SANDBOX:-}
     ports:
-      - "127.0.0.1:${OPEN_DESIGN_PORT:-7456}:7456"
+      - "${OPEN_DESIGN_PORT:-7456}:7456"
     volumes:
       - open_design_data:/app/.od
     read_only: true
