@@ -92,7 +92,7 @@ export async function fetchImageGenerationWithResponseRetry(
     summary.retryFinalResult = retryResponse.ok ? 'success' : 'failed';
     settle();
     return retryResponse;
-  } catch (error) {
+  } catch (error: any) {
     settle();
     throw error;
   }

@@ -23,13 +23,13 @@ interface CodexFirstCallUsage {
   first_call_cache_hit_ratio: number;
 }
 
-function asRecord(value: unknown): Record<string, unknown> | null {
+function asRecord(value: any): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
 }
 
-function finiteNumber(value: unknown): number | undefined {
+function finiteNumber(value: any): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
@@ -39,7 +39,7 @@ function finiteNumber(value: unknown): number | undefined {
  * `initializing` status event (mirroring claude). Returns the first one found,
  * or null. Matches the `{ event: 'agent', data: {...} }` envelope the run uses.
  */
-export function codexSessionIdFromRunEvents(events: unknown): string | null {
+export function codexSessionIdFromRunEvents(events: any): string | null {
   if (!Array.isArray(events)) return null;
   for (const ev of events) {
     const record = asRecord(ev);
@@ -66,7 +66,7 @@ export function extractCodexLastTurnFirstCallUsage(
   for (const line of rolloutJsonl.split('\n')) {
     const trimmed = line.trim();
     if (!trimmed) continue;
-    let parsed: unknown;
+    let parsed: any;
     try {
       parsed = JSON.parse(trimmed);
     } catch {

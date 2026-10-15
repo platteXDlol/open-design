@@ -47,7 +47,7 @@ export function resolveQwenSettingsFile(env: RuntimeEnv): string | null {
   return join(home, DEFAULT_QWEN_SETTINGS_FILE);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
@@ -65,12 +65,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * Ids are sanitized and de-duplicated; anything unparseable is skipped rather
  * than failing the whole read.
  */
-export function parseQwenSettingsModelIds(raw: unknown): string[] {
+export function parseQwenSettingsModelIds(raw: any): string[] {
   if (!isRecord(raw)) return [];
 
   const seen = new Set<string>();
   const ids: string[] = [];
-  const push = (candidate: unknown): void => {
+  const push = (candidate: any): void => {
     if (typeof candidate !== 'string') return;
     const id = sanitizeCustomModel(candidate);
     if (!id || seen.has(id)) return;
@@ -140,7 +140,7 @@ export async function loadQwenSettingsModels(
     return null;
   }
 
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(text);
   } catch {

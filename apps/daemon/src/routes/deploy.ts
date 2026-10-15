@@ -1,11 +1,10 @@
 import type { Express } from 'express';
 import type { RouteDeps } from '../server-context.js';
-import type { AuthorizeProjectRequest } from '../collab/project-request-authority.js';
 import { clientRequestIdFor } from '../http/client-request-id.js';
 import { classifyDeployFailure } from '../deploy/failure-detail.js';
 
 export interface RegisterDeployRoutesDeps extends RouteDeps<'db' | 'http' | 'paths' | 'ids' | 'deploy' | 'projectStore'> {
-  authorizeProjectRequest: AuthorizeProjectRequest;
+  authorizeProjectRequest: any;
 }
 
 export function registerDeployRoutes(app: Express, ctx: RegisterDeployRoutesDeps) {
@@ -270,7 +269,7 @@ export function registerDeployRoutes(app: Express, ctx: RegisterDeployRoutesDeps
 }
 
 export interface RegisterDeploymentCheckRoutesDeps extends RouteDeps<'db' | 'http' | 'deploy' | 'projectStore'> {
-  authorizeProjectRequest: AuthorizeProjectRequest;
+  authorizeProjectRequest: any;
 }
 
 export function registerDeploymentCheckRoutes(app: Express, ctx: RegisterDeploymentCheckRoutesDeps) {

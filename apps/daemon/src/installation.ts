@@ -68,7 +68,7 @@ function installationFilePath(installationDir: string): string {
 }
 
 function parseInstallationFile(raw: string): InstallationFile {
-  const parsed: unknown = JSON.parse(raw);
+  const parsed: any = JSON.parse(raw);
   if (parsed == null || typeof parsed !== 'object' || Array.isArray(parsed)) {
     return {};
   }
@@ -88,7 +88,7 @@ function parseInstallationFile(raw: string): InstallationFile {
   return out;
 }
 
-function parsePendingAttribution(raw: unknown): PendingAttribution | null {
+function parsePendingAttribution(raw: any): PendingAttribution | null {
   if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const obj = raw as Record<string, unknown>;
   if (typeof obj.token !== 'string' || obj.token.length === 0) return null;
@@ -134,7 +134,7 @@ export function readInstallationFileSync(
 
 // Serialize writes to the same installationDir so concurrent persists
 // can't truncate each other. Mirrors the writeAppConfig lock strategy.
-const writeLocks = new Map<string, Promise<unknown>>();
+const writeLocks = new Map<string, Promise<any>>();
 
 /**
  * Patch shape for {@link writeInstallationFile}.

@@ -222,7 +222,7 @@ async function readDiffReviewDecision(cwd: string): Promise<'accept' | 'reject' 
   const p = path.join(cwd, 'review', 'decision.json');
   try {
     const raw = await fsp.readFile(p, 'utf8');
-    const obj = JSON.parse(raw) as { decision?: unknown };
+    const obj = JSON.parse(raw) as { decision?: any };
     if (obj.decision === 'accept' || obj.decision === 'reject' || obj.decision === 'partial') {
       return obj.decision;
     }
@@ -320,7 +320,7 @@ async function readBuildTestSignals(cwd: string): Promise<{ buildPassing: boolea
   const p = path.join(cwd, 'critique', 'build-test.json');
   try {
     const raw = await fsp.readFile(p, 'utf8');
-    const obj = JSON.parse(raw) as { signals?: { 'build.passing'?: unknown; 'tests.passing'?: unknown } };
+    const obj = JSON.parse(raw) as { signals?: { 'build.passing'?: any; 'tests.passing'?: any } };
     const buildPassing = obj.signals?.['build.passing'] === true;
     const testsPassing = obj.signals?.['tests.passing'] === true;
     return { buildPassing, testsPassing };

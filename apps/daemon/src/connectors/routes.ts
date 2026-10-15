@@ -47,7 +47,7 @@ export type ConnectorApiErrorSender = (
   status: number,
   code: ConnectorApiErrorCode,
   message: string,
-  init?: { details?: unknown; retryable?: boolean; requestId?: string; taskId?: string },
+  init?: { details?: any; retryable?: boolean; requestId?: string; taskId?: string },
 ) => Response;
 
 export interface RegisterConnectorRoutesOptions {
@@ -61,14 +61,14 @@ export interface RegisterConnectorRoutesOptions {
   };
 }
 
-function sendConnectorRouteError(res: Response, err: unknown, sendApiError: ConnectorApiErrorSender): Response {
+function sendConnectorRouteError(res: Response, err: any, sendApiError: ConnectorApiErrorSender): Response {
   if (err instanceof ConnectorServiceError) {
     return sendApiError(res, err.status, err.code, err.message, err.details === undefined ? {} : { details: err.details });
   }
   return sendApiError(res, 500, 'CONNECTOR_EXECUTION_FAILED', err instanceof Error ? err.message : String(err));
 }
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
+function isPlainObject(value: any): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
@@ -80,17 +80,17 @@ function isLoopbackHostname(hostname: string): boolean {
   return net.isIP(normalized) === 4 && (normalized === '127.0.0.1' || normalized.startsWith('127.'));
 }
 
-function parseConnectorToolUseCase(value: unknown): ConnectorToolUseCase | undefined {
+function parseConnectorToolUseCase(value: any): ConnectorToolUseCase | undefined {
   if (value === undefined) return undefined;
   if (value === 'personal_daily_digest') return value;
   return undefined;
 }
 
-function parseConnectorLogoTheme(value: unknown): 'light' | 'dark' {
+function parseConnectorLogoTheme(value: any): 'light' | 'dark' {
   return value === 'light' ? 'light' : 'dark';
 }
 
-function parseConnectorLogoSlug(value: unknown): string | undefined {
+function parseConnectorLogoSlug(value: any): string | undefined {
   if (typeof value !== 'string') return undefined;
   const normalized = value.toLowerCase().replace(/[^a-z0-9_]/g, '');
   const slug = COMPOSIO_LOGO_SLUG_ALIASES[normalized] ?? normalized;
@@ -119,7 +119,7 @@ function normalizeImageContentType(value: string | null): string | null {
   return contentType;
 }
 
-function isAbortLikeError(error: unknown): boolean {
+function isAbortLikeError(error: any): boolean {
   return error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError');
 }
 
@@ -236,7 +236,7 @@ async function fetchComposioLogo(slug: string, theme: 'light' | 'dark'): Promise
       };
       cacheComposioLogo(cacheKey, logo);
       return logo;
-    } catch (error) {
+    } catch (error: any) {
       if (isAbortLikeError(error)) return null;
       throw error;
     } finally {
@@ -558,7 +558,7 @@ export function registerConnectorRoutes(app: Express, options: RegisterConnector
   app.get('/api/connectors', async (_req: Request, res: Response) => {
     try {
       res.json({ connectors: await service.listConnectors() });
-    } catch (err) {
+    } catch (err: any) {
       sendConnectorRouteError(res, err, options.sendApiError);
     }
   });
@@ -566,7 +566,7 @@ export function registerConnectorRoutes(app: Express, options: RegisterConnector
   app.get('/api/connectors/status', async (_req: Request, res: Response) => {
     try {
       res.json({ statuses: service.listConnectorStatuses() });
-    } catch (err) {
+    } catch (err: any) {
       sendConnectorRouteError(res, err, options.sendApiError);
     }
   });
@@ -580,7 +580,7 @@ export function registerConnectorRoutes(app: Express, options: RegisterConnector
         ? ['1', 'true', 'yes'].includes(req.query.hydrateTools.toLowerCase())
         : false;
       res.json(await service.listConnectorDiscovery({ refresh, hydrateTools }));
-    } catch (err) {
+    } catch (err: any) {
       sendConnectorRouteError(res, err, options.sendApiError);
     }
   });
@@ -588,7 +588,7 @@ export function registerConnectorRoutes(app: Express, options: RegisterConnector
   app.get('/api/connectors/logos/:slug', async (req: Request, res: Response) => {
     try {
       await proxyComposioLogo(req, res);
-    } catch (err) {
+    } catch (err: any) {
       sendConnectorRouteError(res, err, options.sendApiError);
     }
   });
@@ -596,7 +596,7 @@ export function registerConnectorRoutes(app: Express, options: RegisterConnector
   app.get('/api/connectors/composio/config', (_req: Request, res: Response) => {
     try {
       res.json(readPublicComposioConfig());
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err instanceof Error ? err.message : err) });
     }
   });
@@ -611,7 +611,7 @@ export function registerConnectorRoutes(app: Express, options: RegisterConnector
         deleteConnectorCredentialsByProvider('composio');
       }
       res.json(cfg);
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: String(err instanceof Error ? err.message : err) });
     }
   });
@@ -631,7 +631,7 @@ export function registerConnectorRoutes(app: Express, options: RegisterConnector
         return;
       }
       res.json({ connector: await service.getConnector(connectorId) });
-    } catch (err) {
+    } catch (err: any) {
       sendConnectorRouteError(res, err, options.sendApiError);
     }
   });
@@ -647,7 +647,7 @@ export function registerConnectorRoutes(app: Express, options: RegisterConnector
         return;
       }
       res.json(await service.prepareAuthConfigs(connectorIds));
-    } catch (err) {
+    } catch (err: any) {
       sendConnectorRouteError(res, err, options.sendApiError);
     }
   });
@@ -675,7 +675,7 @@ export function registerConnectorRoutes(app: Express, options: RegisterConnector
           callbackUrl: `${connectorCallbackUrl(req)}/${encodeURIComponent(connectorId)}`,
         })),
       });
-    } catch (err) {
+    } catch (err: any) {
       sendConnectorRouteError(res, err, options.sendApiError);
     }
   });
@@ -696,7 +696,7 @@ export function registerConnectorRoutes(app: Express, options: RegisterConnector
       const status = typeof req.query.status === 'string' ? req.query.status : undefined;
       await service.completeComposioConnection({ connectorId, state, ...(providerConnectionId === undefined ? {} : { providerConnectionId }), ...(status === undefined ? {} : { status }) });
       res.type('html').send(renderConnectorConnectedHtml(connectorId));
-    } catch (err) {
+    } catch (err: any) {
       sendConnectorRouteError(res, err, options.sendApiError);
     }
   });
@@ -706,7 +706,7 @@ export function registerConnectorRoutes(app: Express, options: RegisterConnector
       const connectorId = req.params.connectorId;
       if (!connectorId) return options.sendApiError(res, 400, 'CONNECTOR_NOT_FOUND', 'connectorId is required');
       res.json({ connector: await service.cancelPendingAuthorization(connectorId) });
-    } catch (err) {
+    } catch (err: any) {
       sendConnectorRouteError(res, err, options.sendApiError);
     }
   });
@@ -716,7 +716,7 @@ export function registerConnectorRoutes(app: Express, options: RegisterConnector
       const connectorId = req.params.connectorId;
       if (!connectorId) return options.sendApiError(res, 400, 'CONNECTOR_NOT_FOUND', 'connectorId is required');
       res.json({ connector: await service.disconnect(connectorId) });
-    } catch (err) {
+    } catch (err: any) {
       sendConnectorRouteError(res, err, options.sendApiError);
     }
   });
@@ -747,7 +747,7 @@ export function registerConnectorRoutes(app: Express, options: RegisterConnector
         return;
       }
       res.json({ connectors: await listConnectorTools({ grant, projectsRoot: options.projectsRoot, service, ...(useCase === undefined ? {} : { useCase }) }) });
-    } catch (err) {
+    } catch (err: any) {
       sendConnectorRouteError(res, err, options.sendApiError);
     }
   });
@@ -811,7 +811,7 @@ export function registerConnectorRoutes(app: Express, options: RegisterConnector
         { grant, projectsRoot: options.projectsRoot, service },
       );
       res.json(result);
-    } catch (err) {
+    } catch (err: any) {
       sendConnectorRouteError(res, err, options.sendApiError);
     }
   });

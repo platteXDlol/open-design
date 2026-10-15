@@ -10,9 +10,9 @@ export function parseDshProfileProbeOutput(stdout: string): DshProfileProbeFrame
   if (lines.length !== 1) {
     throw new Error('DeepSeek Harness profile probe must emit exactly one frame.');
   }
-  let value: unknown;
+  let value: any;
   try {
-    value = JSON.parse(lines[0] ?? '') as unknown;
+    value = JSON.parse(lines[0] ?? '') as any;
   } catch {
     throw new Error('DeepSeek Harness profile probe emitted malformed JSON.');
   }
@@ -26,9 +26,9 @@ export function parseDshProfileProbeOutput(stdout: string): DshProfileProbeFrame
 export function parseDshProfileModelsOutput(stdout: string): DshProfileModelCatalogEntry[] | null {
   const lines = stdout.split(/\r?\n/u).filter((line) => line.trim().length > 0);
   if (lines.length !== 1) return null;
-  let value: unknown;
+  let value: any;
   try {
-    value = JSON.parse(lines[0] ?? '') as unknown;
+    value = JSON.parse(lines[0] ?? '') as any;
   } catch {
     return null;
   }

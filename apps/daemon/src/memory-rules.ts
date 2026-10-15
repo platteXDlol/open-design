@@ -32,7 +32,7 @@ interface DistillOptions {
   projectRoot?: string | null;
   chatAgentId?: string | null;
   chatModel?: string | null;
-  chatProvider?: unknown;
+  chatProvider?: any;
   // Test seam: inject a fake suggest function so the LLM pass can be exercised
   // without a network call.
   suggest?: typeof suggestWithLLM;
@@ -234,7 +234,7 @@ export async function distillRulesFromAnnotations(
         })
         .filter((p): p is RuleProposalDraft => p !== null);
     }
-  } catch (err) {
+  } catch (err: any) {
     // Distillation is best-effort; a provider failure still returns the
     // heuristic proposals so the feature degrades gracefully.
     console.warn('[memory-rules] LLM distillation failed', (err as Error)?.message ?? err);

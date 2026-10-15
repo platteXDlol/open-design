@@ -20,23 +20,23 @@ export type RunMatureUnfinishedState =
   RunTerminalLifecycleStatus['unfinishedState'];
 export type RunTerminalLifecycleV1 = RunTerminalLifecycleStatus;
 
-function normalizedAttemptCount(value: unknown): number {
+function normalizedAttemptCount(value: any): number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
     ? Math.floor(value)
     : 0;
 }
 
 export function runAttemptForTerminalLifecycle(input: {
-  cumulativeRetryAttemptCount?: unknown;
-  retryAttemptCount?: unknown;
-  manualResumeAttemptCount?: unknown;
+  cumulativeRetryAttemptCount?: any;
+  retryAttemptCount?: any;
+  manualResumeAttemptCount?: any;
 }): number {
   return normalizedAttemptCount(input.cumulativeRetryAttemptCount)
     + normalizedAttemptCount(input.retryAttemptCount)
     + normalizedAttemptCount(input.manualResumeAttemptCount);
 }
 
-export function boundedRuntimeGenerationId(value: unknown): string | null {
+export function boundedRuntimeGenerationId(value: any): string | null {
   if (typeof value !== 'string') return null;
   const normalized = value.trim();
   return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu
@@ -65,10 +65,10 @@ export function deriveRunTerminationOrigin(input: {
 }
 
 export function terminalPersistenceErrorType(
-  error: unknown,
+  error: any,
 ): RunTerminalPersistenceErrorType {
   const code = error && typeof error === 'object'
-    ? (error as { code?: unknown }).code
+    ? (error as { code?: any }).code
     : undefined;
   if (code === 'EACCES' || code === 'EPERM') return 'permission_denied';
   if (code === 'EROFS') return 'read_only_storage';
@@ -79,10 +79,10 @@ export function terminalPersistenceErrorType(
 }
 
 export function terminalLifecycleSnapshot(input: {
-  cumulativeRetryAttemptCount?: unknown;
-  retryAttemptCount?: unknown;
-  manualResumeAttemptCount?: unknown;
-  runtimeGenerationId?: unknown;
+  cumulativeRetryAttemptCount?: any;
+  retryAttemptCount?: any;
+  manualResumeAttemptCount?: any;
+  runtimeGenerationId?: any;
   cancelOrigin?: TrackingRunCancelOrigin | null;
   terminalTrigger?: TrackingRunTerminalTrigger | null;
   terminalIntegrity?: TrackingRunTerminalIntegrity | null;

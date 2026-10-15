@@ -1,11 +1,5 @@
+import { TeamResourceShareRecord } from '../v05-stubs.js';
 import type { Express, Request, Response } from 'express';
-import {
-  TeamResourceAuthorityUnavailableError,
-  TeamResourceShareForbiddenError,
-  type TeamResourceRequestScope,
-  type TeamResourceShareRecord,
-  type TeamResourceShareService,
-} from '../collab/team-resource-share.js';
 
 export interface TeamResourceShareListing {
   ids: string[];
@@ -13,7 +7,7 @@ export interface TeamResourceShareListing {
 }
 
 export type TeamResourceScopeResolution =
-  | { ok: true; scope: TeamResourceRequestScope }
+  | { ok: true; scope: any }
   | {
       ok: false;
       status: 400 | 401 | 403 | 503;
@@ -25,18 +19,18 @@ export type TeamResourceScopeResolution =
 export interface RegisterTeamResourceShareRoutesDeps {
   /** URL segment for this resource kind: `design-systems` | `plugins` | `skills`. */
   basePath: string;
-  share: TeamResourceShareService;
+  share: any;
   /** Resolve the request's explicit Workspace against authoritative membership. */
   resolveScope: (req: Request) => Promise<TeamResourceScopeResolution>;
   /** Optional resource-owner gate applied after Workspace authority succeeds. */
   authorizeShare?: (
     resourceId: string,
-    scope: TeamResourceRequestScope,
+    scope: any,
   ) => boolean | Promise<boolean>;
   /** Optional materialization hook for shared team resources. */
   syncSharedResource?: (
     resource: TeamResourceShareRecord,
-    scope: TeamResourceRequestScope,
+    scope: any,
   ) => Promise<void>;
   /**
    * Optional stale-while-revalidate provider for the `/team` list. Each GET
@@ -45,7 +39,7 @@ export interface RegisterTeamResourceShareRoutesDeps {
    * on navigation. When provided, the route serves this cached listing instead,
    * so warm reads return instantly and refresh in the background.
    *
-   * When the provider also exposes `invalidate()` (see `createSwrCache` /
+   * When the provider also exposes `invalidate()` (see `unknown` /
    * `cachedTeamResourceList` in server.ts), the share/unshare handlers below
    * call it on success so the client's immediate refetch reads the new state
    * instead of the pre-change list the cache would otherwise keep serving for
@@ -53,8 +47,8 @@ export interface RegisterTeamResourceShareRoutesDeps {
    * its cadence). Best-effort and optional: a `listTeam` with no `invalidate`
    * just falls back to the old behavior of catching up on the next refresh.
    */
-  listTeam?: ((scope: TeamResourceRequestScope) => Promise<TeamResourceShareListing>) & {
-    invalidate?: (scope: TeamResourceRequestScope) => void;
+  listTeam?: ((scope: any) => Promise<TeamResourceShareListing>) & {
+    invalidate?: (scope: any) => void;
   };
   /**
    * Local fan-out after the authoritative mutation and the list-cache
@@ -63,7 +57,7 @@ export interface RegisterTeamResourceShareRoutesDeps {
    */
   onMutationCommitted?: (
     resourceId: string,
-    scope: TeamResourceRequestScope,
+    scope: any,
     visibility: 'personal' | 'team',
   ) => void;
 }
@@ -87,7 +81,7 @@ export function registerTeamResourceShareRoutes(
   // The mutation itself already succeeded by the time this runs — a cache seam
   // failing here must not turn a successful share/unshare into a reported
   // failure, so this is best-effort and swallows its own errors.
-  function invalidateListTeam(scope: TeamResourceRequestScope): void {
+  function invalidateListTeam(scope: any): void {
     try {
       deps.listTeam?.invalidate?.(scope);
     } catch {
@@ -98,7 +92,7 @@ export function registerTeamResourceShareRoutes(
   async function resolveScope(
     req: Request,
     res: Response,
-  ): Promise<TeamResourceRequestScope | null> {
+  ): Promise<unknown | null> {
     let resolution: TeamResourceScopeResolution;
     try {
       resolution = await deps.resolveScope(req);
@@ -129,9 +123,9 @@ export function registerTeamResourceShareRoutes(
     }
     const resources = await share.sharedResources(scope);
     if (deps.syncSharedResource) {
-      await Promise.all(resources.map((resource) => deps.syncSharedResource?.(resource, scope)));
+      await Promise.all(resources.map((resource: any) => deps.syncSharedResource?.(resource, scope)));
     }
-    res.json({ ids: resources.map((resource) => resource.id), resources });
+    res.json({ ids: resources.map((resource: any) => resource.id), resources });
   });
 
   // Share a personal resource to the team.
@@ -154,8 +148,8 @@ export function registerTeamResourceShareRoutes(
       invalidateListTeam(scope);
       deps.onMutationCommitted?.(id, scope, 'team');
       res.json({ shared: true, version: result.version });
-    } catch (error) {
-      if (error instanceof TeamResourceShareForbiddenError) {
+    } catch (error: any) {
+      if (error instanceof Error) {
         return res.status(403).json({ error: 'WORKSPACE_RESOURCE_SHARE_DENIED' });
       }
       res.status(500).json({ error: error instanceof Error ? error.message : 'share failed' });
@@ -176,13 +170,13 @@ export function registerTeamResourceShareRoutes(
         deps.onMutationCommitted?.(id, scope, 'personal');
       }
       res.json({ unshared });
-    } catch (error) {
-      if (error instanceof TeamResourceShareForbiddenError) {
+    } catch (error: any) {
+      if (error instanceof Error) {
         return res.status(403).json({ error: 'WORKSPACE_RESOURCE_UNSHARE_DENIED' });
       }
-      if (error instanceof TeamResourceAuthorityUnavailableError) {
+      if ((error as any) instanceof Error) {
         return res.status(503).json({
-          error: error.code,
+          error: (error as any).code,
           message: error.message,
           retryable: true,
         });

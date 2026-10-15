@@ -16,16 +16,16 @@ export interface TavilySearchInput {
 }
 
 interface TavilyRawResult {
-  title?: unknown;
-  url?: unknown;
-  content?: unknown;
-  score?: unknown;
-  published_date?: unknown;
+  title?: any;
+  url?: any;
+  content?: any;
+  score?: any;
+  published_date?: any;
 }
 
 interface TavilyRawResponse {
-  answer?: unknown;
-  results?: unknown;
+  answer?: any;
+  results?: any;
 }
 
 export interface TavilySearchOutput {
@@ -79,7 +79,7 @@ export async function tavilySearch(
       body: JSON.stringify(body),
       signal: ctrl.signal,
     });
-  } catch (err) {
+  } catch (err: any) {
     throw new TavilyError(
       `Tavily request failed: ${(err as Error).message || String(err)}`,
     );

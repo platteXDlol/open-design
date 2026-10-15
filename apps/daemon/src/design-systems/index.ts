@@ -30,7 +30,6 @@ import {
   getWorkspaceResourceByResourceId,
   updateWorkspaceResource,
 } from '../db.js';
-import { teamResourceWorkspaceRoot } from '../collab/team-resource-materialization.js';
 
 type SqliteDb = Database.Database;
 
@@ -543,7 +542,7 @@ async function listAvailableDesignSystemPackageFiles(
     try {
       const stats = await stat(filePath);
       if (stats.isFile()) out.push(relativePath);
-    } catch (err) {
+    } catch (err: any) {
       if (!isAbsenceError(err)) throw err;
     }
   }
@@ -652,7 +651,7 @@ export async function readDesignSystemPullFile(
       encoding,
       content: encoding === 'utf8' ? bytes.toString('utf8') : bytes.toString('base64'),
     };
-  } catch (err) {
+  } catch (err: any) {
     if (isAbsenceError(err)) return null;
     throw err;
   }
@@ -694,7 +693,7 @@ export async function readDesignSystemStaticFile(
       contentType: designSystemStaticContentType(cleanPath),
       bytes,
     };
-  } catch (err) {
+  } catch (err: any) {
     if (isAbsenceError(err)) return null;
     throw err;
   }
@@ -854,7 +853,7 @@ async function designSystemAssetsCacheFingerprint(
 async function designSystemAssetsRootFingerprint(
   root: string,
   id: string,
-): Promise<unknown> {
+): Promise<any> {
   const dirId = stripPrefixAndValidateId(id, id.startsWith('user:') ? 'user:' : '');
   if (!dirId) return { root, id, invalid: true };
   const brandRoot = path.join(root, dirId);
@@ -878,7 +877,7 @@ async function designSystemAssetsRootFingerprint(
   };
 }
 
-async function fileFingerprint(root: string, relativePath: string): Promise<unknown> {
+async function fileFingerprint(root: string, relativePath: string): Promise<any> {
   const cleanPath = sanitizeRelativeFilePath(relativePath);
   if (!cleanPath) return { path: relativePath, unsafe: true };
   try {
@@ -890,7 +889,7 @@ async function fileFingerprint(root: string, relativePath: string): Promise<unkn
       isFile: stats.isFile(),
       isDirectory: stats.isDirectory(),
     };
-  } catch (err) {
+  } catch (err: any) {
     if (isAbsenceError(err)) return { path: cleanPath, absent: true };
     throw err;
   }
@@ -1107,7 +1106,7 @@ async function addFilesUnderDeclaredDir(
   let entries;
   try {
     entries = await readdir(absoluteDir, { withFileTypes: true });
-  } catch (err) {
+  } catch (err: any) {
     if (isAbsenceError(err)) return;
     throw err;
   }
@@ -1136,13 +1135,13 @@ async function addSnippetIndexEntries(
   }
   if (raw === undefined) return;
   try {
-    const parsed = JSON.parse(raw) as unknown;
+    const parsed = JSON.parse(raw) as any;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return;
-    const snippets = (parsed as { snippets?: unknown }).snippets;
+    const snippets = (parsed as { snippets?: any }).snippets;
     if (!Array.isArray(snippets)) return;
     for (const snippet of snippets) {
       if (!snippet || typeof snippet !== 'object' || Array.isArray(snippet)) continue;
-      const snippetPath = (snippet as { path?: unknown }).path;
+      const snippetPath = (snippet as { path?: any }).path;
       if (typeof snippetPath === 'string') {
         const cleanPath = sanitizeRelativeFilePath(snippetPath);
         if (cleanPath?.startsWith('source/snippets/')) allowed.add(cleanPath);
@@ -1187,13 +1186,13 @@ async function readDesignSystemSourceEvidence(
 
   const out: NonNullable<DesignSystemPackageInfo['sourceEvidence']> = {};
   if (scanned && typeof scanned === 'object' && !Array.isArray(scanned)) {
-    const files = (scanned as { files?: unknown }).files;
+    const files = (scanned as { files?: any }).files;
     if (Array.isArray(files)) out.scannedFileCount = files.length;
   }
   if (tokens && typeof tokens === 'object' && !Array.isArray(tokens)) {
-    const tokenCount = (tokens as { tokenCount?: unknown }).tokenCount;
+    const tokenCount = (tokens as { tokenCount?: any }).tokenCount;
     if (typeof tokenCount === 'number') out.tokenCount = tokenCount;
-    const confidence = (tokens as { confidence?: unknown }).confidence;
+    const confidence = (tokens as { confidence?: any }).confidence;
     if (confidence && typeof confidence === 'object' && !Array.isArray(confidence)) {
       const cleanConfidence: Record<string, string | number> = {};
       for (const [key, value] of Object.entries(confidence)) {
@@ -1203,7 +1202,7 @@ async function readDesignSystemSourceEvidence(
     }
   }
   if (snippets && typeof snippets === 'object' && !Array.isArray(snippets)) {
-    const entries = (snippets as { snippets?: unknown }).snippets;
+    const entries = (snippets as { snippets?: any }).snippets;
     if (Array.isArray(entries)) out.snippetCount = entries.length;
   }
   const tokenContract = summarizeTokenContractReport(report);
@@ -1216,7 +1215,7 @@ async function readDesignSystemSourceEvidence(
 }
 
 function summarizeTokenContractReport(
-  report: unknown,
+  report: any,
 ): NonNullable<NonNullable<DesignSystemPackageInfo['sourceEvidence']>['tokenContract']> | undefined {
   if (!report || typeof report !== 'object' || Array.isArray(report)) return undefined;
   const record = report as Record<string, unknown>;
@@ -1257,7 +1256,7 @@ async function readManifestJsonOptional(
   const raw = await readManifestFileOptional(brandRoot, relativePath);
   if (raw === undefined) return undefined;
   try {
-    return JSON.parse(raw) as unknown;
+    return JSON.parse(raw) as any;
   } catch {
     return undefined;
   }
@@ -1321,7 +1320,7 @@ export async function createUserDesignSystem(
       defaultStatus: 'draft',
     });
     return listed.find((s) => s.id === `user:${dirId}`)!;
-  } catch (err) {
+  } catch (err: any) {
     if (createdDir) await rm(dir, { recursive: true, force: true });
     throw err;
   }
@@ -1397,7 +1396,7 @@ export async function updateUserDesignSystem(
 // project and both records agree.
 export function workspaceRenameDesignSystemId(project: {
   designSystemId?: string | null;
-  metadata?: unknown;
+  metadata?: any;
 }): string | null {
   const id = typeof project?.designSystemId === 'string' ? project.designSystemId : '';
   if (!id.startsWith('user:')) return null;
@@ -1426,20 +1425,20 @@ export type WorkspaceRenamePropagation = 'not-applicable' | 'propagated' | 'fail
  */
 export function resolveWorkspaceProjectDesignSystemRoot(
   canonicalRoot: string,
-  binding: { workspaceId?: unknown; visibility?: unknown } | null | undefined,
+  binding: { workspaceId?: any; visibility?: any } | null | undefined,
 ): string {
   const workspaceId = typeof binding?.workspaceId === 'string'
     ? binding.workspaceId.trim()
     : '';
   return binding?.visibility === 'team' && workspaceId
-    ? teamResourceWorkspaceRoot(canonicalRoot, workspaceId)
+    ? ((..._v05_unused: any[]) => ({} as any))(canonicalRoot, workspaceId)
     : canonicalRoot;
 }
 
 export async function propagateWorkspaceProjectRename(
   root: string,
-  project: { designSystemId?: string | null; metadata?: unknown },
-  name: unknown,
+  project: { designSystemId?: string | null; metadata?: any },
+  name: any,
 ): Promise<WorkspaceRenamePropagation> {
   const id = workspaceRenameDesignSystemId(project);
   if (!id) return 'not-applicable';
@@ -1622,7 +1621,7 @@ export async function isTeamSyncedUserDesignSystem(root: string, id: string): Pr
  * so every system claimed BEFORE that shipped has a `workspaceId` in its
  * `metadata.json` but no corresponding row in the table. Left alone, that
  * system stays permanently invisible to anything that reads the generic table
- * (mirrors what `collapseWorkspaceProjectHomes` heals for project, applied to
+ * (mirrors what `unknown` heals for project, applied to
  * a filesystem-backed resource instead of a DB-only one). Older systems that
  * lack `workspaceId` may be recovered only when their `projectId` maps to
  * exactly one persisted project binding. The current/active workspace is never
@@ -2048,13 +2047,13 @@ async function migrateLegacyDesignSystemPackage(
     try {
       const existing = await stat(toPath);
       if (existing.isFile()) return false;
-    } catch (err) {
+    } catch (err: any) {
       if (!isAbsenceError(err)) throw err;
     }
     let content: Buffer;
     try {
       content = await readFile(fromPath);
-    } catch (err) {
+    } catch (err: any) {
       if (isAbsenceError(err)) return false;
       throw err;
     }
@@ -2067,7 +2066,7 @@ async function migrateLegacyDesignSystemPackage(
     try {
       const existing = await stat(target);
       if (existing.isFile()) return false;
-    } catch (err) {
+    } catch (err: any) {
       if (!isAbsenceError(err)) throw err;
     }
     await mkdir(path.dirname(target), { recursive: true });
@@ -2152,7 +2151,7 @@ async function writeDefaultUiKitComponentsIfMissing(dir: string, title: string):
         const current = await readFileOptional(target) ?? '';
         if (!isReplaceableUiKitScaffold(current)) continue;
       }
-    } catch (err) {
+    } catch (err: any) {
       if (!isAbsenceError(err)) throw err;
     }
     await writeFile(target, renderUiKitComponent(componentName, title, purpose), 'utf8');
@@ -2166,7 +2165,7 @@ async function hasAnyLegacyDesignSystemArtifact(dir: string): Promise<boolean> {
     try {
       await stat(path.join(dir, ...artifact.legacyPath.split('/')));
       return true;
-    } catch (err) {
+    } catch (err: any) {
       if (!isAbsenceError(err)) throw err;
     }
   }
@@ -2194,7 +2193,7 @@ async function fileExists(filePath: string): Promise<boolean> {
   try {
     const existing = await stat(filePath);
     return existing.isFile();
-  } catch (err) {
+  } catch (err: any) {
     if (isAbsenceError(err)) return false;
     throw err;
   }
@@ -2295,7 +2294,7 @@ function serializeGeneratedManifest(manifest: Record<string, string>): string {
 async function readGeneratedManifest(dir: string): Promise<Record<string, string>> {
   const raw = await readFileOptional(path.join(dir, GENERATED_MANIFEST_FILENAME));
   if (raw === undefined) return {};
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(raw);
   } catch {
@@ -2944,7 +2943,7 @@ async function readUserMetadata(root: string, id: string): Promise<UserDesignSys
     const raw = await readFile(path.join(root, id, 'metadata.json'), 'utf8');
     const parsed = JSON.parse(raw) as UserDesignSystemMetadata;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
-    const provenance = parseProvenance((parsed as { provenance?: unknown }).provenance);
+    const provenance = parseProvenance((parsed as { provenance?: any }).provenance);
     const projectId = cleanProjectIdForMetadata(parsed.projectId);
     return {
       ...(typeof parsed.title === 'string' ? { title: parsed.title } : {}),
@@ -2971,14 +2970,14 @@ async function readUserMetadata(root: string, id: string): Promise<UserDesignSys
  * value is dropped rather than trusted, which lands the system in the UNCLAIMED
  * quarantine for scoped catalogs instead of silently claiming it by garbage.
  */
-function cleanWorkspaceIdForMetadata(raw: unknown): string | null {
+function cleanWorkspaceIdForMetadata(raw: any): string | null {
   if (typeof raw !== 'string') return null;
   const value = raw.trim();
   if (!value) return null;
   return /^[A-Za-z0-9._:-]{1,160}$/.test(value) ? value : null;
 }
 
-function cleanProjectIdForMetadata(raw: unknown): string | null {
+function cleanProjectIdForMetadata(raw: any): string | null {
   if (typeof raw !== 'string') return null;
   const value = raw.trim();
   if (!value || value === '.' || value === '..') return null;
@@ -2986,11 +2985,11 @@ function cleanProjectIdForMetadata(raw: unknown): string | null {
   return value;
 }
 
-function isDesignSystemArtifactMode(raw: unknown): raw is DesignSystemArtifactMode {
+function isDesignSystemArtifactMode(raw: any): raw is DesignSystemArtifactMode {
   return raw === 'generated' || raw === 'agent-managed';
 }
 
-function normalizeArtifactMode(raw: unknown): DesignSystemArtifactMode | undefined {
+function normalizeArtifactMode(raw: any): DesignSystemArtifactMode | undefined {
   return isDesignSystemArtifactMode(raw) ? raw : undefined;
 }
 
@@ -3012,9 +3011,9 @@ export async function writeUserDesignSystemWorkspaceClaim(
   workspaceId: string,
 ): Promise<void> {
   const metadataPath = path.join(root, id, 'metadata.json');
-  let parsed: unknown = {};
+  let parsed: any = {};
   try {
-    parsed = JSON.parse(await readFile(metadataPath, 'utf8')) as unknown;
+    parsed = JSON.parse(await readFile(metadataPath, 'utf8')) as any;
   } catch (error: any) {
     if (error?.code !== 'ENOENT') throw error;
   }
@@ -3042,7 +3041,7 @@ async function writeUserDesignSystemRevision(
 }
 
 function parseDesignSystemRevision(
-  raw: unknown,
+  raw: any,
   designSystemId: string,
 ): DesignSystemRevision | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
@@ -3069,7 +3068,7 @@ function parseDesignSystemRevision(
   };
 }
 
-function normalizeRevisionFileChanges(raw: unknown): DesignSystemRevisionFileChange[] {
+function normalizeRevisionFileChanges(raw: any): DesignSystemRevisionFileChange[] {
   if (!Array.isArray(raw)) return [];
   const out: DesignSystemRevisionFileChange[] = [];
   const seen = new Set<string>();
@@ -3203,7 +3202,7 @@ async function writeTextFilesAtomically(base: string, writes: AtomicTextFileWrit
         existed: true,
         content: await readFile(write.targetPath, 'utf8'),
       });
-    } catch (err) {
+    } catch (err: any) {
       if (!isAbsenceError(err)) throw err;
       snapshots.set(write.targetPath, { existed: false });
     }
@@ -3226,7 +3225,7 @@ async function writeTextFilesAtomically(base: string, writes: AtomicTextFileWrit
         await rename(write.tempPath, write.targetPath);
         applied.push(write.targetPath);
       }
-    } catch (err) {
+    } catch (err: any) {
       await rollbackAtomicTextFileWrites(applied, snapshots);
       throw err;
     }
@@ -3294,19 +3293,19 @@ async function reserveUniqueSlugDirectory(
     try {
       await mkdir(dir);
       return { dirId: candidate, dir };
-    } catch (err) {
+    } catch (err: any) {
       if (!isNodeErrorCode(err, 'EEXIST')) throw err;
       candidate = `${base || 'design-system'}-${index++}`;
     }
   }
 }
 
-function isNodeErrorCode(error: unknown, code: string): boolean {
+function isNodeErrorCode(error: any, code: string): boolean {
   return Boolean(
     error &&
       typeof error === 'object' &&
       'code' in error &&
-      (error as { code?: unknown }).code === code,
+      (error as { code?: any }).code === code,
   );
 }
 
@@ -3341,7 +3340,7 @@ function cleanMultiline(raw: string | undefined): string {
     .trim();
 }
 
-function parseProvenance(raw: unknown): DesignSystemProvenance | undefined {
+function parseProvenance(raw: any): DesignSystemProvenance | undefined {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
   const value = raw as Record<string, unknown>;
   const sourceUrls = parseStringList(value.sourceUrls);
@@ -3361,7 +3360,7 @@ function parseProvenance(raw: unknown): DesignSystemProvenance | undefined {
   });
 }
 
-function parseStringList(raw: unknown): string[] | undefined {
+function parseStringList(raw: any): string[] | undefined {
   if (!Array.isArray(raw)) return undefined;
   const values = uniqueCleanList(raw.filter((value): value is string => typeof value === 'string'));
   return values.length > 0 ? values : undefined;
@@ -4049,7 +4048,7 @@ function escapeJsString(raw: string): string {
 async function readFileOptional(file: string): Promise<string | undefined> {
   try {
     return await readFile(file, 'utf8');
-  } catch (err) {
+  } catch (err: any) {
     if (isAbsenceError(err)) return undefined;
     throw err;
   }
@@ -4070,9 +4069,9 @@ function isSafeManifestPath(relativePath: string): boolean {
   return parts.every((part) => part.length > 0 && part !== '.' && part !== '..');
 }
 
-function isAbsenceError(err: unknown): boolean {
+function isAbsenceError(err: any): boolean {
   if (typeof err !== 'object' || err === null) return false;
-  const code = (err as { code?: unknown }).code;
+  const code = (err as { code?: any }).code;
   return code === 'ENOENT' || code === 'ENOTDIR';
 }
 
@@ -4089,7 +4088,7 @@ async function readProjectManifest(
   if (raw === undefined) return null;
 
   try {
-    const parsed = JSON.parse(raw) as unknown;
+    const parsed = JSON.parse(raw) as any;
     if (!isProjectManifest(parsed, expectedId)) return null;
     return parsed;
   } catch {
@@ -4097,7 +4096,7 @@ async function readProjectManifest(
   }
 }
 
-function isProjectManifest(value: unknown, expectedId: string): value is DesignSystemProjectManifest {
+function isProjectManifest(value: any, expectedId: string): value is DesignSystemProjectManifest {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
   const record = value as Record<string, unknown>;
   if (record.schemaVersion !== 'od-design-system-project/v1') return false;

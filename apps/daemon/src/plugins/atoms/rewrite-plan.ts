@@ -99,7 +99,7 @@ export async function runRewritePlan(opts: RewritePlanOptions): Promise<RewriteP
   let index: CodeImportIndex;
   try {
     index = JSON.parse(await fsp.readFile(indexPath, 'utf8')) as CodeImportIndex;
-  } catch (err) {
+  } catch (err: any) {
     throw new Error(`rewrite-plan: missing or unreadable code/index.json (run code-import first): ${(err as Error).message}`);
   }
 
@@ -244,7 +244,7 @@ function slug(file: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-function canonicaliseIndex(index: CodeImportIndex): unknown {
+function canonicaliseIndex(index: CodeImportIndex): any {
   // Strip the walk-time fields (walkedAt / walkBudgetMs) and
   // skipped[] so the digest only changes when the file roster
   // changes. Otherwise re-walks would invalidate every plan even
@@ -260,7 +260,7 @@ function canonicaliseIndex(index: CodeImportIndex): unknown {
   };
 }
 
-function digestObject(obj: unknown): string {
+function digestObject(obj: any): string {
   return createHash('sha1').update(JSON.stringify(obj)).digest('hex');
 }
 

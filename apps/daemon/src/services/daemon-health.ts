@@ -228,7 +228,7 @@ export function createDaemonHealth(options: DaemonHealthOptions) {
     mkdirSync(paths.directory, { recursive: true });
     try {
       renameSync(paths.current, paths.previous);
-    } catch (error) {
+    } catch (error: any) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
     }
   }, undefined);
@@ -662,7 +662,7 @@ export function observeRead<T>(
   let result: T;
   try {
     result = read();
-  } catch (error) {
+  } catch (error: any) {
     health.endRead(index, null);
     throw error;
   }
@@ -728,7 +728,7 @@ function processIsAlive(target: number): boolean {
   try {
     process.kill(target, 0);
     return true;
-  } catch (error) {
+  } catch (error: any) {
     return (error as NodeJS.ErrnoException).code === 'EPERM';
   }
 }
@@ -806,7 +806,7 @@ function round3(value: number): number {
   return Math.round(value * 1000) / 1000;
 }
 
-function finiteOr<T>(value: unknown, fallback: T): number | T {
+function finiteOr<T>(value: any, fallback: T): number | T {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 

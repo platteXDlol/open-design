@@ -94,7 +94,7 @@ export interface ToolLoopGuardOptions {
 export interface ToolLoopGuard {
   /** Record a tool call so a later errored result can be attributed to its
    *  action signature. Safe to call with unknown/missing input. */
-  observeToolUse(id: string, name: string, input: unknown): void;
+  observeToolUse(id: string, name: string, input: any): void;
   /** Record a tool result. Returns a verdict the first time WARN is crossed
    *  and again the first time HALT is crossed; otherwise `null`. */
   observeToolResult(toolUseId: string, isError: boolean, content?: string): ToolLoopVerdict | null;
@@ -284,7 +284,7 @@ export function isProgressSuccess(name: string, signature: string): boolean {
  * collide and pool each other's failures. Use `displayToolSignature` for the
  * bounded form surfaced in the `tool_loop` event.
  */
-export function computeToolSignature(name: string, input: unknown): string {
+export function computeToolSignature(name: string, input: any): string {
   const toolName = name || 'tool';
   let detail = '';
   if (input && typeof input === 'object') {

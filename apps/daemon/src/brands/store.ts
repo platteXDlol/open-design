@@ -93,7 +93,7 @@ function readJson<T>(file: string): T | null {
   }
 }
 
-function writeJson(file: string, value: unknown): void {
+function writeJson(file: string, value: any): void {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(value, null, 2), 'utf8');
 }

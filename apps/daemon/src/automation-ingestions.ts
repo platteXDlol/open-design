@@ -69,13 +69,13 @@ export async function listAutomationSourcePackets(
   dataDir: string,
   opts: { limit?: number } = {},
 ): Promise<AutomationContentPacket[]> {
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(await fsp.readFile(storePath(dataDir), 'utf8'));
   } catch {
     return [];
   }
-  const packets = Array.isArray((parsed as { packets?: unknown }).packets)
+  const packets = Array.isArray((parsed as { packets?: any }).packets)
     ? ((parsed as { packets: AutomationContentPacket[] }).packets)
     : [];
   const sorted = packets.slice().sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
@@ -91,23 +91,23 @@ export async function getAutomationSourcePacket(
   return packets.find((packet) => packet.id === id) ?? null;
 }
 
-function asString(value: unknown): string {
+function asString(value: any): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-function optionalString(value: unknown): string | undefined {
+function optionalString(value: any): string | undefined {
   const text = asString(value);
   return text ? text : undefined;
 }
 
-function sourceKindFrom(value: unknown): AutomationSourceKind {
+function sourceKindFrom(value: any): AutomationSourceKind {
   if (typeof value === 'string' && SOURCE_KINDS.has(value as AutomationSourceKind)) {
     return value as AutomationSourceKind;
   }
   throw new Error('sourceKind must be one of upload, url, repo, connector, artifact, chat');
 }
 
-function sensitivityFrom(value: unknown): AutomationSensitivity {
+function sensitivityFrom(value: any): AutomationSensitivity {
   if (typeof value === 'string' && SENSITIVITY_VALUES.has(value as AutomationSensitivity)) {
     return value as AutomationSensitivity;
   }
@@ -115,7 +115,7 @@ function sensitivityFrom(value: unknown): AutomationSensitivity {
 }
 
 function compressionModeFrom(
-  value: unknown,
+  value: any,
   fallback: AutomationTokenCompressionMode,
 ): AutomationTokenCompressionMode {
   if (typeof value === 'string' && COMPRESSION_MODES.has(value as AutomationTokenCompressionMode)) {
@@ -125,7 +125,7 @@ function compressionModeFrom(
 }
 
 function reviewPolicyFrom(
-  value: unknown,
+  value: any,
   fallback: AutomationReviewPolicy,
 ): AutomationReviewPolicy {
   if (typeof value === 'string' && REVIEW_POLICIES.has(value as AutomationReviewPolicy)) {
@@ -134,7 +134,7 @@ function reviewPolicyFrom(
   return fallback;
 }
 
-function memoryTypeFrom(value: unknown): MemoryType {
+function memoryTypeFrom(value: any): MemoryType {
   if (typeof value === 'string' && MEMORY_TYPES.has(value as MemoryType)) {
     return value as MemoryType;
   }
@@ -142,7 +142,7 @@ function memoryTypeFrom(value: unknown): MemoryType {
 }
 
 function outputSinksFrom(
-  value: unknown,
+  value: any,
   fallback: AutomationOutputSink[],
 ): AutomationOutputSink[] {
   const raw = Array.isArray(value) ? value : fallback;
@@ -357,7 +357,7 @@ async function persistPacket(
   await writePackets(dataDir, next);
 }
 
-function jsonObjectFrom(value: unknown): Record<string, JsonValue> {
+function jsonObjectFrom(value: any): Record<string, JsonValue> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   return value as Record<string, JsonValue>;
 }

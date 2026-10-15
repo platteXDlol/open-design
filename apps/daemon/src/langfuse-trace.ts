@@ -33,7 +33,6 @@ import {
 
 import type { TelemetryPrefs } from './app-config.js';
 import { normalizeOpenDesignTelemetryRelayUrl } from './integrations/telemetry-relay.js';
-import { readVelaControlApiContext } from './integrations/vela.js';
 import {
   deriveRunTelemetryExportExpectation,
   exportRunObservation,
@@ -167,7 +166,7 @@ export interface RunSummary {
     lineCount: number;
     truncated: boolean;
   };
-  diagnostics?: unknown;
+  diagnostics?: any;
   retryAttemptCount?: number;
   retryFinalResult?: string;
   retrySuppressedReason?: string;
@@ -319,7 +318,7 @@ export interface RuntimeInfo {
   appChannel?: string;
   /** Whether the daemon is running inside a packaged build. */
   packaged?: boolean;
-  /** Front-end carrier — `desktop` (Electron), `web` (browser), or unknown. */
+  /** Front-end carrier — `desktop` (Electron), `web` (browser), or ((..._v05_args: any[]) => ({} as any)). */
   clientType?: 'desktop' | 'web' | 'unknown';
   /** Exact CLI version observed by the daemon's bounded detection probe. */
   agentCliVersion?: string;
@@ -510,7 +509,7 @@ export function readRunTelemetrySinkConfig(
   configuredEnv: Record<string, string> = {},
 ): RunTelemetrySinkConfig | null {
   if (isVelaTelemetryEnabled(env)) {
-    const context = readVelaControlApiContext(env, configuredEnv);
+    const context = ((..._v05_unused: any[]) => ({} as any))(env, configuredEnv);
     const controlKey = context?.controlKey?.trim() ?? '';
     if (context && controlKey) {
       return {
@@ -643,7 +642,7 @@ function buildTagList(ctx: ReportContext): string[] {
   return tags;
 }
 
-function validTimestamp(value: unknown): number | undefined {
+function validTimestamp(value: any): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
     ? value
     : undefined;
@@ -730,7 +729,7 @@ function cappedManifestEntries<T>(entries: T[] | undefined): T[] | undefined {
   return entries ? entries.slice(0, ARTIFACTS_MAX_ITEMS) : undefined;
 }
 
-function manifestTruncated(entries: unknown[] | undefined): true | undefined {
+function manifestTruncated(entries: any[] | undefined): true | undefined {
   return entries && entries.length > ARTIFACTS_MAX_ITEMS ? true : undefined;
 }
 
@@ -836,7 +835,7 @@ function buildCostBreakdown(ctx: ReportContext): Record<string, unknown> {
   };
 }
 
-function cleanNumber(value: unknown): number | undefined {
+function cleanNumber(value: any): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
     ? value
     : undefined;
@@ -1719,7 +1718,7 @@ function safeRunProcessOutcome(input: {
   };
 }
 
-function safeQualityIdentifier(value: unknown): string | undefined {
+function safeQualityIdentifier(value: any): string | undefined {
   return typeof value === 'string' && /^[A-Za-z0-9][A-Za-z0-9._:/-]{0,127}$/.test(value)
     ? value
     : undefined;
@@ -1857,15 +1856,15 @@ function shouldCreateGenerationObservation(ctx: ReportContext): boolean {
 }
 
 function stableRunIngestionEventId(
-  event: unknown,
+  event: any,
   deliveryPurpose: 'final' | 'object-registration',
 ): string | null {
   if (!event || typeof event !== 'object' || Array.isArray(event)) return null;
-  const item = event as { type?: unknown; body?: unknown };
+  const item = event as { type?: any; body?: any };
   if (typeof item.type !== 'string' || !item.body || typeof item.body !== 'object') {
     return null;
   }
-  const bodyId = (item.body as { id?: unknown }).id;
+  const bodyId = (item.body as { id?: any }).id;
   if (typeof bodyId !== 'string' || !bodyId) return null;
   return `od-${createHash('sha256')
     .update(
@@ -1876,9 +1875,9 @@ function stableRunIngestionEventId(
 }
 
 function stabilizeRunIngestionBatch(
-  batch: unknown[],
+  batch: any[],
   deliveryPurpose: 'final' | 'object-registration',
-): unknown[] {
+): any[] {
   return batch.map((event) => {
     const id = stableRunIngestionEventId(event, deliveryPurpose);
     return id && event && typeof event === 'object' && !Array.isArray(event)
@@ -1890,7 +1889,7 @@ function stabilizeRunIngestionBatch(
 export function buildTracePayload(
   ctx: ReportContext,
   deliveryPurpose: 'final' | 'object-registration' = 'final',
-): unknown[] {
+): any[] {
   const wantsContent = ctx.prefs.metrics === true && ctx.prefs.content === true;
   const wantsArtifacts = wantsContent;
   const safeQuality = buildSafeRunQualityProjectionV1({
@@ -2180,7 +2179,7 @@ export function buildTracePayload(
     : agentSpanId;
   const agentEventParentObservationId = toolParentObservationId;
 
-  const batch: unknown[] = [
+  const batch: any[] = [
     {
       id: randomUUID(),
       type: 'trace-create',
@@ -2459,7 +2458,7 @@ function withDeliveryDiagnostics(
 
 export async function postLangfuseBatch(
   config: LangfuseConfig,
-  batch: unknown[],
+  batch: any[],
   fetchImpl: typeof fetch,
   onAttempt?: TransportAttemptObserver,
 ): Promise<LangfuseDeliveryState> {
@@ -2514,7 +2513,7 @@ export async function postLangfuseBatch(
         langfuse_expected: true,
         langfuse_delivery_status: 'accepted',
       };
-    } catch (error) {
+    } catch (error: any) {
       if (attempt < attempts) {
         await waitBeforeRetry(attempt);
         continue;
@@ -2595,7 +2594,7 @@ async function postRelayBatch(
         langfuse_expected: true,
         langfuse_delivery_status: 'accepted',
       };
-    } catch (error) {
+    } catch (error: any) {
       if (attempt < attempts) {
         await waitBeforeRetry(attempt);
         continue;
@@ -2642,7 +2641,7 @@ interface VelaTelemetryEnvelope {
   }>;
 }
 
-function asVelaSourceEvents(batch: unknown[]): VelaSourceEvent[] {
+function asVelaSourceEvents(batch: any[]): VelaSourceEvent[] {
   return batch.filter((item): item is VelaSourceEvent => {
     if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
     const event = item as Partial<VelaSourceEvent>;
@@ -2668,7 +2667,7 @@ function stableVelaEventId(event: VelaSourceEvent): string {
 }
 
 function buildVelaEnvelope(
-  batch: unknown[],
+  batch: any[],
   installationId: string,
 ): VelaTelemetryEnvelope {
   return {
@@ -2697,7 +2696,7 @@ function velaIdempotencyKey(envelope: VelaTelemetryEnvelope): string {
 
 async function postVelaBatch(
   config: VelaTelemetrySinkConfig,
-  batch: unknown[],
+  batch: any[],
   installationId: string,
   fetchImpl: typeof fetch,
   opts: {
@@ -2791,7 +2790,7 @@ async function postVelaBatch(
           'vela',
         ),
       };
-    } catch (error) {
+    } catch (error: any) {
       if (attempt < attempts) {
         await waitBeforeRetry(attempt);
         continue;
@@ -2832,7 +2831,7 @@ export interface PostLegacyTelemetryBatchOptions {
  */
 export async function postLegacyTelemetryBatch(
   config: RunTelemetrySinkConfig,
-  batch: unknown[],
+  batch: any[],
   options: PostLegacyTelemetryBatchOptions = {},
 ): Promise<LangfuseDeliveryState> {
   const fetchImpl = options.fetchImpl ?? globalThis.fetch;
@@ -2951,7 +2950,7 @@ function dropReasonFromPerEventErrors(
   responseBody: string,
   sinkKind: TelemetrySinkConfig['kind'],
 ): LangfuseDropReason {
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(responseBody);
   } catch {
@@ -2959,14 +2958,14 @@ function dropReasonFromPerEventErrors(
   }
   const errors =
     parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? (parsed as { errors?: unknown }).errors
+      ? (parsed as { errors?: any }).errors
       : undefined;
   if (!Array.isArray(errors)) {
     return sinkKind === 'relay' ? 'relay_5xx' : 'langfuse_5xx';
   }
   for (const error of errors) {
     if (!error || typeof error !== 'object' || Array.isArray(error)) continue;
-    const status = (error as { status?: unknown }).status;
+    const status = (error as { status?: any }).status;
     if (typeof status === 'number' && Number.isFinite(status)) {
       return ingestionDropReasonFromStatus(status, sinkKind);
     }
@@ -2975,7 +2974,7 @@ function dropReasonFromPerEventErrors(
 }
 
 function warnPerEventErrors(responseBody: string, label: string): boolean {
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(responseBody);
   } catch {
@@ -2983,7 +2982,7 @@ function warnPerEventErrors(responseBody: string, label: string): boolean {
   }
   const errors =
     parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? (parsed as { errors?: unknown }).errors
+      ? (parsed as { errors?: any }).errors
       : undefined;
   if (Array.isArray(errors) && errors.length > 0) {
     console.warn(
@@ -2994,17 +2993,17 @@ function warnPerEventErrors(responseBody: string, label: string): boolean {
   return false;
 }
 
-function objectRegistrationBatch(batch: unknown[]): unknown[] {
+function objectRegistrationBatch(batch: any[]): any[] {
   const trace = batch.find((item) => {
     if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
-    return (item as { type?: unknown }).type === 'trace-create';
+    return (item as { type?: any }).type === 'trace-create';
   });
   if (!trace || typeof trace !== 'object' || Array.isArray(trace)) return [];
   const source = trace as {
-    id?: unknown;
-    type?: unknown;
-    timestamp?: unknown;
-    body?: unknown;
+    id?: any;
+    type?: any;
+    timestamp?: any;
+    body?: any;
   };
   if (!source.body || typeof source.body !== 'object' || Array.isArray(source.body)) {
     return [];
@@ -3069,7 +3068,7 @@ async function exportLegacyLangfuseRun(
     );
   }
 
-  let batch: unknown[];
+  let batch: any[];
   try {
     batch = buildTracePayload(
       { ...ctx, langfuse: langfuseDelivery },
@@ -3078,7 +3077,7 @@ async function exportLegacyLangfuseRun(
     if (opts.deliveryPurpose === 'object-registration') {
       batch = objectRegistrationBatch(batch);
     }
-  } catch (error) {
+  } catch (error: any) {
     console.warn(`[langfuse-trace] Payload build error: ${String(error)}`);
     return withDeliveryDiagnostics({
       langfuse_expected: true,
@@ -3197,10 +3196,10 @@ export function reportRunCompleted(
 // in a follow-up submission do not get a tombstone. A future change can
 // thread `removedReasonCodes` through and emit overwriting "cleared"
 // scores for them; not done here to keep this PR scoped to the bridge.
-export function buildFeedbackPayload(ctx: FeedbackReportContext): unknown[] {
+export function buildFeedbackPayload(ctx: FeedbackReportContext): any[] {
   const traceId = ctx.traceId ?? ctx.runId;
   const nowIso = new Date().toISOString();
-  const batch: unknown[] = [];
+  const batch: any[] = [];
 
   const ratingMetadata: Record<string, unknown> = {
     reasonCodes: ctx.reasonCodes,
@@ -3261,10 +3260,10 @@ export async function reportRunFeedback(
   const config = resolveFeedbackReportConfig(opts);
   if (!config) return;
 
-  let batch: unknown[];
+  let batch: any[];
   try {
     batch = buildFeedbackPayload(ctx);
-  } catch (error) {
+  } catch (error: any) {
     console.warn(`[langfuse-trace] Feedback payload build error: ${String(error)}`);
     return;
   }

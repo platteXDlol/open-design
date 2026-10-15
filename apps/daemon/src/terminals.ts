@@ -21,7 +21,7 @@ export const TERMINAL_SESSION_TERMINAL_STATUSES = new Set(['exited']);
 const DEFAULT_COLS = 80;
 const DEFAULT_ROWS = 24;
 
-function clampDimension(value: unknown, fallback: number): number {
+function clampDimension(value: any, fallback: number): number {
   const n = Number(value);
   if (!Number.isFinite(n)) return fallback;
   // PTY dimensions must be positive integers; clamp to a sane ceiling so a

@@ -36,16 +36,16 @@ const systemClock: ToolTimingClock = { now: () => Date.now() };
 
 /** 出口处的事件形状(daemon 内部用 `type`,落库/送前端后叫 `kind`) */
 interface MaybeToolEvent {
-  type?: unknown;
-  startedAt?: unknown;
-  completedAt?: unknown;
+  type?: any;
+  startedAt?: any;
+  completedAt?: any;
 }
 
 /**
  * 在事件对象上补齐工具时间戳。原地改 —— 这里是事件的唯一出口,
  * 对象由各家适配器现造,没有别处引用它。
  */
-export function stampToolTiming(event: unknown, clock: ToolTimingClock = systemClock): void {
+export function stampToolTiming(event: any, clock: ToolTimingClock = systemClock): void {
   if (!event || typeof event !== 'object') return;
   const ev = event as MaybeToolEvent;
   if (ev.type === 'tool_use') {

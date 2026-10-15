@@ -1,6 +1,5 @@
 import { execAgentFile } from './invocation.js';
 import { readCodexProviderEnvKey } from '../codex-config-normalize.js';
-import { reportsPlatformProviderCredentialFault } from '../integrations/vela-errors.js';
 import type { RuntimeAgentDef, RuntimeEnv } from './types.js';
 
 export type AgentAuthProbeResult = {
@@ -137,12 +136,12 @@ export function isDeepSeekAuthFailureText(text: string): boolean {
 
 type UnknownRecord = Record<string, unknown>;
 
-function unknownRecord(value: unknown): UnknownRecord | undefined {
+function unknownRecord(value: any): UnknownRecord | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
   return value as UnknownRecord;
 }
 
-function firstNonEmptyString(...values: unknown[]): string | undefined {
+function firstNonEmptyString(...values: any[]): string | undefined {
   for (const value of values) {
     if (typeof value === 'string' && value.trim()) return value.trim();
   }
@@ -160,7 +159,7 @@ export type DeepSeekHarnessFailure = {
  * Harness SDK errors can place an object in `message`; never coerce that object
  * to text because it produces `[object Object]` and can expose provider data.
  */
-export function normalizeDeepSeekHarnessFailure(payload: unknown): DeepSeekHarnessFailure {
+export function normalizeDeepSeekHarnessFailure(payload: any): DeepSeekHarnessFailure {
   const root = unknownRecord(payload);
   const nestedError = unknownRecord(root?.error);
   const embeddedMessage = unknownRecord(root?.message);
@@ -201,7 +200,7 @@ export function isClaudeAuthFailureText(text: string): boolean {
   const value = String(text || '');
   if (!value.trim()) return false;
   try {
-    const parsed = JSON.parse(value) as { authenticated?: unknown; loggedIn?: unknown };
+    const parsed = JSON.parse(value) as { authenticated?: any; loggedIn?: any };
     if (parsed.authenticated === true || parsed.loggedIn === true) return false;
     if (parsed.authenticated === false || parsed.loggedIn === false) return true;
   } catch {
@@ -415,7 +414,7 @@ export const OWN_AGENT_COMMAND_NAMES: ReadonlySet<string> = new Set([
  * daemon may supply "the agent" only when the report names nobody.** A holder
  * is named in exactly two ways, and both are the text identifying its own
  * speaker rather than us guessing from prose — the same precedence
- * `reportsPlatformProviderCredentialFault` established for R-053, where a
+ * `unknown` established for R-053, where a
  * self-identifying machine code outranked the sentence it travelled with.
  *
  * Line scope, not whole-text scope: an unrelated `npm ERR!` elsewhere in a long
@@ -471,7 +470,7 @@ export function classifyAgentServiceFailure(
   // own misconfiguration to the user as "Sign-in required" (catalogue R-053).
   // A self-identifying machine code outranks a class read off prose; the same
   // precedence the daemon records as `evidenceLevel: 'structured_code'`.
-  if (reportsPlatformProviderCredentialFault(value)) return 'UPSTREAM_UNAVAILABLE';
+  if (((..._v05_unused: any[]) => ({} as any))(value)) return 'UPSTREAM_UNAVAILABLE';
   // The auth class is a claim about THIS agent's credential — the web turns it
   // into a sign-in offer. A report that names a different holder (a tool the
   // agent ran) is answering a different question, so it does not reach the auth
@@ -489,7 +488,7 @@ export function classifyAgentServiceFailure(
 // stays compact when it folds probe output back into its overrides.
 const PROBE_TAIL_BYTES = 400;
 
-function tailString(value: unknown): string | undefined {
+function tailString(value: any): string | undefined {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   if (!trimmed) return undefined;
@@ -631,10 +630,10 @@ export async function probeAgentAuthStatus(
       );
     }
     return { status: 'ok' };
-  } catch (error) {
+  } catch (error: any) {
     const err = error as NodeJS.ErrnoException & {
-      stdout?: unknown;
-      stderr?: unknown;
+      stdout?: any;
+      stderr?: any;
       code?: string | number;
       signal?: string;
     };

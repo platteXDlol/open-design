@@ -14,7 +14,7 @@ export interface RecentApiFailure {
 export interface ApiFailureToRecord extends Omit<RecentApiFailure, 'method' | 'path'> {
   request?: {
     method?: string;
-    route?: { path?: unknown };
+    route?: { path?: any };
   };
 }
 

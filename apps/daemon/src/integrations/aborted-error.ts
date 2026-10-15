@@ -9,7 +9,7 @@
  * Whether a rejection is an operation WE cancelled, rather than one that
  * failed.
  *
- * `runVelaCommand` marks a deliberate abort with `name: 'AbortError'` and
+ * `unknown` marks a deliberate abort with `name: 'AbortError'` and
  * `code: 'ABORT_ERR'`, and keeps a separate `timeout` termination for real
  * deadline breaches. The proactive team-pull scheduler cancels in-flight pulls
  * as ordinary control flow — a higher published version supersedes the one
@@ -19,8 +19,8 @@
  * Deliberately narrow: a real timeout and any transport error stay failures,
  * so a genuine fault can never be swallowed as "we meant to do that".
  */
-export function isAbortedOperationError(error: unknown): boolean {
+export function isAbortedOperationError(error: any): boolean {
   if (!error || typeof error !== 'object') return false;
-  const candidate = error as { name?: unknown; code?: unknown };
+  const candidate = error as { name?: any; code?: any };
   return candidate.code === 'ABORT_ERR' || candidate.name === 'AbortError';
 }

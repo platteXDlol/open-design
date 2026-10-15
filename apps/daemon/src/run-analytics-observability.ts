@@ -12,7 +12,6 @@ import {
   agentIdToTracking,
   byokProtocolToTracking,
 } from '@open-design/contracts/analytics';
-import type { VelaLoginStatus } from './integrations/vela.js';
 
 const RUNTIME_TYPES: readonly TrackingRuntimeType[] = [
   'amr_cloud',
@@ -30,7 +29,7 @@ const RUNTIME_TYPES: readonly TrackingRuntimeType[] = [
 // malformed) falls back to the daemon's own derivation.
 export function runtimeTypeForRunAnalytics(args: {
   derived: TrackingRuntimeType;
-  hint?: unknown;
+  hint?: any;
 }): TrackingRuntimeType {
   if (
     typeof args.hint === 'string' &&
@@ -42,8 +41,8 @@ export function runtimeTypeForRunAnalytics(args: {
 }
 
 export function agentProviderIdForRunAnalytics(args: {
-  agentId: unknown;
-  byokProvider?: unknown;
+  agentId: any;
+  byokProvider?: any;
 }): TrackingCliProviderId | TrackingByokProviderId {
   if (args.agentId === 'byok-opencode') {
     const protocol = readByokProviderProtocol(args.byokProvider);
@@ -52,9 +51,9 @@ export function agentProviderIdForRunAnalytics(args: {
   return agentIdToTracking(typeof args.agentId === 'string' ? args.agentId : null);
 }
 
-function readByokProviderProtocol(provider: unknown): string | null {
+function readByokProviderProtocol(provider: any): string | null {
   if (!provider || typeof provider !== 'object') return null;
-  const protocol = (provider as { protocol?: unknown }).protocol;
+  const protocol = (provider as { protocol?: any }).protocol;
   return typeof protocol === 'string' && protocol.trim() ? protocol.trim() : null;
 }
 
@@ -66,7 +65,7 @@ function readByokProviderProtocol(provider: unknown): string | null {
 // authorized but carries no profile, so it yields no stamp — only
 // file-backed sign-in knows the account id.
 export function amrUserIdForRunAnalytics(
-  status: VelaLoginStatus | null,
+  status: any | null,
 ): Record<string, string> {
   if (status?.loggedIn !== true) return {};
   const id = status.user?.id?.trim() ?? '';
@@ -76,7 +75,7 @@ export function amrUserIdForRunAnalytics(
 export interface RunEventForAnalyticsObservability {
   id?: number;
   event: string;
-  data: unknown;
+  data: any;
   timestamp?: number;
 }
 
@@ -232,7 +231,7 @@ export function createRunPerRequestUsageLedger(): PerRequestUsageLedger {
 
 export function foldEventIntoPerRequestUsageLedger(
   ledger: PerRequestUsageLedger,
-  record: { event?: unknown; data?: unknown; timestamp?: number },
+  record: { event?: any; data?: any; timestamp?: number },
 ): void {
   if (record?.event !== 'agent') return;
   const data = record.data && typeof record.data === 'object' && !Array.isArray(record.data)
@@ -375,13 +374,13 @@ export interface RunTimingAnalytics {
   attempt_terminal_phase?: TrackingRunLifecyclePhase;
 }
 
-export function hasExplicitRequestedModelForAnalytics(value: unknown): value is string {
+export function hasExplicitRequestedModelForAnalytics(value: any): value is string {
   if (typeof value !== 'string') return false;
   const model = value.trim();
   return model.length > 0 && model !== 'default';
 }
 
-function readNumber(value: unknown): number | undefined {
+function readNumber(value: any): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
     ? value
     : undefined;
@@ -391,7 +390,7 @@ function readNestedNumber(
   value: Record<string, unknown>,
   path: string[],
 ): number | undefined {
-  let current: unknown = value;
+  let current: any = value;
   for (const key of path) {
     if (!current || typeof current !== 'object') return undefined;
     current = (current as Record<string, unknown>)[key];
@@ -425,11 +424,11 @@ function durationBetween(
   return Math.round(end - start);
 }
 
-function isAgentEventPayload(value: unknown): value is Record<string, unknown> {
+function isAgentEventPayload(value: any): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object';
 }
 
-function toolName(value: unknown): string | undefined {
+function toolName(value: any): string | undefined {
   if (!isAgentEventPayload(value)) return undefined;
   const name = value.name;
   return typeof name === 'string' && name.trim() ? name.trim() : undefined;
@@ -700,7 +699,7 @@ export function inputAccountingModeForUsage(
 
 export function scanRunEventsForUsageAnalytics(
   events: RunEventForAnalyticsObservability[],
-  reqBodyModel: unknown,
+  reqBodyModel: any,
   userQueryTokens: number,
 ): RunUsageAnalytics {
   let inputTokens: number | undefined;
@@ -733,9 +732,9 @@ export function scanRunEventsForUsageAnalytics(
           usage?: Record<string, unknown> | null;
           modelUsage?: Record<string, unknown> | null;
           label?: string;
-          provider?: unknown;
-          model?: unknown;
-          detail?: unknown;
+          provider?: any;
+          model?: any;
+          detail?: any;
         }
       | null
       | undefined;
@@ -1072,10 +1071,10 @@ export function summarizeToolAnalytics(
     const data = rec.data as
       | {
           type?: string;
-          id?: unknown;
-          name?: unknown;
-          toolUseId?: unknown;
-          isError?: unknown;
+          id?: any;
+          name?: any;
+          toolUseId?: any;
+          isError?: any;
         }
       | null
       | undefined;
@@ -1220,7 +1219,7 @@ export function summarizeRunTimingAnalytics(args: {
 
   for (const rec of args.events) {
     const data = rec.data as
-      | { type?: string; id?: unknown; toolUseId?: unknown; name?: unknown }
+      | { type?: string; id?: any; toolUseId?: any; name?: any }
       | null
       | undefined;
     const ts = eventTimestamp(rec);
@@ -1254,7 +1253,7 @@ export function summarizeRunTimingAnalytics(args: {
       }
       // Prefer producer-supplied start time (ACP firstSeenAt) when present.
       const payloadStartedAt =
-        typeof (data as { startedAt?: unknown }).startedAt === 'number' &&
+        typeof (data as { startedAt?: any }).startedAt === 'number' &&
         Number.isFinite((data as { startedAt: number }).startedAt)
           ? (data as { startedAt: number }).startedAt
           : undefined;

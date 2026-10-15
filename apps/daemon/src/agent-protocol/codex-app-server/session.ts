@@ -55,11 +55,11 @@ export interface CodexClosedThreadCleanup {
 
 export interface CodexAppServerSessionOptions {
   child: {
-    once?(event: 'close', listener: () => void): unknown;
-    stdout: { on(event: 'data', listener: (chunk: unknown) => void): unknown };
+    once?(event: 'close', listener: () => void): any;
+    stdout: { on(event: 'data', listener: (chunk: any) => void): any };
     stdin: {
-      write(chunk: string, cb?: (err?: Error | null) => void): unknown;
-      end(): unknown;
+      write(chunk: string, cb?: (err?: Error | null) => void): any;
+      end(): any;
       destroyed?: boolean;
     } | null;
     killed?: boolean;
@@ -123,7 +123,7 @@ function chosen(value: string | null | undefined): string | null {
   return trimmed;
 }
 
-function isRecord(value: unknown): value is JsonObject {
+function isRecord(value: any): value is JsonObject {
   return value != null && typeof value === 'object' && !Array.isArray(value);
 }
 
@@ -135,7 +135,7 @@ function isRecord(value: unknown): value is JsonObject {
  * OS and client versions and must not be mistaken for the server version.
  * Unknown and prerelease builds keep the existing completion-only behavior.
  */
-function supportsPatchStreaming(userAgent: unknown): boolean {
+function supportsPatchStreaming(userAgent: any): boolean {
   if (typeof userAgent !== 'string') return false;
   const match = /^[^/\s]+\/(\d+)\.(\d+)\.(\d+)(?:\+[\w.-]+)?(?:\s|$)/u.exec(userAgent);
   if (!match) return false;
@@ -198,7 +198,7 @@ export function attachCodexAppServerSession(
     params: JsonObject,
     onResult: (result: JsonObject) => void,
     onWritten?: () => void,
-    onError?: (error: unknown) => void,
+    onError?: (error: any) => void,
   ): void {
     const id = nextId++;
     pending.set(id, (frame) => {
@@ -216,7 +216,7 @@ export function attachCodexAppServerSession(
     write({ jsonrpc: '2.0', method, params });
   }
 
-  function rpcErrorText(method: string, error: unknown): string {
+  function rpcErrorText(method: string, error: any): string {
     const detail = isRecord(error) ? error : {};
     const message =
       typeof detail.message === 'string' && detail.message
@@ -434,7 +434,7 @@ export function attachCodexAppServerSession(
       const line = buffer.slice(0, newline).trim();
       buffer = buffer.slice(newline + 1);
       if (!line) continue;
-      let frame: unknown;
+      let frame: any;
       try {
         frame = JSON.parse(line);
       } catch {

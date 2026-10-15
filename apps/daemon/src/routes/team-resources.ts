@@ -1,3 +1,4 @@
+import { TeamResourceKey, TeamResourceKind, TeamResourceStateProvider } from '../v05-stubs.js';
 import type { Express } from 'express';
 import {
   assertTeamResourceCopyAllowed,
@@ -6,11 +7,6 @@ import {
   TeamResourceCopyForbiddenError,
   type TeamResourceState,
 } from '@open-design/contracts';
-import type {
-  TeamResourceKind,
-  TeamResourceKey,
-  TeamResourceStateProvider,
-} from '../collab/team-resource-state.js';
 
 export interface RegisterTeamResourceRoutesDeps {
   teamResources: TeamResourceStateProvider;
@@ -49,7 +45,7 @@ export function registerTeamResourceRoutes(app: Express, deps: RegisterTeamResou
     try {
       assertTeamResourceCopyAllowed(target);
       res.json({ allowed: true });
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof TeamResourceCopyForbiddenError) {
         return res.status(403).json(createApiErrorResponse(createApiError(error.code, error.message)));
       }
@@ -63,7 +59,7 @@ export function registerTeamResourceRoutes(app: Express, deps: RegisterTeamResou
     const key = readKey(req.params);
     if (!key) return res.status(400).json({ error: 'invalid resource key' });
     if (!teamResources.set) return res.status(404).json({ error: 'resource state is not settable' });
-    const body = (req.body ?? {}) as { scope?: unknown; state?: unknown };
+    const body = (req.body ?? {}) as { scope?: any; state?: any };
     if (body.scope === 'personal') {
       teamResources.set(key, { scope: 'personal' });
       return res.json({ scope: 'personal' });

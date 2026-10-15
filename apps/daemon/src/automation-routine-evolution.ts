@@ -9,7 +9,7 @@ type RoutineLike = {
 
 type MessageLike = {
   role?: string;
-  content?: unknown;
+  content?: any;
 };
 
 export function automationTemplateIdFromRoutinePrompt(prompt: string): string | null {
@@ -17,7 +17,7 @@ export function automationTemplateIdFromRoutinePrompt(prompt: string): string | 
   return match?.[1] ?? null;
 }
 
-function compactMessageContent(value: unknown): string {
+function compactMessageContent(value: any): string {
   const text = typeof value === 'string' ? value : JSON.stringify(value ?? '');
   return text.replace(/\s+/g, ' ').trim().slice(0, 2_000);
 }

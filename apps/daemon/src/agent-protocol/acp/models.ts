@@ -23,7 +23,7 @@ export interface ModelOption {
 export interface AcpModelConfigOption {
   configId: string;
   currentValue: string | null;
-  values: unknown[];
+  values: any[];
 }
 /** Options accepted by `detectAcpModels` to control how the probe subprocess is launched and identified. */
 export interface DetectAcpModelsOptions {
@@ -43,7 +43,7 @@ export interface DetectAcpModelsOptions {
  * @param value - A raw field value from an ACP config option object.
  * @returns A normalised token string, or `''` when `value` is not a string.
  */
-export function normalizeConfigOptionToken(value: unknown): string {
+export function normalizeConfigOptionToken(value: any): string {
   return typeof value === 'string'
     ? value.trim().toLowerCase().replace(/[\s_-]+/g, '')
     : '';
@@ -73,7 +73,7 @@ export function isModelConfigOption(option: JsonObject, configId: string): boole
  * @param configOptions - The raw `result.configOptions` value from a session response.
  * @returns A parsed `AcpModelConfigOption` or `null` when absent.
  */
-export function findModelConfigOption(configOptions: unknown): AcpModelConfigOption | null {
+export function findModelConfigOption(configOptions: any): AcpModelConfigOption | null {
   const options = Array.isArray(configOptions) ? configOptions : [];
   for (const rawOption of options) {
     const option = asObject(rawOption);
@@ -106,7 +106,7 @@ export function findModelConfigOption(configOptions: unknown): AcpModelConfigOpt
  * @returns `{ currentModelId, models }` or `null` when no config option is found.
  */
 export function normalizeModelConfigOptions(
-  configOptions: unknown,
+  configOptions: any,
   defaultModelOption: ModelOption,
 ): { currentModelId: string | null; models: ModelOption[] } | null {
   const modelConfig = findModelConfigOption(configOptions);
@@ -143,9 +143,9 @@ export function normalizeModelConfigOptions(
  * @returns A deduplicated array of `ModelOption` items.
  */
 export function normalizeModels(
-  models: unknown,
+  models: any,
   defaultModelOption: ModelOption,
-  configOptions?: unknown,
+  configOptions?: any,
 ): ModelOption[] {
   const configModels = normalizeModelConfigOptions(configOptions, defaultModelOption);
   if (configModels && configModels.models.length > 1) {
@@ -175,7 +175,7 @@ export function normalizeModels(
  *
  * @param code - The `error.code` value from a JSON-RPC error response.
  */
-export function modelSelectionErrorIsRecoverable(code: unknown): boolean {
+export function modelSelectionErrorIsRecoverable(code: any): boolean {
   return code === -32603 || code === -32602 || code === -32601 || code === -32002;
 }
 /**
@@ -253,10 +253,10 @@ export async function detectAcpModels({
       if (!child.killed) child.kill('SIGTERM');
     };
 
-    const writeRpc = (id: JsonRpcId, method: string, params: unknown) => {
+    const writeRpc = (id: JsonRpcId, method: string, params: any) => {
       try {
         sendRpc(child.stdin, id, method, params);
-      } catch (err) {
+      } catch (err: any) {
         fail(`stdin write failed: ${errorMessage(err)}`);
       }
     };

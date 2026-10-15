@@ -3,7 +3,7 @@
 // The Codex CLI only accepts `service_tier = "fast"` or `"flex"`. Any other
 // value makes it exit before processing the prompt:
 //
-//   Error loading config.toml: unknown variant '<value>', expected 'fast'
+//   Error loading config.toml: any variant '<value>', expected 'fast'
 //   or 'flex' in `service_tier`
 //
 // The Codex app has written several invalid values over time ("priority",
@@ -318,7 +318,7 @@ export async function normalizeCodexConfigFile(
   try {
     await io.writeFile(tmpPath, patched, 'utf8');
     await io.rename(tmpPath, configPath);
-  } catch (err) {
+  } catch (err: any) {
     // Log the failure so it surfaces in daemon logs, but do not block launch.
     // The Codex CLI will surface the original parse error which is actionable.
     console.warn('[codex-config-normalize] atomic write failed:', err);

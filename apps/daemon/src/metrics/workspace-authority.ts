@@ -1,6 +1,5 @@
 import { Counter, Histogram, register } from 'prom-client';
 
-import type { WorkspaceAuthorityCacheMode } from '../collab/workspace-authority-health.js';
 
 export type WorkspaceAuthorityMetricSource =
   | 'cache'
@@ -78,7 +77,7 @@ export const workspaceAuthorityRevocationClearMs = new Histogram({
 });
 
 export function recordWorkspaceAuthorityDecision(input: {
-  mode: WorkspaceAuthorityCacheMode;
+  mode: any;
   source: WorkspaceAuthorityMetricSource;
   reason: WorkspaceAuthorityMetricReason;
   outcome: WorkspaceAuthorityMetricOutcome;
@@ -103,7 +102,7 @@ export function recordWorkspaceAuthorityDecision(input: {
 }
 
 export function recordWorkspaceAuthoritySuppressedRequest(input: {
-  mode: WorkspaceAuthorityCacheMode;
+  mode: any;
   source: WorkspaceAuthorityMetricSource;
   reason: 'lease_hit' | 'in_flight' | 'failure_backoff' | 'safety_floor';
 }): void {
@@ -115,7 +114,7 @@ export function recordWorkspaceAuthoritySuppressedRequest(input: {
 }
 
 export function recordWorkspaceAuthorityInvalidation(input: {
-  mode: WorkspaceAuthorityCacheMode;
+  mode: any;
   source: 'cache' | 'current';
   reason: 'mutation' | 'event_dirty' | 'auth_reject' | 'catch_up' | 'unhealthy';
 }): void {
@@ -127,7 +126,7 @@ export function recordWorkspaceAuthorityInvalidation(input: {
 }
 
 export function recordWorkspaceAuthorityRealtimeTransition(input: {
-  mode: WorkspaceAuthorityCacheMode;
+  mode: any;
   healthy: boolean;
   memberEvents: boolean;
   listenerStatus: boolean;
@@ -147,7 +146,7 @@ export function recordWorkspaceAuthorityRealtimeTransition(input: {
 }
 
 export function recordWorkspaceAuthorityRevocationClear(
-  mode: WorkspaceAuthorityCacheMode,
+  mode: any,
   durationMs: number,
 ): void {
   if (!Number.isFinite(durationMs) || durationMs < 0) return;

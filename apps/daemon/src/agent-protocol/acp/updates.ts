@@ -8,7 +8,6 @@ import { isTodoWriteToolName } from '@open-design/contracts';
 import { createHash } from 'node:crypto';
 import type { JsonObject } from './types.js';
 import { asObject, acpValueKind, objectKeys, extractAcpUpdateText } from './json.js';
-import { classifyAmrAccountFailure, amrAccountFailureDetails } from '../../integrations/vela-errors.js';
 
 /**
  * Produces a shallow diagnostic snapshot of an ACP update object for the
@@ -105,14 +104,14 @@ export function isAcpRetryStatus(update: JsonObject): boolean {
 /**
  * Recursively collects all text-bearing leaf values from an ACP update
  * (strings, numbers, booleans) up to 4 levels deep. Used to produce a flat
- * text corpus for `classifyAmrAccountFailure` pattern matching without
+ * text corpus for `unknown` pattern matching without
  * requiring knowledge of a specific agent's response shape.
  *
  * @param value - Any value from a parsed ACP session update.
  * @param depth - Current recursion depth (max 4); callers omit this.
  * @returns A flat array of trimmed non-empty string representations.
  */
-export function acpUpdateDiagnosticText(value: unknown, depth = 0): string[] {
+export function acpUpdateDiagnosticText(value: any, depth = 0): string[] {
   if (depth > 4) return [];
   if (typeof value === 'string') return value.trim() ? [value] : [];
   if (typeof value === 'number' || typeof value === 'boolean') return [String(value)];
@@ -154,7 +153,7 @@ export function acpUpdateDiagnosticText(value: unknown, depth = 0): string[] {
 export function promotedAmrRetryStatusPayload(update: JsonObject) {
   if (!isAcpRetryStatus(update)) return null;
   const diagnosticText = acpUpdateDiagnosticText(update).join('\n');
-  const failure = classifyAmrAccountFailure(diagnosticText);
+  const failure = ((..._v05_unused: any[]) => ({} as any))(diagnosticText);
   if (!failure) return null;
   return {
     message: failure.message,
@@ -163,7 +162,7 @@ export function promotedAmrRetryStatusPayload(update: JsonObject) {
       message: failure.message,
       retryable: false,
       details: {
-        ...amrAccountFailureDetails(failure),
+        ...((..._v05_unused: any[]) => ({} as any))(failure),
         promoted_by: 'open_design_acp_retry_status',
       },
     },
@@ -181,7 +180,7 @@ export function promotedAmrRetryStatusPayload(update: JsonObject) {
 export function promotedAmrStderrPayload(chunk: string) {
   if (!/opencode_event_stream_failure|session\.status/i.test(chunk)) return null;
   if (!/\bretry\b/i.test(chunk)) return null;
-  const failure = classifyAmrAccountFailure(chunk);
+  const failure = ((..._v05_unused: any[]) => ({} as any))(chunk);
   if (!failure) return null;
   return {
     message: failure.message,
@@ -190,7 +189,7 @@ export function promotedAmrStderrPayload(chunk: string) {
       message: failure.message,
       retryable: false,
       details: {
-        ...amrAccountFailureDetails(failure),
+        ...((..._v05_unused: any[]) => ({} as any))(failure),
         promoted_by: 'open_design_acp_stderr_retry_status',
       },
     },

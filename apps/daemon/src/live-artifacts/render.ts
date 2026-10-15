@@ -35,7 +35,7 @@ export function validateHtmlTemplateV1Security(templateHtml: string): void {
   }
 }
 
-export function escapeHtmlTemplateValue(value: unknown): string {
+export function escapeHtmlTemplateValue(value: any): string {
   return String(value)
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
@@ -53,8 +53,8 @@ export function escapeHtmlTemplateValue(value: unknown): string {
  */
 type BindingResolver = (binding: string) => string;
 
-function walkPath(root: unknown, segments: string[], rawPath: string): unknown {
-  let current: unknown = root;
+function walkPath(root: any, segments: string[], rawPath: string): any {
+  let current: any = root;
   for (const segment of segments) {
     if (current === null || current === undefined) return '';
     if (Array.isArray(current)) {
@@ -68,13 +68,13 @@ function walkPath(root: unknown, segments: string[], rawPath: string): unknown {
   return current ?? '';
 }
 
-function readTemplatePath(dataJson: BoundedJsonObject, rawPath: string): unknown {
+function readTemplatePath(dataJson: BoundedJsonObject, rawPath: string): any {
   const segments = rawPath.split('.');
   if (segments.shift() !== 'data') throw new Error(`unsupported template binding path: ${rawPath}`);
   return walkPath(dataJson, segments, rawPath);
 }
 
-function scalarOrThrow(value: unknown, binding: string): string {
+function scalarOrThrow(value: any, binding: string): string {
   if (Array.isArray(value) || (value !== null && typeof value === 'object')) {
     throw new Error(`template binding must resolve to a scalar: ${binding}`);
   }
@@ -90,7 +90,7 @@ function rootResolver(dataJson: BoundedJsonObject): BindingResolver {
   };
 }
 
-function childResolver(parent: BindingResolver, varName: string, item: unknown): BindingResolver {
+function childResolver(parent: BindingResolver, varName: string, item: any): BindingResolver {
   return (binding) => {
     if (!TEMPLATE_PATH.test(binding)) throw new Error(`invalid template binding path: ${binding}`);
     const segments = binding.split('.');

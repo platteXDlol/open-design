@@ -42,23 +42,23 @@ interface CachedDiscordPresence {
 }
 
 interface GithubRepoMetadataPayload {
-  stargazers_count?: unknown;
+  stargazers_count?: any;
 }
 
 interface GithubLatestReleasePayload {
-  tag_name?: unknown;
-  html_url?: unknown;
+  tag_name?: any;
+  html_url?: any;
 }
 
 interface DiscordInviteProfilePayload {
-  online_count?: unknown;
-  member_count?: unknown;
+  online_count?: any;
+  member_count?: any;
 }
 
 interface DiscordInvitePayload {
-  approximate_presence_count?: unknown;
-  approximate_member_count?: unknown;
-  profile?: unknown;
+  approximate_presence_count?: any;
+  approximate_member_count?: any;
+  profile?: any;
 }
 
 export interface OpenDesignPublicMetadataServiceOptions {
@@ -76,11 +76,11 @@ const OPEN_DESIGN_DISCORD_INVITE_API = `https://discord.com/api/v10/invites/${OP
 const OPEN_DESIGN_DISCORD_CACHE_TTL_MS = 5 * 60 * 1000;
 const OPEN_DESIGN_DISCORD_TIMEOUT_MS = 4_000;
 
-function isObject(value: unknown): value is Record<string, unknown> {
+function isObject(value: any): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function readFiniteNonNegativeNumber(value: unknown): number | null {
+function readFiniteNonNegativeNumber(value: any): number | null {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
     ? value
     : null;
@@ -136,7 +136,7 @@ export function createOpenDesignPublicMetadataService({
         }
         githubRepoCache = { stargazersCount, fetchedAt: now() };
         return withFreshness(githubRepoCache, false);
-      } catch (error) {
+      } catch (error: any) {
         if (githubRepoCache) return withFreshness(githubRepoCache, true);
         throw error;
       } finally {
@@ -181,7 +181,7 @@ export function createOpenDesignPublicMetadataService({
         }
         githubLatestReleaseCache = { tagName, htmlUrl, fetchedAt: now() };
         return withFreshness(githubLatestReleaseCache, false);
-      } catch (error) {
+      } catch (error: any) {
         if (githubLatestReleaseCache) return withFreshness(githubLatestReleaseCache, true);
         throw error;
       } finally {
@@ -235,7 +235,7 @@ export function createOpenDesignPublicMetadataService({
 
         discordPresenceCache = { onlineCount, memberCount, fetchedAt: now() };
         return withFreshness(discordPresenceCache, false);
-      } catch (error) {
+      } catch (error: any) {
         if (discordPresenceCache) return withFreshness(discordPresenceCache, true);
         throw error;
       } finally {

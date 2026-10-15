@@ -76,7 +76,7 @@ export interface TouchpointContentCache {
     trimmed: Record<string, unknown>,
   ): Record<string, unknown> | null;
   /** Record the content of a full response for later reassembly. Never throws. */
-  remember(key: TouchpointContentKey, response: unknown): void;
+  remember(key: TouchpointContentKey, response: any): void;
   /**
    * The whole decision to answer with while the runtime is unreachable, or
    * `null` when there is nothing this store may put on the screen.
@@ -95,7 +95,7 @@ export interface TouchpointContentCache {
    * could not be read; the rule for which of those reclaim lives in
    * `touchpointWithdrawalReclaims`.
    */
-  forgetWithdrawn(key: TouchpointContentKey, body: unknown): boolean;
+  forgetWithdrawn(key: TouchpointContentKey, body: any): boolean;
 }
 
 /**
@@ -133,12 +133,12 @@ type AssemblyRecord = Readonly<{
   placementKey: string;
   contentId: string;
   locale: string;
-  manifest: unknown;
+  manifest: any;
   manifestHash: string;
   entryPath: string;
   entryDigest: string;
-  runtime: unknown;
-  buildIdentity: unknown;
+  runtime: any;
+  buildIdentity: any;
   resources: readonly CachedResource[];
   /** `null` when the decision did not carry a complete, coherent schedule. */
   schedule: TouchpointSchedule | null;
@@ -181,7 +181,7 @@ const recordStillHolds = (record: AssemblyRecord, held: HeldContentRef): boolean
   record.contentId === held.heldContentId && record.locale === held.heldContentLocale;
 
 const sha256 = (bytes: Buffer): string => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
-const isRecord = (value: unknown): value is Record<string, unknown> =>
+const isRecord = (value: any): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 /** Digest strings are the only thing that ever names a file here, so a path never escapes the root. */
 const blobName = (digest: string): string | null =>
@@ -235,7 +235,7 @@ export function createTouchpointContentCache(runtimeDataDir: string): Touchpoint
     try {
       fs.writeFileSync(temporary, data);
       fs.renameSync(temporary, file);
-    } catch (error) {
+    } catch (error: any) {
       try {
         fs.rmSync(temporary, { force: true });
       } catch {
@@ -247,9 +247,9 @@ export function createTouchpointContentCache(runtimeDataDir: string): Touchpoint
 
   const parseAssembly = (file: string, expect?: TouchpointContentKey): AssemblyRecord | null => {
     try {
-      const parsed: unknown = JSON.parse(fs.readFileSync(file, 'utf8'));
+      const parsed: any = JSON.parse(fs.readFileSync(file, 'utf8'));
       if (!isRecord(parsed) || parsed.version !== ASSEMBLY_VERSION) return null;
-      const record = parsed as unknown as AssemblyRecord;
+      const record = parsed as any as AssemblyRecord;
       if (
         (expect && (record.placementKey !== expect.placementKey || record.scope !== expect.scope)) ||
         typeof record.scope !== 'string' ||

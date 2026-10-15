@@ -4,7 +4,7 @@ import { captureProcessSnapshot, collectProcessTreePids, isProcessAlive, selectO
 import type { CodexClosedThreadCleanup } from './session.js';
 
 /** Same measured compatibility floor used by the live session's archive path. */
-export function codexHistoryCapabilities(userAgent: unknown): { paginated: boolean; legacy: boolean } {
+export function codexHistoryCapabilities(userAgent: any): { paginated: boolean; legacy: boolean } {
   const version = typeof userAgent === 'string'
     ? /^[^/\s]+\/(\d+)\.(\d+)\.(\d+)(?:\s|$)/u.exec(userAgent) : null;
   if (!version) return { paginated: false, legacy: false };
@@ -51,7 +51,7 @@ export async function cleanupClosedCodexThread(opts: CodexThreadCleanupOptions):
         detached: process.platform !== 'win32',
         windowsVerbatimArguments: opts.windowsVerbatimArguments,
       });
-    } catch (error) {
+    } catch (error: any) {
       resolve({ status: 'failed', message: String(error) });
       return;
     }
@@ -87,7 +87,7 @@ export async function cleanupClosedCodexThread(opts: CodexThreadCleanupOptions):
         // retain our pipes without belonging to that group.
         if (child.pid) signalProcesses([-child.pid], 'SIGKILL');
         else child.kill('SIGKILL');
-      } catch (error) {
+      } catch (error: any) {
         result = { status: 'failed', message: `codex thread cleanup timed out; ${String(error)}` };
       }
       let closeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -137,14 +137,14 @@ export async function cleanupClosedCodexThread(opts: CodexThreadCleanupOptions):
         treeVerified = true;
         const stopped = await stopProcesses(owned.map(entry => entry.pid), { termGraceMs: 0, killGraceMs: 200 });
         remainingPids = stopped.remainingPids;
-      } catch (error) {
+      } catch (error: any) {
         failure = `; ${String(error)}`;
         remainingPids = knownProcesses.map(entry => entry.pid).filter(isProcessAlive);
       } finally {
         // This actual child is owned even if enumeration failed. Do not let a
         // missing snapshot turn into a leaked wrapper or an endless close wait.
         if (originalAlive()) {
-          try { child.kill('SIGKILL'); } catch (error) { failure += `; ${String(error)}`; }
+          try { child.kill('SIGKILL'); } catch (error: any) { failure += `; ${String(error)}`; }
         }
         let closeTimer: ReturnType<typeof setTimeout> | undefined;
         await Promise.race([closePromise, new Promise<void>(done => { closeTimer = setTimeout(done, 200); })]);
@@ -180,7 +180,7 @@ export async function cleanupClosedCodexThread(opts: CodexThreadCleanupOptions):
         child.stdin?.write(`${JSON.stringify(frame)}\n`, (error) => {
           if (error) finish({ status: 'failed', message: error.message });
         });
-      } catch (error) { finish({ status: 'failed', message: String(error) }); }
+      } catch (error: any) { finish({ status: 'failed', message: String(error) }); }
     }
     child.on('error', (error) => finish({ status: 'failed', message: error.message }));
     child.stdin?.on('error', (error) => finish({ status: 'failed', message: error.message }));
@@ -207,7 +207,7 @@ export async function cleanupClosedCodexThread(opts: CodexThreadCleanupOptions):
         buffer = buffer.slice(newline + 1);
         let frame: Record<string, unknown>;
         try {
-          const value: unknown = JSON.parse(line);
+          const value: any = JSON.parse(line);
           if (!value || typeof value !== 'object' || Array.isArray(value)) continue;
           frame = value as Record<string, unknown>;
         } catch { continue; }

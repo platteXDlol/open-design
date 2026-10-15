@@ -26,7 +26,7 @@ type ProjectWatchIgnored = (absPath: string, stats?: Stats) => boolean;
 export interface ProjectWatcherOptions {
   ignored?: ProjectWatchIgnored;
   awaitWriteFinish?: false | { stabilityThreshold: number; pollInterval: number };
-  metadata?: unknown;
+  metadata?: any;
   _watcherFactory?: WatcherFactory;
 }
 interface WatcherEntry {
@@ -61,7 +61,7 @@ export const DEFAULT_AWAIT_WRITE_FINISH = {
 const registry = new Map<string, WatcherEntry>();
 const PREFERS_POLLING = process.env.OD_WATCHER_USE_POLLING === '1' || process.env.CHOKIDAR_USEPOLLING === '1';
 
-function isPollingFallbackError(err: unknown): boolean {
+function isPollingFallbackError(err: any): boolean {
   const code = (err as NodeJS.ErrnoException | undefined)?.code;
   return code === 'EMFILE' || code === 'ENOSPC';
 }
@@ -114,7 +114,7 @@ function makeEntry(dir: string, opts: Required<Pick<ProjectWatcherOptions, 'igno
     for (const cb of entry.subscribers) {
       try {
         cb(evt);
-      } catch (err) {
+      } catch (err: any) {
         // A buggy subscriber must not poison siblings. Log in dev so the bug
         // doesn't go silent during local testing.
         if (process.env.NODE_ENV === 'development') {

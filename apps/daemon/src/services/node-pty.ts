@@ -9,13 +9,13 @@ const NODE_PTY_UNAVAILABLE_CODE = 'NODE_PTY_UNAVAILABLE';
 export class NodePtyUnavailableError extends Error {
   readonly code = NODE_PTY_UNAVAILABLE_CODE;
 
-  constructor(cause: unknown) {
+  constructor(cause: any) {
     super('The native PTY helper could not be loaded.', { cause });
     this.name = 'NodePtyUnavailableError';
   }
 }
 
-export function isNodePtyUnavailableError(error: unknown): error is NodePtyUnavailableError {
+export function isNodePtyUnavailableError(error: any): error is NodePtyUnavailableError {
   return error instanceof NodePtyUnavailableError
     || (
       error instanceof Error
@@ -69,7 +69,7 @@ export async function loadNodePty(): Promise<typeof NodePty> {
   try {
     loadedNodePty = (await import('node-pty')) as typeof NodePty;
     return loadedNodePty;
-  } catch (error) {
+  } catch (error: any) {
     throw new NodePtyUnavailableError(error);
   }
 }

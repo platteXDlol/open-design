@@ -55,7 +55,7 @@ export function writeAntigravityModelSelection(
   let existing: Record<string, unknown> = {};
   if (existsSync(settingsPath)) {
     try {
-      const parsed = JSON.parse(readFileSync(settingsPath, 'utf8')) as unknown;
+      const parsed = JSON.parse(readFileSync(settingsPath, 'utf8')) as any;
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
         existing = parsed as Record<string, unknown>;
       }

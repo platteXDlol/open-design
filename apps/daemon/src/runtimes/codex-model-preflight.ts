@@ -142,7 +142,7 @@ export function extractCodexRootModelConfig(content: string): {
   return { model, modelProvider, hasCompatibilityOverlay };
 }
 
-function safeVersion(stdout: unknown, stderr: unknown): string | null {
+function safeVersion(stdout: any, stderr: any): string | null {
   const text = `${String(stdout || '')}\n${String(stderr || '')}`.trim();
   const firstLine = text.split(/\r?\n/, 1)[0]?.trim() ?? '';
   if (!firstLine) return null;
@@ -217,7 +217,7 @@ async function pathState(filePath: string): Promise<'present' | 'missing' | 'unc
   try {
     await stat(filePath);
     return 'present';
-  } catch (error) {
+  } catch (error: any) {
     const code = (error as NodeJS.ErrnoException).code;
     return code === 'ENOENT' || code === 'ENOTDIR' ? 'missing' : 'uncertain';
   }
@@ -345,10 +345,10 @@ async function hasMacManagedConfigPreference(
       return Boolean(
         `${String(result.stdout || '')}\n${String(result.stderr || '')}`.trim(),
       );
-    } catch (error) {
+    } catch (error: any) {
       const probed = error as NodeJS.ErrnoException & {
-        stdout?: unknown;
-        stderr?: unknown;
+        stdout?: any;
+        stderr?: any;
       };
       const text = [
         probed.message,

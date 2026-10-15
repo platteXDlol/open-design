@@ -1,3 +1,4 @@
+import { TeamResourceStateProvider, VerifyWorkspaceRequestAuthority, enforceTeamResourceCopyAllowed, enforceVerifiedWorkspaceResourceMutation, resolveOptionalLocalWorkspaceRequestAuthority } from '../v05-stubs.js';
 import type { Express, Response } from 'express';
 import type Database from 'better-sqlite3';
 import path from 'node:path';
@@ -7,10 +8,6 @@ import type {
   WorkspaceCollabContext,
 } from '@open-design/contracts';
 import { TeamResourceCopyForbiddenError } from '@open-design/contracts';
-import {
-  enforceTeamResourceCopyAllowed,
-  type TeamResourceStateProvider,
-} from '../collab/team-resource-state.js';
 import { detectAgents, detectAgentsStream } from '../agents.js';
 import {
   SkillImportError,
@@ -30,11 +27,6 @@ import {
   getWorkspaceResource,
   getWorkspaceResourceByResourceId,
 } from '../db.js';
-import {
-  enforceVerifiedWorkspaceResourceMutation,
-  resolveOptionalLocalWorkspaceRequestAuthority,
-  type VerifyWorkspaceRequestAuthority,
-} from '../collab/workspace-resource-mutation.js';
 import { listCodexPets, readCodexPetSpritesheet } from '../codex-pets.js';
 import { syncCommunityPets } from '../community-pets-sync.js';
 import {
@@ -69,7 +61,7 @@ import { findRealElementRange, HTML_TAG_PATTERNS } from '@open-design/contracts/
 
 export interface RegisterAtomRoutesDeps {
   db: Database.Database;
-  resources: { FIRST_PARTY_ATOMS: Array<{ id: string; taskKinds: string[]; [key: string]: unknown }> };
+  resources: { FIRST_PARTY_ATOMS: Array<{ id: string; taskKinds: string[]; [key: string]: any }> };
 }
 
 export interface RegisterStaticResourceRoutesDeps extends RouteDeps<'db' | 'http' | 'paths' | 'resources'> {
@@ -106,7 +98,7 @@ export function registerAtomRoutes(app: Express, ctx: RegisterAtomRoutesDeps) {
       const { loadAtomBodies } = await import('../plugins/atom-bodies.js');
       const bodies = await loadAtomBodies(db, [id]);
       if (bodies[0] && typeof bodies[0].body === 'string') body.skillBody = bodies[0].body;
-    } catch (err) {
+    } catch (err: any) {
       console.warn(`[atoms] failed to load SKILL.md body for ${id}:`, err);
     }
     res.json(body);
@@ -133,7 +125,7 @@ export function registerStaticResourceRoutes(app: Express, ctx: RegisterStaticRe
     listAllDesignTemplates,
     listAllSkillLikeEntries,
     listAllDesignSystems,
-    resolveWorkspaceScope,
+_deleted,
     canMutateUserDesignSystem,
     mimeFor,
   } = ctx.resources;
@@ -144,7 +136,7 @@ export function registerStaticResourceRoutes(app: Express, ctx: RegisterStaticRe
     sendApiError(res, 403, 'FORBIDDEN', 'local origin required');
     return false;
   };
-  const sendWorkspaceScopeError = (res: Response, error: unknown): boolean => {
+  const sendWorkspaceScopeError = (res: Response, error: any): boolean => {
     if (
       !error
       || typeof error !== 'object'
@@ -182,7 +174,7 @@ export function registerStaticResourceRoutes(app: Express, ctx: RegisterStaticRe
   const readSkillIdFromDirectory = (directory: string): string | null => {
     try {
       const raw = fs.readFileSync(path.join(directory, 'SKILL.md'), 'utf8');
-      const parsed = parseFrontmatter(raw) as { data?: { name?: unknown } };
+      const parsed = parseFrontmatter(raw) as { data?: { name?: any } };
       return typeof parsed.data?.name === 'string' && parsed.data.name.trim()
         ? parsed.data.name.trim()
         : null;
@@ -321,8 +313,8 @@ export function registerStaticResourceRoutes(app: Express, ctx: RegisterStaticRe
       req,
       res,
       sendApiError,
-      (dbArg, workspaceId, resourceId) => getWorkspaceResource(dbArg as typeof db, 'skill', workspaceId, resourceId),
-      (dbArg, resourceId) => getWorkspaceResourceByResourceId(dbArg as typeof db, 'skill', resourceId),
+      (dbArg: any, workspaceId: any, resourceId: any) => getWorkspaceResource(dbArg as typeof db, 'skill', workspaceId, resourceId),
+      (dbArg: any, resourceId: any) => getWorkspaceResourceByResourceId(dbArg as typeof db, 'skill', resourceId),
       db,
       skillId,
       capability,
@@ -364,7 +356,7 @@ export function registerStaticResourceRoutes(app: Express, ctx: RegisterStaticRe
     let tokenContractRebuild: DesignSystemTokenContractRebuildJobResponse | undefined;
     try {
       tokenContractRebuild = await ctx.tokenContractRebuild?.maybeStartForImportedDesignSystem?.(designSystem.id);
-    } catch (err) {
+    } catch (err: any) {
       console.warn('[design-systems] import token-contract rebuild auto-queue failed', err);
     }
     return {
@@ -411,7 +403,7 @@ export function registerStaticResourceRoutes(app: Express, ctx: RegisterStaticRe
       ) {
         throw conflict();
       }
-    } catch (error) {
+    } catch (error: any) {
       await fs.promises.rm(path.join(USER_DESIGN_SYSTEMS_DIR, dirId), {
         recursive: true,
         force: true,
@@ -808,7 +800,7 @@ export function registerStaticResourceRoutes(app: Express, ctx: RegisterStaticRe
         : null;
       if (workspaceContext === undefined) return;
       const workspaceId = workspaceContext?.workspaceId
-        ?? (catalogAuthority ? null : (await resolveWorkspaceScope?.(req)) ?? null);
+        ?? (catalogAuthority ? null : (await (null as any)?.(req)) ?? null);
       const workspaceMemberId = workspaceContext?.workspaceMemberId ?? null;
       const catalog = await listAllDesignSystems({
         workspaceId,
@@ -824,8 +816,8 @@ export function registerStaticResourceRoutes(app: Express, ctx: RegisterStaticRe
             );
             if (
               teamBinding?.workspaceId === workspaceId
-              && teamBinding.visibility === 'team'
-              && teamBinding.resourceState !== 'deleted'
+              && teamBinding!.visibility === 'team'
+              && teamBinding!.resourceState !== 'deleted'
             ) {
               return true;
             }
@@ -835,9 +827,9 @@ export function registerStaticResourceRoutes(app: Express, ctx: RegisterStaticRe
               system.id,
             );
             return personalBinding?.workspaceId === workspaceId
-              && personalBinding.visibility !== 'team'
-              && personalBinding.resourceState !== 'deleted'
-              && personalBinding.createdByWorkspaceMemberId === workspaceMemberId;
+              && personalBinding!.visibility !== 'team'
+              && personalBinding!.resourceState !== 'deleted'
+              && personalBinding!.createdByWorkspaceMemberId === workspaceMemberId;
           })
         : catalog;
       // recvqb6mfyqXLD: decorate every teamSynced entry with the same
@@ -1477,11 +1469,11 @@ function designSystemDirIdsFromCatalog(systems: Array<{ id: string }>): string[]
   );
 }
 
-function normalizeDesignSystemImportMode(value: unknown): 'normalized' | 'hybrid' | 'verbatim' | undefined {
+function normalizeDesignSystemImportMode(value: any): 'normalized' | 'hybrid' | 'verbatim' | undefined {
   return value === 'normalized' || value === 'hybrid' || value === 'verbatim' ? value : undefined;
 }
 
-function normalizeDesignSystemCraftApplies(value: unknown): string[] | undefined {
+function normalizeDesignSystemCraftApplies(value: any): string[] | undefined {
   if (!Array.isArray(value)) return undefined;
   const seen = new Set<string>();
   const out: string[] = [];

@@ -52,7 +52,7 @@ function publicComposioAuthStart(auth: ComposioConnectionStart): PublicComposioC
   };
 }
 
-function isMissingOrExpiredComposioOAuthState(error: unknown): boolean {
+function isMissingOrExpiredComposioOAuthState(error: any): boolean {
   return error instanceof ConnectorServiceError
     && error.code === 'CONNECTOR_EXECUTION_FAILED'
     && error.message === 'Composio OAuth state is missing or expired';
@@ -75,7 +75,7 @@ function boundedJsonValueIncludesAuthStaleSignal(value: BoundedJsonValue | undef
   return Object.values(value).some(boundedJsonValueIncludesAuthStaleSignal);
 }
 
-function isConnectorAuthStaleError(error: unknown, request: Pick<ConnectorExecuteRequest, 'connectorId' | 'toolName'>): boolean {
+function isConnectorAuthStaleError(error: any, request: Pick<ConnectorExecuteRequest, 'connectorId' | 'toolName'>): boolean {
   if (!(error instanceof ConnectorServiceError) || error.code !== 'CONNECTOR_EXECUTION_FAILED') return false;
   const details = error.details;
   return details?.connectorId === request.connectorId
@@ -227,7 +227,7 @@ export class FileConnectorCredentialStore implements ConnectorCredentialStore {
 
   private readRecords(): Record<string, ConnectorCredentialRecord> {
     try {
-      const parsed = JSON.parse(fs.readFileSync(this.filePath, 'utf8')) as unknown;
+      const parsed = JSON.parse(fs.readFileSync(this.filePath, 'utf8')) as any;
       if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
       const records: Record<string, ConnectorCredentialRecord> = {};
       for (const [connectorId, value] of Object.entries(parsed as Record<string, unknown>)) {
@@ -244,7 +244,7 @@ export class FileConnectorCredentialStore implements ConnectorCredentialStore {
         };
       }
       return records;
-    } catch (error) {
+    } catch (error: any) {
       if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') return {};
       throw error;
     }
@@ -741,7 +741,7 @@ export class ConnectorService {
       const completed = await composioConnectorProvider.completeConnection({ definition, state: input.state, ...(input.providerConnectionId === undefined ? {} : { providerConnectionId: input.providerConnectionId }), ...(input.status === undefined ? {} : { status: input.status }), ...(input.signal === undefined ? {} : { signal: input.signal }) });
       this.statusService.connect(definition, completed.accountLabel, completed.credentials);
       return this.toDetail(definition);
-    } catch (error) {
+    } catch (error: any) {
       if (
         input.providerConnectionId !== undefined
         && isMissingOrExpiredComposioOAuthState(error)
@@ -802,7 +802,7 @@ export class ConnectorService {
     }
     try {
       assertJsonSchemaMatches(request.input, tool.inputSchemaJson);
-    } catch (error) {
+    } catch (error: any) {
       throw new ConnectorServiceError('CONNECTOR_INPUT_SCHEMA_MISMATCH', error instanceof Error ? error.message : String(error), 400, {
         connectorId: request.connectorId,
         toolName: request.toolName,
@@ -814,7 +814,7 @@ export class ConnectorService {
     let providerOutput: BoundedJsonObject;
     try {
       providerOutput = await this.executeConnectorProviderTool(request, context, definition, tool);
-    } catch (error) {
+    } catch (error: any) {
       if (isConnectorAuthStaleError(error, request)) {
         this.statusService.markAuthenticationExpired(definition, connectorAuthExpiredMessage(definition), connector.accountLabel);
       }

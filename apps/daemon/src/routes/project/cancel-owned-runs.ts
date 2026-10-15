@@ -3,7 +3,7 @@
 // `ServerContext.design: any` type.
 interface RunCancellationService {
   list: (filter: { projectId?: string; conversationId?: string; status?: string }) => unknown[];
-  cancel: (run: unknown, origin?: 'project_cleanup') => Promise<unknown>;
+  cancel: (run: any, origin?: 'project_cleanup') => Promise<any>;
 }
 
 /**

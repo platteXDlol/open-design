@@ -109,7 +109,7 @@ export interface InvalidCapabilityIssue {
 // Returns the (deduped) accepted list plus issues for anything rejected;
 // unknown shapes are NOT silently dropped — the caller must surface them.
 export function validateCapabilityList(
-  raw: unknown,
+  raw: any,
 ): { accepted: string[]; rejected: InvalidCapabilityIssue[] } {
   const accepted: string[] = [];
   const rejected: InvalidCapabilityIssue[] = [];
@@ -157,7 +157,7 @@ export function grantCapabilities(args: {
   }
   let existing: string[] = [];
   try {
-    const parsed = JSON.parse(row.capabilities_granted ?? '[]') as unknown;
+    const parsed = JSON.parse(row.capabilities_granted ?? '[]') as any;
     if (Array.isArray(parsed)) {
       existing = parsed.filter((c): c is string => typeof c === 'string');
     }
@@ -192,7 +192,7 @@ export function revokeCapabilities(args: {
   }
   let existing: string[] = [];
   try {
-    const parsed = JSON.parse(row.capabilities_granted ?? '[]') as unknown;
+    const parsed = JSON.parse(row.capabilities_granted ?? '[]') as any;
     if (Array.isArray(parsed)) {
       existing = parsed.filter((c): c is string => typeof c === 'string');
     }

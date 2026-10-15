@@ -69,7 +69,7 @@ export interface OpenCodeChildRuntimeFact extends Omit<OpenCodeTaskTerminalCandi
 }
 
 export interface OpenCodeRootTaskEvidenceCollector {
-  observe(value: unknown): void;
+  observe(value: any): void;
   coverage(streamComplete: boolean): ChildEvidenceCoverageV1;
   /**
    * Terminal candidates retained for the post-run sanitized-export upgrade.
@@ -80,21 +80,21 @@ export interface OpenCodeRootTaskEvidenceCollector {
   candidates(): readonly OpenCodeTaskTerminalCandidate[];
 }
 
-function isRecord(value: unknown): value is RecordValue {
+function isRecord(value: any): value is RecordValue {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-function nonEmptyString(value: unknown): string | undefined {
+function nonEmptyString(value: any): string | undefined {
   return typeof value === 'string' && value.trim() ? value : undefined;
 }
 
-function nonNegativeNumber(value: unknown): number | undefined {
+function nonNegativeNumber(value: any): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
     ? value
     : undefined;
 }
 
-function promptIdentity(value: unknown): {
+function promptIdentity(value: any): {
   hash: string;
   bytes: number;
   safePayload: SafeChildPromptInput;
@@ -143,7 +143,7 @@ export function createOpenCodeRootTaskEvidenceCollector(input: {
   const retained: OpenCodeTaskTerminalCandidate[] = [];
   let rootSessionId = input.rootSessionId;
 
-  function observe(value: unknown): void {
+  function observe(value: any): void {
     if (!isRecord(value)) return;
     if (
       value.type === 'step_start' &&
@@ -265,7 +265,7 @@ export function createOpenCodeRootTaskEvidenceCollector(input: {
 function addUsageValue(
   values: NonNullable<OpenCodeChildRuntimeFact['usage']>,
   key: keyof NonNullable<OpenCodeChildRuntimeFact['usage']>,
-  value: unknown,
+  value: any,
 ): void {
   const parsed = nonNegativeNumber(value);
   if (parsed !== undefined) values[key] = (values[key] ?? 0) + parsed;
@@ -310,7 +310,7 @@ function childUsageFromSanitizedExport(
  */
 export function verifyOpenCodeChildExport(input: {
   candidate: OpenCodeTaskTerminalCandidate;
-  sanitizedExport: unknown;
+  sanitizedExport: any;
 }): OpenCodeChildRuntimeFact[] {
   if (input.candidate.adapterVersion !== OPENCODE_CHILD_EVIDENCE_ADAPTER_VERSION) return [];
   if (!isRecord(input.sanitizedExport) || !isRecord(input.sanitizedExport.info)) return [];
@@ -354,7 +354,7 @@ export function verifyOpenCodeChildExport(input: {
  */
 export async function collectOpenCodeChildRuntimeFacts(input: {
   candidate: OpenCodeTaskTerminalCandidate;
-  loadSanitizedExport: (childSessionId: string) => Promise<unknown>;
+  loadSanitizedExport: (childSessionId: string) => Promise<any>;
 }): Promise<OpenCodeChildRuntimeFact[]> {
   if (input.candidate.adapterVersion !== OPENCODE_CHILD_EVIDENCE_ADAPTER_VERSION) return [];
   try {
@@ -386,7 +386,7 @@ export function createOpenCodeSanitizedExportLoader(input: {
   env: NodeJS.ProcessEnv;
   timeoutMs?: number;
   maxBytes?: number;
-}): (childSessionId: string) => Promise<unknown> {
+}): (childSessionId: string) => Promise<any> {
   return async (childSessionId: string) => {
     if (!OPENCODE_CHILD_SESSION_ID.test(childSessionId)) {
       throw new TypeError(`Unsupported OpenCode child session id: ${childSessionId}`);
@@ -419,7 +419,7 @@ export function createOpenCodeSanitizedExportLoader(input: {
  */
 export async function collectOpenCodeChildEvidenceFacts(input: {
   candidates: readonly OpenCodeTaskTerminalCandidate[];
-  loadSanitizedExport: (childSessionId: string) => Promise<unknown>;
+  loadSanitizedExport: (childSessionId: string) => Promise<any>;
   totalBudgetMs?: number;
   now?: () => number;
 }): Promise<OpenCodeChildRuntimeFact[]> {

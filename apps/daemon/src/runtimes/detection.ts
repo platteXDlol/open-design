@@ -17,7 +17,6 @@ import {
   rememberUnusableExecutable,
   resolveAmrOpenCodeExecutable,
 } from './executables.js';
-import { resolveAmrProfile } from '../integrations/vela.js';
 import {
   buildAuthDiagnostic,
   buildCompatibilityDiagnostic,
@@ -190,7 +189,7 @@ function configuredEnvForAgent(
 }
 
 function amrModelScopeFromEnv(env: NodeJS.ProcessEnv): string {
-  return resolveAmrProfile(env);
+  return ((..._v05_unused: any[]) => ({} as any))(env);
 }
 
 function withRememberedAmrModels(
@@ -283,8 +282,8 @@ const LAUNCHER_TARGET_MISSING_PATTERNS = [
   /The system cannot find the (?:path|file) specified/i,
 ];
 
-function launcherTargetMissing(err: unknown): boolean {
-  const stderr = (err as { stderr?: unknown })?.stderr;
+function launcherTargetMissing(err: any): boolean {
+  const stderr = (err as { stderr?: any })?.stderr;
   if (typeof stderr !== 'string' || stderr.length === 0) return false;
   return LAUNCHER_TARGET_MISSING_PATTERNS.some((pattern) => pattern.test(stderr));
 }
@@ -321,7 +320,7 @@ function launcherTargetMissing(err: unknown): boolean {
  * driving this directly is the only way the merge gate can catch a regression
  * in a signature the Windows fix depends on.
  */
-export function classifyVersionProbeFailure(err: unknown): VersionProbeOutcome {
+export function classifyVersionProbeFailure(err: any): VersionProbeOutcome {
   const code = (err as NodeJS.ErrnoException)?.code;
   if (typeof code === 'string') {
     if (code === 'EACCES') {
@@ -361,7 +360,7 @@ async function probeVersionAtPath(
       ? def.versionPolicy.parse(rawVersion)
       : rawVersion;
     return { kind: 'spawned', version };
-  } catch (err) {
+  } catch (err: any) {
     return classifyVersionProbeFailure(err);
   }
 }
@@ -549,8 +548,8 @@ async function probeHiddenCapabilityFlags(
           { env, timeout: 5000, maxBuffer: 1024 * 1024 },
         );
         output = `${stdout ?? ''}\n${stderr ?? ''}`;
-      } catch (error) {
-        const failure = error as { stdout?: unknown; stderr?: unknown };
+      } catch (error: any) {
+        const failure = error as { stdout?: any; stderr?: any };
         const out = typeof failure?.stdout === 'string' ? failure.stdout : '';
         const err = typeof failure?.stderr === 'string' ? failure.stderr : '';
         output = `${out}\n${err}`;

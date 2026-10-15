@@ -12,7 +12,7 @@ export function getSnapshotContextCraft(snapshot: AppliedPluginSnapshot): string
   return normalizeCraftRequires(snapshot.craftRequires);
 }
 
-function normalizeCraftRequires(declared: unknown): string[] {
+function normalizeCraftRequires(declared: any): string[] {
   if (!Array.isArray(declared) || declared.length === 0) return [];
 
   const seen = new Set<string>();

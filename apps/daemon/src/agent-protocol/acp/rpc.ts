@@ -31,7 +31,7 @@ export function sendRpc(
   writable: RpcWritable,
   id: JsonRpcId,
   method: string,
-  params: unknown,
+  params: any,
   observeSerializedFrame?: SerializedRpcFrameObserver,
 ): void {
   const frame = `${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`;
@@ -53,7 +53,7 @@ export function sendRpc(
  * @param id - The id from the incoming request being answered.
  * @param result - The result payload to include in the response.
  */
-export function sendRpcResult(writable: RpcWritable, id: JsonRpcId, result: unknown): void {
+export function sendRpcResult(writable: RpcWritable, id: JsonRpcId, result: any): void {
   writable.write(`${JSON.stringify({ jsonrpc: '2.0', id, result })}\n`);
 }
 
@@ -61,7 +61,7 @@ export function sendRpcResult(writable: RpcWritable, id: JsonRpcId, result: unkn
 export function sendRpcNotification(
   writable: RpcWritable,
   method: string,
-  params: unknown,
+  params: any,
 ): void {
   writable.write(`${JSON.stringify({ jsonrpc: '2.0', method, params })}\n`);
 }
@@ -70,7 +70,7 @@ export function sendRpcNotification(
  * Type guard that returns `true` when `value` is a valid JSON-RPC id
  * (a `number` or `string`). Used before replying to incoming requests.
  */
-export function isJsonRpcId(value: unknown): value is JsonRpcId {
+export function isJsonRpcId(value: any): value is JsonRpcId {
   return typeof value === 'number' || typeof value === 'string';
 }
 /**
@@ -81,7 +81,7 @@ export function isJsonRpcId(value: unknown): value is JsonRpcId {
  * @param raw - A parsed JSON-RPC response object (unknown shape).
  * @returns A non-empty error message string, or `''` when not an error response.
  */
-export function rpcErrorMessage(raw: unknown): string {
+export function rpcErrorMessage(raw: any): string {
   const obj = asObject(raw);
   const error = asObject(obj?.error);
   if (!obj || !error) {
@@ -105,7 +105,7 @@ export function rpcErrorMessage(raw: unknown): string {
  * @param raw - A parsed JSON-RPC response object (unknown shape).
  * @returns The `error.data` value, or `undefined` when absent.
  */
-export function rpcErrorData(raw: unknown): unknown {
+export function rpcErrorData(raw: any): any {
   const obj = asObject(raw);
   const error = asObject(obj?.error);
   return error && 'data' in error ? error.data : undefined;
@@ -123,7 +123,7 @@ export function rpcErrorData(raw: unknown): unknown {
  *
  * @param data - The value of `error.data` extracted via `rpcErrorData`.
  */
-export function rpcErrorRetryable(data: unknown): boolean | undefined {
+export function rpcErrorRetryable(data: any): boolean | undefined {
   const details = asObject(data);
   if (typeof details?.retryable === 'boolean') return details.retryable;
   // `isRetryable` is the same statement under the AI-SDK / opencode spelling
@@ -159,7 +159,7 @@ export function rpcErrorRetryable(data: unknown): boolean | undefined {
  * (`stream idle timeout`, `overloaded`, gateway/service outages) are retryable.
  * Returns `undefined` when nothing matches so callers keep their own default.
  */
-export function inferRpcErrorRetryable(message: string, data: unknown): boolean | undefined {
+export function inferRpcErrorRetryable(message: string, data: any): boolean | undefined {
   const details = asObject(data);
   const text = [
     message,
@@ -206,7 +206,7 @@ export function inferRpcErrorRetryable(message: string, data: unknown): boolean 
  * @param fallbackMessage - Used when the payload's `message` field is blank.
  * @returns A structured error payload, or `null` when not applicable.
  */
-export function promotedOpenCodeSessionErrorPayload(data: unknown, fallbackMessage: string) {
+export function promotedOpenCodeSessionErrorPayload(data: any, fallbackMessage: string) {
   const details = asObject(data);
   if (
     details?.kind !== 'opencode_session_error' ||
@@ -274,7 +274,7 @@ function firstFiniteNumber(src: Record<string, unknown>, keys: string[]): number
  * @param usage - The raw `result.usage` value from a `session/prompt` response.
  * @returns A `FormattedUsage` object with at least one field, or `null`.
  */
-export function formatUsage(usage: unknown): FormattedUsage | null {
+export function formatUsage(usage: any): FormattedUsage | null {
   const src = asObject(usage);
   if (!src) return null;
   const out: FormattedUsage = {};
@@ -325,7 +325,7 @@ export function formatUsage(usage: unknown): FormattedUsage | null {
  * @param options - The `params.options` array from the incoming permission request.
  * @returns The chosen `optionId` string, or `null` when no approvable option is found.
  */
-export function choosePermissionOutcome(options: unknown): string | null {
+export function choosePermissionOutcome(options: any): string | null {
   const list = Array.isArray(options) ? options : [];
   const approveForSession = list.find((option) => option?.optionId === 'approve_for_session');
   if (approveForSession) return 'approve_for_session';

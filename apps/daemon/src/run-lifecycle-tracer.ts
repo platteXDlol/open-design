@@ -74,21 +74,21 @@ export interface RunLifecycleStreamEventMarkers {
  * staring at an empty message?", so it must be stamped by pixels, not by frame
  * arrival. Frame arrival is already covered by `first_model_event`.
  */
-function deltaCarriesCharacters(data: unknown): boolean {
+function deltaCarriesCharacters(data: any): boolean {
   const delta =
     data && typeof data === 'object' && 'delta' in data
-      ? (data as { delta?: unknown }).delta
+      ? (data as { delta?: any }).delta
       : undefined;
   return typeof delta === 'string' && delta.length > 0;
 }
 
 export function runLifecycleMarkersForStreamEvent(
   event: string,
-  data: unknown,
+  data: any,
 ): RunLifecycleStreamEventMarkers {
   const type =
     data && typeof data === 'object' && 'type' in data
-      ? (data as { type?: unknown }).type
+      ? (data as { type?: any }).type
       : undefined;
   if (event === 'agent') {
     // `artifact` is deliberately absent. Agent `artifact` events are emitted
@@ -104,7 +104,7 @@ export function runLifecycleMarkersForStreamEvent(
         : undefined;
     const startedAt =
       data && typeof data === 'object' && 'startedAt' in data
-        ? (data as { startedAt?: unknown }).startedAt
+        ? (data as { startedAt?: any }).startedAt
         : undefined;
     const firstModelEventAt =
       typeof startedAt === 'number' && Number.isFinite(startedAt)

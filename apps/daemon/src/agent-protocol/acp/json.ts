@@ -13,7 +13,7 @@ import { MAX_TIMEOUT_MS } from './constants.js';
  *
  * @param err - Any caught value (typically an `Error` but may be anything).
  */
-export function errorMessage(err: unknown): string {
+export function errorMessage(err: any): string {
   return err instanceof Error ? err.message : String(err);
 }
 /**
@@ -38,7 +38,7 @@ export function resolveAcpTimeoutMs(env: NodeJS.ProcessEnv, fallbackMs: number):
  * @param value - Any value from a JSON parse result.
  * @returns The value cast as `JsonObject`, or `null` when the cast is unsafe.
  */
-export function asObject(value: unknown): JsonObject | null {
+export function asObject(value: any): JsonObject | null {
   return value && typeof value === 'object' ? value as JsonObject : null;
 }
 /**
@@ -48,7 +48,7 @@ export function asObject(value: unknown): JsonObject | null {
  *
  * @param value - Any value from a parsed ACP update object.
  */
-export function acpValueKind(value: unknown): string {
+export function acpValueKind(value: any): string {
   if (Array.isArray(value)) return 'array';
   if (value === null) return 'null';
   return typeof value;
@@ -60,7 +60,7 @@ export function acpValueKind(value: unknown): string {
  *
  * @param value - Any value from a parsed ACP update object.
  */
-export function objectKeys(value: unknown): string[] {
+export function objectKeys(value: any): string[] {
   const obj = asObject(value);
   return obj ? Object.keys(obj).sort() : [];
 }
@@ -76,7 +76,7 @@ export function objectKeys(value: unknown): string[] {
  * @param depth - Current recursion depth (max 4); callers omit this.
  * @returns The first non-empty string found, or `null` when none is present.
  */
-export function extractAcpTextValue(value: unknown, depth = 0): string | null {
+export function extractAcpTextValue(value: any, depth = 0): string | null {
   if (depth > 4) return null;
   if (typeof value === 'string') return value.length > 0 ? value : null;
   if (Array.isArray(value)) {

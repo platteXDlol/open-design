@@ -52,7 +52,7 @@ export async function runDesignExtract(opts: DesignExtractOptions): Promise<Desi
   try {
     const raw = await fsp.readFile(indexPath, 'utf8');
     index = JSON.parse(raw) as CodeImportIndex;
-  } catch (err) {
+  } catch (err: any) {
     throw new Error(`design-extract: missing or unreadable code/index.json (run code-import first): ${(err as Error).message}`);
   }
 

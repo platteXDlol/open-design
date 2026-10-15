@@ -17,7 +17,7 @@ export type AttachDshProfileSessionOptions = {
   model?: string | null;
   reasoningEffort?: string | null;
   resumeSessionId?: string | null;
-  send: (event: string, payload: unknown) => void;
+  send: (event: string, payload: any) => void;
   onReady?: () => void;
   onSession?: () => void;
   onComplete?: () => void;
@@ -38,7 +38,7 @@ function modelSelection(value: string | null | undefined): { provider: string; i
 
 function toolInput(argumentsJson: string): Record<string, unknown> {
   try {
-    const value = JSON.parse(argumentsJson) as unknown;
+    const value = JSON.parse(argumentsJson) as any;
     if (value && typeof value === 'object' && !Array.isArray(value)) {
       return value as Record<string, unknown>;
     }
@@ -77,7 +77,7 @@ export function attachDshProfileSession({
   let thinkingStarted = false;
   let ignoredRequestFrames = 0;
 
-  const sendCommand = (command: unknown): boolean => {
+  const sendCommand = (command: any): boolean => {
     if (stdin.destroyed || !stdin.writable) return false;
     return stdin.write(`${JSON.stringify(command)}\n`);
   };

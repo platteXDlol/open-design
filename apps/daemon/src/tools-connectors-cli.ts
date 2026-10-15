@@ -9,7 +9,7 @@ type JsonObject = Record<string, unknown>;
 interface CliError {
   code?: string;
   message: string;
-  details?: unknown;
+  details?: any;
   retryable?: boolean;
   requestId?: string;
 }
@@ -169,11 +169,11 @@ interface LocalGitHubCloneResult {
   warnings: string[];
 }
 
-function writeJson(value: unknown, stream: NodeJS.WriteStream = process.stdout): void {
+function writeJson(value: any, stream: NodeJS.WriteStream = process.stdout): void {
   stream.write(`${JSON.stringify(value)}\n`);
 }
 
-function fail(message: string, details?: unknown): ToolCliResult {
+function fail(message: string, details?: any): ToolCliResult {
   writeJson({ ok: false, error: { message, ...(details === undefined ? {} : { details }) } }, process.stderr);
   return { exitCode: 1 };
 }
@@ -276,12 +276,12 @@ function endpoint(baseUrl: URL, pathname: string): string {
   return url.toString();
 }
 
-async function readJsonFile(filePath: string): Promise<unknown> {
+async function readJsonFile(filePath: string): Promise<any> {
   const resolved = path.resolve(filePath);
   const text = await readFile(resolved, 'utf8');
   try {
-    return JSON.parse(text) as unknown;
-  } catch (error) {
+    return JSON.parse(text) as any;
+  } catch (error: any) {
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(`invalid JSON in ${resolved}: ${message}`);
   }
@@ -366,11 +366,11 @@ async function ensureParentDirectory(filePath: string): Promise<void> {
   await mkdir(path.dirname(filePath), { recursive: true });
 }
 
-function isAbsenceError(error: unknown): boolean {
+function isAbsenceError(error: any): boolean {
   return Boolean(error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT');
 }
 
-async function requestJsonOrThrow(baseUrl: URL, token: string, pathname: string, init: RequestInit = {}): Promise<unknown> {
+async function requestJsonOrThrow(baseUrl: URL, token: string, pathname: string, init: RequestInit = {}): Promise<any> {
   const response = await requestJson(baseUrl, token, pathname, init);
   if (response.status >= 200 && response.status < 300) return response.body;
   const error = normalizeCliError(response.body);
@@ -382,7 +382,7 @@ async function executeConnectorReadTool(
   token: string,
   toolName: string,
   input: JsonObject,
-): Promise<unknown> {
+): Promise<any> {
   const body = await requestJsonOrThrow(baseUrl, token, '/api/tools/connectors/execute', {
     method: 'POST',
     body: JSON.stringify({ connectorId: GITHUB_CONNECTOR_ID, toolName, input }),
@@ -408,7 +408,7 @@ async function assertGithubConnectorIsListable(baseUrl: URL, token: string): Pro
   }
 }
 
-function getStringAtKeys(value: unknown, keys: string[]): string | undefined {
+function getStringAtKeys(value: any, keys: string[]): string | undefined {
   if (!value || typeof value !== 'object') return undefined;
   const record = value as JsonObject;
   for (const key of keys) {
@@ -422,11 +422,11 @@ function getStringAtKeys(value: unknown, keys: string[]): string | undefined {
   return undefined;
 }
 
-function getDefaultBranch(metadata: unknown): string | undefined {
+function getDefaultBranch(metadata: any): string | undefined {
   return getStringAtKeys(metadata, ['default_branch', 'defaultBranch']);
 }
 
-function decodeContentPayload(value: unknown): string | undefined {
+function decodeContentPayload(value: any): string | undefined {
   if (typeof value === 'string') return value;
   if (!value || typeof value !== 'object') return undefined;
   const record = value as JsonObject;
@@ -456,7 +456,7 @@ function decodeBase64Buffer(value: string): Buffer {
   return Buffer.from(value.replace(/\s+/gu, ''), 'base64');
 }
 
-function decodeBinaryContentPayload(value: unknown): Buffer | undefined {
+function decodeBinaryContentPayload(value: any): Buffer | undefined {
   if (!value || typeof value !== 'object') return undefined;
   if (Array.isArray(value)) {
     for (const item of value) {
@@ -483,7 +483,7 @@ function decodeBinaryContentPayload(value: unknown): Buffer | undefined {
   return undefined;
 }
 
-function findConnectorSignedContentUrl(value: unknown): string | undefined {
+function findConnectorSignedContentUrl(value: any): string | undefined {
   if (!value || typeof value !== 'object') return undefined;
   if (Array.isArray(value)) {
     for (const item of value) {
@@ -501,7 +501,7 @@ function findConnectorSignedContentUrl(value: unknown): string | undefined {
   return undefined;
 }
 
-async function readConnectorTextContent(value: unknown): Promise<string | undefined> {
+async function readConnectorTextContent(value: any): Promise<string | undefined> {
   const decoded = decodeContentPayload(value);
   if (decoded !== undefined) return decoded;
   const signedUrl = findConnectorSignedContentUrl(value);
@@ -514,7 +514,7 @@ async function readConnectorTextContent(value: unknown): Promise<string | undefi
   return text.slice(0, MAX_CONTEXT_FILE_BYTES);
 }
 
-async function readConnectorBinaryContent(value: unknown): Promise<Buffer | undefined> {
+async function readConnectorBinaryContent(value: any): Promise<Buffer | undefined> {
   const decoded = decodeBinaryContentPayload(value);
   if (decoded) return decoded;
   const signedUrl = findConnectorSignedContentUrl(value);
@@ -528,7 +528,7 @@ async function readConnectorBinaryContent(value: unknown): Promise<Buffer | unde
 
 async function readConnectorSnapshotContent(
   repoPath: string,
-  value: unknown,
+  value: any,
 ): Promise<{ content: string | Buffer; bytes: number; binary?: boolean } | undefined> {
   const normalizedPath = repoPath.toLowerCase();
   if (isBinaryDesignAssetPath(normalizedPath)) {
@@ -545,9 +545,9 @@ async function readConnectorSnapshotContent(
   return { content, bytes: Buffer.byteLength(content, 'utf8') };
 }
 
-function extractTreePaths(value: unknown): string[] {
+function extractTreePaths(value: any): string[] {
   const paths = new Set<string>();
-  const visit = (node: unknown) => {
+  const visit = (node: any) => {
     if (!node || typeof node !== 'object') return;
     if (Array.isArray(node)) {
       for (const item of node) visit(item);
@@ -570,9 +570,9 @@ interface GithubDirectoryEntry {
   type: 'file' | 'dir';
 }
 
-function extractDirectoryEntries(value: unknown): GithubDirectoryEntry[] {
+function extractDirectoryEntries(value: any): GithubDirectoryEntry[] {
   const entries = new Map<string, GithubDirectoryEntry>();
-  const visit = (node: unknown) => {
+  const visit = (node: any) => {
     if (!node || typeof node !== 'object') return;
     if (Array.isArray(node)) {
       for (const item of node) visit(item);
@@ -722,7 +722,7 @@ async function collectGithubTreePathsWithConnector(
       recursive: true,
     });
     return extractTreePaths(treePayload);
-  } catch (error) {
+  } catch (error: any) {
     warnings.push(
       `Recursive tree connector read failed; falling back to bounded directory browsing: ${
         error instanceof Error ? error.message : String(error)
@@ -757,7 +757,7 @@ async function collectGithubTreePathsFromDirectoryListings(
         path: currentDir,
       });
       entries = extractDirectoryEntries(payload);
-    } catch (error) {
+    } catch (error: any) {
       warnings.push(`Skipped directory ${currentDir || '.'}: ${error instanceof Error ? error.message : String(error)}`);
       continue;
     }
@@ -789,13 +789,13 @@ async function collectGithubEvidenceWithConnector(
 ): Promise<GithubDesignEvidence> {
   await assertGithubConnectorIsListable(baseUrl, token);
   const warnings: string[] = [];
-  let metadata: unknown;
+  let metadata: any;
   try {
     metadata = await executeConnectorReadTool(baseUrl, token, GITHUB_GET_REPOSITORY_TOOL, {
       owner: repo.owner,
       repo: repo.repo,
     });
-  } catch (error) {
+  } catch (error: any) {
     if (!connectorIntakeIsRecoverable(error)) throw error;
     warnings.push(
       `Repository metadata connector read failed; continuing with ${
@@ -819,7 +819,7 @@ async function collectGithubEvidenceWithConnector(
         content,
       };
     }
-  } catch (error) {
+  } catch (error: any) {
     warnings.push(`README connector read failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 
@@ -847,7 +847,7 @@ async function collectGithubEvidenceWithConnector(
         source: 'connector',
         ...(snapshot.binary ? { binary: true } : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       warnings.push(`Skipped ${repoPath}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
@@ -1009,7 +1009,7 @@ async function collectLocalDesignEvidence(
   };
 }
 
-function connectorIntakeIsRecoverable(error: unknown): boolean {
+function connectorIntakeIsRecoverable(error: any): boolean {
   const message = error instanceof Error ? error.message : String(error);
   if (/\b(ACCESS_DENIED|NOT_FOUND|FORBIDDEN|UNAUTHORIZED)\b|access denied|repository not found|not found|forbidden|permission|unauthorized|\b40[134]\b/iu.test(message)) {
     return false;
@@ -1146,7 +1146,7 @@ function resolveProcessCommand(command: string): string {
   return command;
 }
 
-function appendProcessOutput(current: string, chunk: unknown): string {
+function appendProcessOutput(current: string, chunk: any): string {
   return `${current}${String(chunk)}`.slice(-MAX_PROCESS_OUTPUT_CHARS);
 }
 
@@ -1367,7 +1367,7 @@ async function writePackageFileIfMissing(relativePath: string, content: string |
   try {
     await stat(targetPath);
     return false;
-  } catch (error) {
+  } catch (error: any) {
     if (!isAbsenceError(error)) throw error;
   }
   await ensureParentDirectory(targetPath);
@@ -1631,7 +1631,7 @@ async function runGithubDesignContext(options: ParsedOptions): Promise<ToolCliRe
       ...(options.ref === undefined ? {} : { ref: options.ref }),
       maxFiles,
     });
-  } catch (localError) {
+  } catch (localError: any) {
     const localReason = localError instanceof Error ? localError.message : String(localError);
     const connectorReady = !('error' in baseUrl) && typeof token === 'string';
     if (connectorReady) {
@@ -1647,7 +1647,7 @@ async function runGithubDesignContext(options: ParsedOptions): Promise<ToolCliRe
         evidence.warnings.unshift(
           `This-device GitHub intake failed; used Composio GitHub connector fallback. Reason: ${localReason}`,
         );
-      } catch (connectorError) {
+      } catch (connectorError: any) {
         connectorReason = connectorError instanceof Error ? connectorError.message : String(connectorError);
         if (options.requireConnector) {
           return fail('Required GitHub repository intake could not read the repository through git, GitHub CLI, or connector', {
@@ -2655,7 +2655,7 @@ function missingUiKitComponentRoles(componentFiles: string[]): string[] {
     .map(([role]) => role);
 }
 
-async function requestJson(baseUrl: URL, token: string, pathname: string, init: RequestInit = {}): Promise<{ status: number; body: unknown }> {
+async function requestJson(baseUrl: URL, token: string, pathname: string, init: RequestInit = {}): Promise<{ status: number; body: any }> {
   const response = await fetch(endpoint(baseUrl, pathname), {
     ...init,
     headers: {
@@ -2666,10 +2666,10 @@ async function requestJson(baseUrl: URL, token: string, pathname: string, init: 
     },
   });
   const text = await response.text();
-  let body: unknown = text;
+  let body: any = text;
   if (text.length > 0) {
     try {
-      body = JSON.parse(text) as unknown;
+      body = JSON.parse(text) as any;
     } catch {
       body = { message: text };
     }
@@ -2677,7 +2677,7 @@ async function requestJson(baseUrl: URL, token: string, pathname: string, init: 
   return { status: response.status, body };
 }
 
-function compactTool(value: unknown): unknown {
+function compactTool(value: any): any {
   if (!value || typeof value !== 'object') return value;
   const tool = value as JsonObject;
   return {
@@ -2689,7 +2689,7 @@ function compactTool(value: unknown): unknown {
   };
 }
 
-function compactConnector(value: unknown): unknown {
+function compactConnector(value: any): any {
   if (!value || typeof value !== 'object') return value;
   const connector = value as JsonObject;
   const tools = Array.isArray(connector.tools) ? connector.tools : [];
@@ -2704,14 +2704,14 @@ function compactConnector(value: unknown): unknown {
   };
 }
 
-function compactList(value: unknown): unknown {
+function compactList(value: any): any {
   if (!value || typeof value !== 'object') return value;
   const response = value as JsonObject;
   const connectors = Array.isArray(response.connectors) ? response.connectors : [];
   return { connectors: connectors.map(compactConnector) };
 }
 
-function compactExecution(value: unknown): unknown {
+function compactExecution(value: any): any {
   if (!value || typeof value !== 'object') return value;
   const response = value as JsonObject;
   return {
@@ -2725,7 +2725,7 @@ function compactExecution(value: unknown): unknown {
   };
 }
 
-function compactValidationDetails(details: unknown): unknown {
+function compactValidationDetails(details: any): any {
   if (!details || typeof details !== 'object') return details;
   const record = details as JsonObject;
   if (record.kind !== 'validation' || !Array.isArray(record.issues)) return details;
@@ -2743,7 +2743,7 @@ function compactValidationDetails(details: unknown): unknown {
   };
 }
 
-function normalizeCliError(body: unknown): CliError {
+function normalizeCliError(body: any): CliError {
   const rawError = body && typeof body === 'object' && 'error' in body ? (body as JsonObject).error : body;
 
   if (typeof rawError === 'string') return { message: rawError };
@@ -2759,7 +2759,7 @@ function normalizeCliError(body: unknown): CliError {
   };
 }
 
-async function printApiResult(response: { status: number; body: unknown }, compact: (body: unknown) => unknown): Promise<ToolCliResult> {
+async function printApiResult(response: { status: number; body: any }, compact: (body: any) => unknown): Promise<ToolCliResult> {
   if (response.status < 200 || response.status >= 300) {
     writeJson({ ok: false, status: response.status, error: normalizeCliError(response.body) }, process.stderr);
     return { exitCode: 1 };
@@ -2780,7 +2780,7 @@ export async function runConnectorsToolCli(args: string[]): Promise<ToolCliResul
   if (options.command === 'github-design-context') {
     try {
       return await runGithubDesignContext(options);
-    } catch (error) {
+    } catch (error: any) {
       const message = error instanceof Error ? error.message : String(error);
       return fail(message);
     }
@@ -2789,7 +2789,7 @@ export async function runConnectorsToolCli(args: string[]): Promise<ToolCliResul
   if (options.command === 'local-design-context') {
     try {
       return await runLocalDesignContext(options);
-    } catch (error) {
+    } catch (error: any) {
       const message = error instanceof Error ? error.message : String(error);
       return fail(message);
     }
@@ -2798,7 +2798,7 @@ export async function runConnectorsToolCli(args: string[]): Promise<ToolCliResul
   if (options.command === 'design-system-package-audit') {
     try {
       return await runDesignSystemPackageAudit(options);
-    } catch (error) {
+    } catch (error: any) {
       const message = error instanceof Error ? error.message : String(error);
       return fail(message);
     }
@@ -2833,7 +2833,7 @@ export async function runConnectorsToolCli(args: string[]): Promise<ToolCliResul
     }
 
     return fail(`unknown connectors command: ${options.command}`);
-  } catch (error) {
+  } catch (error: any) {
     const message = error instanceof Error ? error.message : String(error);
     return fail(message);
   }

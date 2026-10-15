@@ -10,13 +10,13 @@ import {
 } from '@open-design/contracts';
 import { sanitizeSeedOverrides, type Brand } from './schema.js';
 
-const isStr = (v: unknown): v is string => typeof v === 'string';
-const strArr = (v: unknown): string[] => (Array.isArray(v) ? v.filter(isStr) : []);
+const isStr = (v: any): v is string => typeof v === 'string';
+const strArr = (v: any): string[] => (Array.isArray(v) ? v.filter(isStr) : []);
 
 /** Parse the optional `imagery.samples` array. Each entry needs a `file`
  *  string; `kind`/`caption` are optional. Anything malformed is dropped so a
  *  sloppy agent output still validates (backward compatible). */
-function imagerySamples(raw: unknown): BrandImagerySample[] {
+function imagerySamples(raw: any): BrandImagerySample[] {
   if (!Array.isArray(raw)) return [];
   const out: BrandImagerySample[] = [];
   for (const item of raw) {
@@ -32,7 +32,7 @@ function imagerySamples(raw: unknown): BrandImagerySample[] {
   return out;
 }
 
-function fontSpec(raw: unknown, fallbackFamily: string): BrandFontSpec {
+function fontSpec(raw: any, fallbackFamily: string): BrandFontSpec {
   const o = (raw ?? {}) as Record<string, unknown>;
   return {
     family: isStr(o.family) && o.family ? o.family : fallbackFamily,
@@ -48,7 +48,7 @@ function fontSpec(raw: unknown, fallbackFamily: string): BrandFontSpec {
  * unrecoverable problems (missing name/colors); fills sensible defaults for
  * everything optional so a slightly-sloppy input still renders.
  */
-export function validateBrand(raw: unknown, sourceUrl: string): Brand {
+export function validateBrand(raw: any, sourceUrl: string): Brand {
   if (!raw || typeof raw !== 'object') throw new Error('brand is not a JSON object');
   const o = raw as Record<string, unknown>;
 
@@ -130,7 +130,7 @@ export function validateBrand(raw: unknown, sourceUrl: string): Brand {
 
 /** Pull the last ```json fenced block (or bare top-level object) out of text —
  *  the fallback path when a brand object arrives inline instead of as JSON. */
-export function extractJsonBlock(text: string): unknown | null {
+export function extractJsonBlock(text: string): any | null {
   const fences = [...text.matchAll(/```(?:json)?\s*\n([\s\S]*?)```/g)];
   for (let i = fences.length - 1; i >= 0; i--) {
     try {

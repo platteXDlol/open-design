@@ -18,7 +18,7 @@ export function resolveHyperFramesCliPath({
   try {
     const manifestPath = resolvePackage('hyperframes/package.json');
     return path.join(path.dirname(manifestPath), 'bin', 'hyperframes.mjs');
-  } catch (error) {
+  } catch (error: any) {
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(
       `Bundled HyperFrames CLI is unavailable. Reinstall Open Design so its pinned ` +
@@ -35,7 +35,7 @@ export function resolveHyperFramesBrowserRuntimePath({
   try {
     const manifestPath = resolvePackage('hyperframes/package.json');
     return path.join(path.dirname(manifestPath), 'dist', 'hyperframe.runtime.iife.js');
-  } catch (error) {
+  } catch (error: any) {
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(
       `Bundled HyperFrames browser runtime is unavailable. Reinstall Open Design so its pinned ` +

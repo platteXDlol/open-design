@@ -1,4 +1,4 @@
-export function sanitizeArchiveFilename(raw: unknown): string {
+export function sanitizeArchiveFilename(raw: any): string {
   return String(raw ?? '')
     .replace(/[\\/:*?"<>|]/g, '_')
     .replace(/[\u0000-\u001f\u007f]/g, '')

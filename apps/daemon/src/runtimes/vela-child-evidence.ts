@@ -139,11 +139,11 @@ export interface VelaChildEvidenceCoverageInput {
 }
 
 export interface VelaChildEvidenceConsumer {
-  negotiate(initializeResult: unknown): VelaChildEvidenceNegotiation;
+  negotiate(initializeResult: any): VelaChildEvidenceNegotiation;
   observe(input: {
     expectedAcpSessionId: string | null;
-    envelopeAcpSessionId: unknown;
-    update: unknown;
+    envelopeAcpSessionId: any;
+    update: any;
   }): VelaChildEvidenceObserveResult;
   getNegotiation(): VelaChildEvidenceNegotiation;
   /**
@@ -156,11 +156,11 @@ export interface VelaChildEvidenceConsumer {
   childEvidenceCoverage(input: VelaChildEvidenceCoverageInput): ChildEvidenceCoverageV1;
 }
 
-function isRecord(value: unknown): value is RecordValue {
+function isRecord(value: any): value is RecordValue {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-function safeString(value: unknown, maxLength = 256): string | undefined {
+function safeString(value: any, maxLength = 256): string | undefined {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   if (!trimmed || trimmed.length > maxLength || /[\u0000-\u001f\u007f]/u.test(trimmed)) {
@@ -169,28 +169,28 @@ function safeString(value: unknown, maxLength = 256): string | undefined {
   return trimmed;
 }
 
-function nonNegativeNumber(value: unknown): number | undefined {
+function nonNegativeNumber(value: any): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
     ? value
     : undefined;
 }
 
-function nonNegativeInteger(value: unknown): number | undefined {
+function nonNegativeInteger(value: any): number | undefined {
   const parsed = nonNegativeNumber(value);
   return parsed !== undefined && Number.isInteger(parsed) ? parsed : undefined;
 }
 
-function safeSha256(value: unknown): string | undefined {
+function safeSha256(value: any): string | undefined {
   return typeof value === 'string' && /^[a-f0-9]{64}$/iu.test(value)
     ? value.toLowerCase()
     : undefined;
 }
 
-function safeProducerIdentity(value: unknown): string | undefined {
+function safeProducerIdentity(value: any): string | undefined {
   return safeString(value, 128);
 }
 
-function observableProducerVersion(value: unknown): string | undefined {
+function observableProducerVersion(value: any): string | undefined {
   const version = safeProducerIdentity(value);
   // Vela versions before the candidate fix advertised this literal ACP
   // placeholder even though the root CLI already exposed its real build via
@@ -200,7 +200,7 @@ function observableProducerVersion(value: unknown): string | undefined {
 }
 
 export function negotiateVelaChildEvidence(
-  initializeResult: unknown,
+  initializeResult: any,
 ): VelaChildEvidenceNegotiation {
   const result = isRecord(initializeResult) ? initializeResult : undefined;
   const agentInfo = isRecord(result?.agentInfo) ? result.agentInfo : undefined;
@@ -305,7 +305,7 @@ function terminalSourceIsCoherent(
   return source === 'root_task_tool' && status !== 'running';
 }
 
-function sourceEvidence(value: unknown): VelaChildRuntimeFact['sourceEvidence'] {
+function sourceEvidence(value: any): VelaChildRuntimeFact['sourceEvidence'] {
   if (!Array.isArray(value)) return [];
   return [...new Set(value.flatMap((candidate) => (
     typeof candidate === 'string' && SOURCE_EVIDENCE.has(
@@ -316,7 +316,7 @@ function sourceEvidence(value: unknown): VelaChildRuntimeFact['sourceEvidence'] 
   )))];
 }
 
-function parsePrompt(value: unknown): VelaChildRuntimeFact['prompt'] | undefined {
+function parsePrompt(value: any): VelaChildRuntimeFact['prompt'] | undefined {
   if (!isRecord(value) || value.availability !== 'hash_only') return undefined;
   const sha256 = safeSha256(value.sha256);
   const bytes = nonNegativeInteger(value.bytes);
@@ -333,7 +333,7 @@ const USAGE_SOURCES = new Set([
   'opencode_export_message_snapshot',
 ] as const);
 
-function usageWireShapeIsCoherent(value: unknown): boolean {
+function usageWireShapeIsCoherent(value: any): boolean {
   if (!isRecord(value)) return false;
   if (value.availability === 'unavailable') {
     return value.completeness === 'unavailable' &&
@@ -359,7 +359,7 @@ function usageWireShapeIsCoherent(value: unknown): boolean {
   return false;
 }
 
-function parseUsage(value: unknown): VelaChildRuntimeFact['usage'] | undefined {
+function parseUsage(value: any): VelaChildRuntimeFact['usage'] | undefined {
   if (!isRecord(value) || value.availability !== 'available') return undefined;
   if (value.completeness !== 'complete' && value.completeness !== 'partial') return undefined;
   if (

@@ -202,7 +202,7 @@ export function handleCritiqueArtifact(
         }
       });
       stream.pipe(res);
-    } catch (err) {
+    } catch (err: any) {
       // Anything thrown after the open succeeded but before the stream is
       // wired up: close the fd so it does not leak, then surface 404.
       await fileHandle.close().catch(() => {});

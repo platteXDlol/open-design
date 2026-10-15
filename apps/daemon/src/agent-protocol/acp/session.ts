@@ -132,7 +132,7 @@ export interface AttachAcpSessionOptions {
   // reports in its own `initialize` result. Leave unset for agents that accept
   // stdio MCP servers at every version.
   stdioMcpRemovedInVersion?: string | null;
-  send: (event: string, payload: unknown, meta?: AcpEmissionMeta) => void;
+  send: (event: string, payload: any, meta?: AcpEmissionMeta) => void;
   clientName?: string;
   clientVersion?: string;
   stageTimeoutMs?: number;
@@ -148,7 +148,7 @@ export interface AttachAcpSessionOptions {
   // `session/new`. The agent verifies the session and, if it is gone, returns a
   // structured `resume_failed` error the caller maps to its reseed path.
   resumeSessionId?: string | null;
-  nativeContinuation?: AmrContinuationCursor | null;
+  nativeContinuation?: any | null;
   /** Safe model/session metadata attached to the exact prompt-frame diagnostic. */
   promptBudgetContext?: AcpPromptBudgetContext;
   // Subsegment timing markers for spawn->first-token attribution (#3408 §4).
@@ -227,7 +227,7 @@ export function attachAcpSession({
   const stdin = child.stdin;
   const stdout = child.stdout;
 
-  const nonNegativeInteger = (value: unknown): number | undefined =>
+  const nonNegativeInteger = (value: any): number | undefined =>
     typeof value === 'number' &&
     Number.isSafeInteger(value) &&
     value >= 0 &&
@@ -235,7 +235,7 @@ export function attachAcpSession({
       ? value
       : undefined;
 
-  const boundedModelId = (value: unknown): string => {
+  const boundedModelId = (value: any): string => {
     const trimmed = typeof value === 'string' ? value.trim() : '';
     if (!trimmed) return 'default';
     if (trimmed.length > 128 || !/^[A-Za-z0-9][A-Za-z0-9._/:@-]*$/.test(trimmed)) {
@@ -261,7 +261,7 @@ export function attachAcpSession({
   // ACP wrapper id ("vela-opencode-1").
   let durableSessionId: string | null = null;
   let nativeContinuationSupported = false;
-  let continuationRecovery: AmrContinuationRecovery | null = null;
+  let continuationRecovery: any | null = null;
   let activeModel: string | null = null;
   let modelConfigId: string | null = null;
   let emittedThinkingStart = false;
@@ -551,7 +551,7 @@ export function attachAcpSession({
     );
   };
 
-  const failWithPayload = (payload: unknown) => {
+  const failWithPayload = (payload: any) => {
     if (finished) return;
     // Emit pending tools as errored before terminal state so deferred
     // tool_use pairs are not lost on timeout / process death / RPC error.
@@ -590,7 +590,7 @@ export function attachAcpSession({
    */
   const fail = (
     message: string,
-    options: { forceModelUnavailable?: boolean; details?: unknown; retryable?: boolean } = {},
+    options: { forceModelUnavailable?: boolean; details?: any; retryable?: boolean } = {},
   ) => {
     if (finished) return;
     // Emit pending tools as errored before terminal state so deferred
@@ -628,7 +628,7 @@ export function attachAcpSession({
     if (!terminalOwnedByCaller && !child.killed) child.kill('SIGTERM');
   };
 
-  const writeRpc = (id: JsonRpcId, method: string, params: unknown, timeoutLabel: string) => {
+  const writeRpc = (id: JsonRpcId, method: string, params: any, timeoutLabel: string) => {
     currentStage = timeoutLabel;
     resetStageTimer(timeoutLabel);
     try {
@@ -686,7 +686,7 @@ export function attachAcpSession({
             }
           : undefined,
       );
-    } catch (err) {
+    } catch (err: any) {
       fail(`stdin write failed: ${errorMessage(err)}`);
     }
   };
@@ -920,7 +920,7 @@ export function attachAcpSession({
   // Best-effort: emit provider usage before terminal fail/success so failed
   // ACP runs still contribute token fields to PostHog/Langfuse when the agent
   // returned a usage object on the prompt result.
-  const emitUsageIfPresent = (usageSource?: unknown) => {
+  const emitUsageIfPresent = (usageSource?: any) => {
     const usage = formatUsage(usageSource);
     if (!usage) return;
     send('agent', {
@@ -941,7 +941,7 @@ export function attachAcpSession({
     return completionText;
   };
 
-  const finishCleanPrompt = (usageSource?: unknown) => {
+  const finishCleanPrompt = (usageSource?: any) => {
     if (finished) return;
     // Mark the prompt finished before notifying observers so duplicate results
     // and callback re-entry cannot report clean completion more than once.
@@ -1001,7 +1001,7 @@ export function attachAcpSession({
       sendRpcResult(stdin, raw.id, {
         outcome: { outcome: 'selected', optionId },
       });
-    } catch (err) {
+    } catch (err: any) {
       fail(`stdin write failed: ${errorMessage(err)}`);
     }
   };
@@ -1051,19 +1051,7 @@ export function attachAcpSession({
         return;
       }
       const details = rpcErrorData(obj);
-      if (modelUnavailableErrorCode && obj.id === promptRequestId && isAmrContinuationIncomplete(rpcErr, details)) {
-        const recovery = parseAmrContinuationRecovery(details);
-        // Check before fail() flushes incomplete tools into synthetic errors.
-        const toolsCommitted = acpToolRunEventState.size > 0 &&
-          [...acpToolRunEventState.values()].every((tool) => tool.emitted);
-        if (nativeContinuationSupported && toolsCommitted && recovery?.sessionId === durableSessionId) {
-          continuationRecovery = recovery;
-        }
-        fail(rpcErr, { retryable: false, details: {
-          ...asObject(details), kind: 'opencode_continuation_incomplete', code: AMR_CONTINUATION_ERROR_CODE,
-        } });
-        return;
-      }
+      // (Was: AMR continuation block, removed in v0.5.)
       const promotedPayload = promotedOpenCodeSessionErrorPayload(details, rpcErr);
       if (promotedPayload) {
         failWithPayload(promotedPayload);
@@ -1329,7 +1317,7 @@ export function attachAcpSession({
       return;
     }
     if (expectedId === 1) {
-      nativeContinuationSupported = !!modelUnavailableErrorCode && supportsAmrNativeContinuation(result);
+      nativeContinuationSupported = false;
       if (nativeContinuation && (!resumeSessionId || !nativeContinuationSupported)) {
         fail('The agent does not support safe native continuation.', { retryable: false,
           details: { kind: 'native_continuation_rejected', reason: 'capability_unavailable' } });
@@ -1361,7 +1349,7 @@ export function attachAcpSession({
         // on which MCP transports this payload may carry. Preferred over any
         // earlier `--version` probe, which can be stale by the time a run
         // starts (upgrade between probe and run, PATH shim, detection refresh).
-        const agentInfo = (result as { agentInfo?: { version?: unknown } }).agentInfo;
+        const agentInfo = (result as { agentInfo?: { version?: any } }).agentInfo;
         const reportedVersion =
           typeof agentInfo?.version === 'string' ? agentInfo.version : null;
         const sessionMcp = mcpServers

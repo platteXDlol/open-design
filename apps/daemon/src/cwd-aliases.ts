@@ -128,7 +128,7 @@ export async function stageActiveSkill(
   let sourceStat;
   try {
     sourceStat = await stat(sourceDir);
-  } catch (err) {
+  } catch (err: any) {
     return {
       staged: false,
       reason: `source missing: ${(err as Error).message}`,
@@ -181,7 +181,7 @@ export async function stageActiveSkill(
         dereference: true,
         preserveTimestamps: true,
       });
-    } catch (err) {
+    } catch (err: any) {
       const code = (err as NodeJS.ErrnoException).code ?? '';
       if (!RECOVERABLE_COPY_CODES.has(code)) throw err;
       log(
@@ -191,7 +191,7 @@ export async function stageActiveSkill(
       await copyTreeDereferenced(sourceDir, stagedPath);
     }
     return { staged: true, stagedPath };
-  } catch (err) {
+  } catch (err: any) {
     log(`[od] skill-stage failed: ${(err as Error).message}`);
     return { staged: false, reason: (err as Error).message };
   }
@@ -205,7 +205,7 @@ const UNSAFE_ALIAS_RE = /[\\/]|\0/;
  * separators (`/`, `\`), null bytes, and absolute paths so a malformed
  * caller cannot escape the alias root.
  */
-function isSafeAliasSegment(name: unknown): name is string {
+function isSafeAliasSegment(name: any): name is string {
   if (typeof name !== 'string') return false;
   if (name.length === 0) return false;
   if (name === '.' || name === '..') return false;

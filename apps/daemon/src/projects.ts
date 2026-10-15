@@ -176,7 +176,7 @@ async function collectFolders(dir, relDir, out, shouldSkipDir?: (name: string) =
   let entries = [];
   try {
     entries = await readdir(dir, { withFileTypes: true });
-  } catch (err) {
+  } catch (err: any) {
     if (err && err.code === 'ENOENT') return;
     throw err;
   }
@@ -189,7 +189,7 @@ async function collectFolders(dir, relDir, out, shouldSkipDir?: (name: string) =
     let st;
     try {
       st = await stat(full);
-    } catch (err) {
+    } catch (err: any) {
       if (err && err.code === 'ENOENT') continue;
       throw err;
     }
@@ -284,7 +284,7 @@ async function collectFiles(dir, relDir, out, shouldSkipDir?: (name: string) => 
   let entries = [];
   try {
     entries = await readdir(dir, { withFileTypes: true });
-  } catch (err) {
+  } catch (err: any) {
     if (err && err.code === 'ENOENT') return;
     throw err;
   }
@@ -304,7 +304,7 @@ async function collectFiles(dir, relDir, out, shouldSkipDir?: (name: string) => 
     try {
       st = await stat(full);
       manifest = await readManifestForPath(projectRoot, rel);
-    } catch (err) {
+    } catch (err: any) {
       if (err && err.code === 'ENOENT') continue;
       throw err;
     }
@@ -366,7 +366,7 @@ export async function createProjectArchiveStream(projectsRoot, projectId, root, 
   let rootStat;
   try {
     rootStat = await stat(archiveRoot);
-  } catch (err) {
+  } catch (err: any) {
     if (err && err.code === 'ENOENT') {
       const e = new Error('archive root does not exist');
       e.code = 'ENOENT';
@@ -429,7 +429,7 @@ export async function createBatchArchiveStream(projectsRoot, projectId, fileName
     let filePath;
     try {
       filePath = resolveSafe(projectRoot, name);
-    } catch (err) {
+    } catch (err: any) {
       rejected.push({ name, reason: `invalid path: ${err?.message || err}` });
       continue;
     }
@@ -463,7 +463,7 @@ export async function createBatchArchiveStream(projectsRoot, projectId, fileName
       let segStat;
       try {
         segStat = await lstat(walk);
-      } catch (err) {
+      } catch (err: any) {
         if (err && err.code === 'ENOENT') {
           rejected.push({ name, reason: `segment not found: ${seg}` });
           break;
@@ -486,7 +486,7 @@ export async function createBatchArchiveStream(projectsRoot, projectId, fileName
     let st;
     try {
       st = await lstat(filePath);
-    } catch (err) {
+    } catch (err: any) {
       if (err && err.code === 'ENOENT') {
         rejected.push({ name, reason: 'file not found' });
         continue;
@@ -553,7 +553,7 @@ async function collectArchiveEntries(dir, relDir, out) {
   let entries = [];
   try {
     entries = await readdir(dir, { withFileTypes: true });
-  } catch (err) {
+  } catch (err: any) {
     if (err && err.code === 'ENOENT') return;
     throw err;
   }
@@ -864,7 +864,7 @@ export async function writeProjectFile(
       const err = new Error('file already exists');
       err.code = 'EEXIST';
       throw err;
-    } catch (err) {
+    } catch (err: any) {
       if (!err || err.code !== 'ENOENT') throw err;
     }
   }
@@ -960,7 +960,7 @@ export async function reconcileHtmlArtifactManifest(projectsRoot, projectId, nam
   let target;
   try {
     target = await resolveSafeReal(dir, safeName);
-  } catch (err) {
+  } catch (err: any) {
     if (err && err.code === 'ENOENT') return null;
     throw err;
   }
@@ -968,7 +968,7 @@ export async function reconcileHtmlArtifactManifest(projectsRoot, projectId, nam
   let targetStat;
   try {
     targetStat = await stat(target);
-  } catch (err) {
+  } catch (err: any) {
     if (err && err.code === 'ENOENT') return null;
     throw err;
   }
@@ -980,7 +980,7 @@ export async function reconcileHtmlArtifactManifest(projectsRoot, projectId, nam
   try {
     const raw = await readFile(manifestTarget, 'utf8');
     return parseManifest(raw);
-  } catch (err) {
+  } catch (err: any) {
     if (!err || err.code !== 'ENOENT') throw err;
   }
 
@@ -1018,7 +1018,7 @@ async function readManifestForPath(projectDirPath, relPath) {
     const raw = await readFile(manifestPath, 'utf8');
     const parsed = parseManifest(raw);
     if (parsed) return parsed;
-  } catch (err) {
+  } catch (err: any) {
     if (!err || err.code !== 'ENOENT') {
       // ignore malformed/invalid manifests and fallback to inference
     }
@@ -1045,7 +1045,7 @@ export async function renameProjectFile(projectsRoot, projectId, fromName, toNam
   const newName = sanitizePath(toName);
   try {
     await stat(dir);
-  } catch (err) {
+  } catch (err: any) {
     if (err && err.code === 'ENOENT') {
       const missing = new Error('source file not found');
       missing.code = 'ENOENT';
@@ -1088,7 +1088,7 @@ export async function renameProjectFile(projectsRoot, projectId, fromName, toNam
       const err = new Error('target file already exists');
       err.code = 'EEXIST';
       throw err;
-    } catch (err) {
+    } catch (err: any) {
       if (!err || err.code !== 'ENOENT') throw err;
     }
   }
@@ -1135,7 +1135,7 @@ async function renameFilePath(source, target, opts = {}) {
     } else {
       await rename(temp, target);
     }
-  } catch (err) {
+  } catch (err: any) {
     try {
       await rename(temp, source);
     } catch {
@@ -1152,7 +1152,7 @@ async function uniqueRenameTempPath(source) {
     const temp = path.join(dir, `.od-rename-${process.pid}-${Date.now()}-${i}-${base}.tmp`);
     try {
       await stat(temp);
-    } catch (err) {
+    } catch (err: any) {
       if (err && err.code === 'ENOENT') return temp;
       throw err;
     }
@@ -1173,7 +1173,7 @@ async function prepareArtifactManifestRename(dir, oldName, newName) {
   let raw = null;
   try {
     raw = await readFile(oldManifestPath, 'utf8');
-  } catch (err) {
+  } catch (err: any) {
     if (err && err.code === 'ENOENT') return null;
     throw err;
   }
@@ -1189,7 +1189,7 @@ async function prepareArtifactManifestRename(dir, oldName, newName) {
       const err = new Error('target artifact manifest already exists');
       err.code = 'EEXIST';
       throw err;
-    } catch (err) {
+    } catch (err: any) {
       if (!err || err.code !== 'ENOENT') throw err;
     }
   }
@@ -1228,7 +1228,7 @@ async function updateArtifactManifestRefsForRename(dir, oldName, newName) {
     let raw;
     try {
       raw = await readFile(manifestFile.fullPath, 'utf8');
-    } catch (err) {
+    } catch (err: any) {
       if (err && err.code === 'ENOENT') continue;
       throw err;
     }
@@ -1252,7 +1252,7 @@ async function collectArtifactManifestFiles(dir, relDir, out) {
   let entries = [];
   try {
     entries = await readdir(dir, { withFileTypes: true });
-  } catch (err) {
+  } catch (err: any) {
     if (err && err.code === 'ENOENT') return;
     throw err;
   }
@@ -1293,7 +1293,7 @@ async function isViteDevHtmlEntry(projectDirPath, safeName, targetPath) {
     try {
       const st = await stat(path.join(projectDirPath, candidate));
       if (st.isFile()) return true;
-    } catch (err) {
+    } catch (err: any) {
       if (!err || err.code !== 'ENOENT') return false;
     }
   }
@@ -1419,12 +1419,12 @@ export async function stageProjectDirsForDelete(projectsRoot, projectIds, batchI
       try {
         await rename(source, target);
         staged.push({ projectId, source, target });
-      } catch (error) {
+      } catch (error: any) {
         if (error?.code === 'ENOENT') continue;
         throw error;
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     await Promise.allSettled(
       staged
         .slice()
@@ -1473,7 +1473,7 @@ async function resolveSafeReal(dir, name) {
   let real;
   try {
     real = await realpath(candidate);
-  } catch (err) {
+  } catch (err: any) {
     if (!err || err.code !== 'ENOENT') throw err;
     // Write case: path doesn't exist yet. Realpath the longest existing
     // prefix and re-append the missing tail.
@@ -1495,7 +1495,7 @@ async function resolveExistingPrefix(p) {
       const real = await realpath(prefix);
       const rest = parts.slice(i).join(path.sep);
       return rest ? path.join(real, rest) : real;
-    } catch (err) {
+    } catch (err: any) {
       if (!err || err.code !== 'ENOENT') throw err;
     }
   }

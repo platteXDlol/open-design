@@ -23,15 +23,15 @@ type VoiceCacheEntry = {
 
 const voiceOptionsCache = new Map<string, VoiceCacheEntry>();
 
-function isRecord(value: unknown): value is JsonRecord {
+function isRecord(value: any): value is JsonRecord {
   return value !== null && typeof value === 'object';
 }
 
-function readString(value: unknown): string {
+function readString(value: any): string {
   return typeof value === 'string' && value.trim() ? value.trim() : '';
 }
 
-function readLabels(value: unknown): Record<string, string> | undefined {
+function readLabels(value: any): Record<string, string> | undefined {
   if (!isRecord(value)) return undefined;
   const labels: Record<string, string> = {};
   for (const [key, raw] of Object.entries(value)) {
@@ -41,7 +41,7 @@ function readLabels(value: unknown): Record<string, string> | undefined {
   return Object.keys(labels).length > 0 ? labels : undefined;
 }
 
-function clampLimit(limit: unknown): number {
+function clampLimit(limit: any): number {
   if (typeof limit !== 'number' || !Number.isFinite(limit)) {
     return ELEVENLABS_DEFAULT_VOICE_LIMIT;
   }
@@ -51,7 +51,7 @@ function clampLimit(limit: unknown): number {
   );
 }
 
-function normalizeVoice(value: unknown): ElevenLabsVoiceOption | null {
+function normalizeVoice(value: any): ElevenLabsVoiceOption | null {
   if (!isRecord(value)) return null;
   const voiceId = readString(value.voice_id);
   if (!voiceId) return null;
@@ -137,7 +137,7 @@ export async function listElevenLabsVoiceOptions(
     throw new Error(`elevenlabs voices ${resp.status}: ${errText.slice(0, 240)}`);
   }
 
-  const payload = await resp.json() as unknown;
+  const payload = await resp.json() as any;
   const rawVoices = isRecord(payload) && Array.isArray(payload.voices)
     ? payload.voices
     : [];

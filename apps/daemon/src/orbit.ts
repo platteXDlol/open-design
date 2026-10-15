@@ -206,7 +206,7 @@ async function readLastSummary(dataDir: string): Promise<OrbitActivitySummary | 
   return (await readSummaryStore(dataDir)).lastRun;
 }
 
-function isOrbitRunSummary(value: unknown): value is OrbitActivitySummary {
+function isOrbitRunSummary(value: any): value is OrbitActivitySummary {
   if (!value || typeof value !== 'object') return false;
   const obj = value as Partial<OrbitActivitySummary>;
   return (
@@ -219,7 +219,7 @@ function isOrbitRunSummary(value: unknown): value is OrbitActivitySummary {
   );
 }
 
-function normalizeSummaryStore(raw: unknown): OrbitSummaryStore {
+function normalizeSummaryStore(raw: any): OrbitSummaryStore {
   if (isOrbitRunSummary(raw)) {
     const templateSkillId = typeof raw.templateSkillId === 'string' && raw.templateSkillId.trim()
       ? raw.templateSkillId.trim()
@@ -233,7 +233,7 @@ function normalizeSummaryStore(raw: unknown): OrbitSummaryStore {
     return { lastRun: null, lastRunsByTemplate: {} };
   }
   const obj = raw as {
-    lastRun?: unknown;
+    lastRun?: any;
     lastRunsByTemplate?: Record<string, unknown>;
   };
   const lastRun = isOrbitRunSummary(obj.lastRun) ? obj.lastRun : null;
@@ -258,7 +258,7 @@ async function readSummaryStore(dataDir: string): Promise<OrbitSummaryStore> {
   let raw: string;
   try {
     raw = await readFile(summaryFile(dataDir), 'utf8');
-  } catch (error) {
+  } catch (error: any) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
       return { lastRun: null, lastRunsByTemplate: {} };
     }
@@ -266,7 +266,7 @@ async function readSummaryStore(dataDir: string): Promise<OrbitSummaryStore> {
   }
 
   try {
-    return normalizeSummaryStore(JSON.parse(raw) as unknown);
+    return normalizeSummaryStore(JSON.parse(raw) as any);
   } catch {
     return { lastRun: null, lastRunsByTemplate: {} };
   }

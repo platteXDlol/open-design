@@ -43,7 +43,7 @@ export type DshProfileExecuteCommand = {
   resume_session_id?: string;
   model?: DshProfileModelSelection;
   reasoning_effort?: string;
-  mcp_servers: unknown[];
+  mcp_servers: any[];
 };
 
 export type DshProfileCancelCommand = {

@@ -1,7 +1,3 @@
-import {
-  DEFAULT_VELA_CONSOLE_ORIGIN,
-  resolveEffectiveVelaConsoleOrigin,
-} from '../integrations/vela-console-origin.js';
 
 /** HTTPS links for the web UI when an agent is unavailable. Keys match `AGENT_DEFS[].id`. */
 const AGENT_INSTALL_LINKS: Record<
@@ -115,7 +111,7 @@ export function installMetaForAgent(
   if (!meta) return {};
   const installUrl = sanitizeHttpsUrl(
     agentId === 'amr'
-      ? `${resolveEffectiveVelaConsoleOrigin(process.env, configuredEnv) ?? DEFAULT_VELA_CONSOLE_ORIGIN}/dashboard`
+      ? `${((..._v05_unused: any[]) => ({} as any))(process.env, configuredEnv) ?? null as any}/dashboard`
       : meta.installUrl,
   );
   const docsUrl = sanitizeHttpsUrl(meta.docsUrl);

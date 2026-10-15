@@ -84,7 +84,7 @@ export async function writeTranscript(
             }
           }
           ws.end();
-        } catch (err) {
+        } catch (err: any) {
           ws.destroy(err instanceof Error ? err : new Error(String(err)));
           reject(err);
         }
@@ -113,7 +113,7 @@ export async function writeTranscript(
           await fh.close();
         }
         await rename(gzTempPath, finalGz);
-      } catch (gzErr) {
+      } catch (gzErr: any) {
         // Unlink the .gz.tmp so no partial file lingers.
         await rm(gzTempPath, { force: true });
         throw gzErr;
@@ -124,7 +124,7 @@ export async function writeTranscript(
       await rename(tempPath, finalNdjson);
       return { path: 'transcript.ndjson', bytes: totalBytes, gzipped: false };
     }
-  } catch (err) {
+  } catch (err: any) {
     // Ensure the write stream has fully closed before unlinking. If the
     // iterable fails before the lazy open completes, unlinking immediately can
     // race with createWriteStream and leave a late-created temp file behind.
@@ -152,7 +152,7 @@ export async function* readTranscript(
 ): AsyncIterable<PanelEvent> {
   if (!fileName.endsWith('.ndjson') && !fileName.endsWith('.ndjson.gz')) {
     throw new RangeError(
-      `readTranscript: unknown extension on "${fileName}", expected .ndjson or .ndjson.gz`,
+      `readTranscript: any extension on "${fileName}", expected .ndjson or .ndjson.gz`,
     );
   }
 
@@ -165,7 +165,7 @@ export async function* readTranscript(
     : fileStream;
 
   const rl = createInterface({
-    input: source as unknown as NodeJS.ReadableStream,
+    input: source as any as NodeJS.ReadableStream,
     crlfDelay: Infinity,
   });
 

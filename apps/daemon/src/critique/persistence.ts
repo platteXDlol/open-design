@@ -100,7 +100,7 @@ function serializeRoundsPayload(
 
 function parseRoundsPayload(json: string): { rounds: CritiqueRoundSummary[]; recoveryReason?: string } {
   try {
-    const parsed: unknown = JSON.parse(json);
+    const parsed: any = JSON.parse(json);
     if (Array.isArray(parsed)) {
       return { rounds: parsed as CritiqueRoundSummary[] };
     }

@@ -1,12 +1,9 @@
+import { AuthorizeProjectToolRequest } from '../v05-stubs.js';
 import type { Express } from 'express';
 import type { RouteDeps } from '../server-context.js';
-import type {
-  AuthorizeProjectRequest,
-  AuthorizeProjectToolRequest,
-} from '../collab/project-request-authority.js';
 
 export interface RegisterLiveArtifactRoutesDeps extends RouteDeps<'db' | 'http' | 'paths' | 'auth' | 'liveArtifacts' | 'projectStore'> {
-  authorizeProjectRequest: AuthorizeProjectRequest;
+  authorizeProjectRequest: any;
   authorizeProjectToolRequest: AuthorizeProjectToolRequest;
 }
 
@@ -253,7 +250,7 @@ export function registerLiveArtifactRoutes(app: Express, ctx: RegisterLiveArtifa
             emitLiveArtifactRefreshEvent(toolGrant, { phase: 'started', artifactId, refreshId });
           },
         });
-      } catch (refreshErr) {
+      } catch (refreshErr: any) {
         emitLiveArtifactRefreshEvent(toolGrant, {
           phase: 'failed',
           artifactId,
@@ -358,7 +355,7 @@ export function registerLiveArtifactRoutes(app: Express, ctx: RegisterLiveArtifa
             emitLiveArtifactRefreshEvent({ projectId }, { phase: 'started', artifactId: req.params.artifactId, refreshId });
           },
         });
-      } catch (refreshErr) {
+      } catch (refreshErr: any) {
         emitLiveArtifactRefreshEvent({ projectId }, {
           phase: 'failed',
           artifactId: req.params.artifactId,

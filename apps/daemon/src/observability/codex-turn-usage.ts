@@ -1,6 +1,6 @@
 type Counters = { input: number; output: number; total: number; modelCalls: number };
 type Row = Record<string, unknown>;
-const row = (value: unknown): Row => value && typeof value === 'object' && !Array.isArray(value) ? value as Row : {};
+const row = (value: any): Row => value && typeof value === 'object' && !Array.isArray(value) ? value as Row : {};
 
 /** Per-call last usage, deduplicated by cumulative provider counters within an explicit Turn. */
 export function createCodexTurnUsage() {
@@ -11,7 +11,7 @@ export function createCodexTurnUsage() {
   const seen = new Set<string>();
   return {
     start(id: string) { turnId = id; invalid = !id; previousTotal = -1; seen.clear(); result = { input: 0, output: 0, total: 0, modelCalls: 0 }; },
-    add(id: string, tokenUsage: unknown): Counters | null {
+    add(id: string, tokenUsage: any): Counters | null {
       const usage = row(tokenUsage); const total = row(usage.total); const last = row(usage.last);
       const counters = [last.inputTokens, last.outputTokens, last.totalTokens, total.totalTokens];
       if (!turnId || id !== turnId || counters.some(v => typeof v !== 'number' || !Number.isSafeInteger(v) || v < 0)) invalid = true;
@@ -28,7 +28,7 @@ export function createCodexTurnUsage() {
   };
 }
 
-export function codexTurnUsageFromEvents(events: Array<{ event: string; data: unknown }>): Counters | null {
+export function codexTurnUsageFromEvents(events: Array<{ event: string; data: any }>): Counters | null {
   let result: Counters | null = null;
   for (const event of events) {
     const data = row(event.data);

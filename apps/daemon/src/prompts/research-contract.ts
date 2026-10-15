@@ -65,7 +65,7 @@ export function renderResearchCommandContract(
   return lines.join('\n');
 }
 
-function normalizeMaxSources(value: unknown): number {
+function normalizeMaxSources(value: any): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
     return DEFAULT_MAX_SOURCES;
   }

@@ -71,7 +71,7 @@ export async function packPlugin(input: PackPluginInput): Promise<PackPluginResu
   let manifestRaw: string;
   try {
     manifestRaw = await fsp.readFile(path.join(folder, 'open-design.json'), 'utf8');
-  } catch (err) {
+  } catch (err: any) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
       throw new PackPluginError(`folder ${folder} does not contain open-design.json`);
     }
@@ -83,7 +83,7 @@ export async function packPlugin(input: PackPluginInput): Promise<PackPluginResu
     const parsed = JSON.parse(manifestRaw) as { name?: string; version?: string };
     if (typeof parsed.name === 'string'    && parsed.name.length    > 0) pluginId      = parsed.name;
     if (typeof parsed.version === 'string' && parsed.version.length > 0) pluginVersion = parsed.version;
-  } catch (err) {
+  } catch (err: any) {
     throw new PackPluginError(`open-design.json failed to parse as JSON: ${(err as Error).message}`);
   }
 

@@ -21,7 +21,7 @@ function parsedPrefix(source: string): ParsedPrefix {
       allowReturnOutsideFunction: true, onToken: tokens,
     });
     return { tokens, errorOffset: null };
-  } catch (error) {
+  } catch (error: any) {
     return {
       tokens,
       errorOffset: error instanceof SyntaxError

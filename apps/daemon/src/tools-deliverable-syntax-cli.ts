@@ -28,7 +28,7 @@ Agent runtime invocation:
   "$OD_NODE_BIN" "$OD_BIN" tools deliverable-syntax check --json
 `;
 
-function writeJson(value: unknown, stream: NodeJS.WriteStream = process.stdout): void {
+function writeJson(value: any, stream: NodeJS.WriteStream = process.stdout): void {
   stream.write(`${JSON.stringify(value)}\n`);
 }
 
@@ -86,7 +86,7 @@ function endpoint(baseUrl: URL, pathname: string): string {
   return url.toString();
 }
 
-async function requestJson(baseUrl: URL, token: string): Promise<{ status: number; body: unknown }> {
+async function requestJson(baseUrl: URL, token: string): Promise<{ status: number; body: any }> {
   const response = await fetch(endpoint(baseUrl, '/api/tools/deliverable-syntax/check'), {
     method: 'POST',
     headers: {
@@ -95,10 +95,10 @@ async function requestJson(baseUrl: URL, token: string): Promise<{ status: numbe
     },
   });
   const text = await response.text();
-  let body: unknown = text;
+  let body: any = text;
   if (text.length > 0) {
     try {
-      body = JSON.parse(text) as unknown;
+      body = JSON.parse(text) as any;
     } catch {
       body = { message: text };
     }
@@ -106,7 +106,7 @@ async function requestJson(baseUrl: URL, token: string): Promise<{ status: numbe
   return { status: response.status, body };
 }
 
-function normalizeCliError(body: unknown): DeliverableSyntaxToolCliFailure['error'] {
+function normalizeCliError(body: any): DeliverableSyntaxToolCliFailure['error'] {
   const rawError = body && typeof body === 'object' && 'error' in body ? (body as JsonObject).error : body;
   if (typeof rawError === 'string') return { message: rawError };
   if (!rawError || typeof rawError !== 'object') return { message: String(rawError ?? 'request failed') };
@@ -149,7 +149,7 @@ export async function runDeliverableSyntaxToolCli(args: string[]): Promise<ToolC
     const output = { ok: true, ...body } as DeliverableSyntaxToolCliSuccess;
     writeJson(output);
     return { exitCode: 0 };
-  } catch (error) {
+  } catch (error: any) {
     return fail(error instanceof Error ? error.message : String(error));
   }
 }

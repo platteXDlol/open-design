@@ -36,20 +36,20 @@ function statusToKind(status: number): ConnectionTestKind {
   return 'unknown';
 }
 
-function extractProviderErrorDetail(data: unknown, rawText: string): string {
+function extractProviderErrorDetail(data: any, rawText: string): string {
   const obj = data && typeof data === 'object' ? data : null;
-  const error = obj ? (obj as { error?: unknown }).error : null;
+  const error = obj ? (obj as { error?: any }).error : null;
   if (typeof error === 'string') return error;
   if (error && typeof error === 'object') {
-    const message = (error as { message?: unknown }).message;
+    const message = (error as { message?: any }).message;
     if (typeof message === 'string' && message.trim()) return message;
   }
-  const message = obj ? (obj as { message?: unknown }).message : null;
+  const message = obj ? (obj as { message?: any }).message : null;
   if (typeof message === 'string' && message.trim()) return message;
   return rawText.trim().slice(0, 240);
 }
 
-function networkErrorToKind(err: unknown): ConnectionTestKind {
+function networkErrorToKind(err: any): ConnectionTestKind {
   if (err instanceof Error) {
     if (err.name === 'AbortError') return 'timeout';
     const cause = (err as { cause?: { code?: string } }).cause;
@@ -116,8 +116,8 @@ function isOpenAiChatModelId(id: string): boolean {
   return !/(?:^|[-_.:])(?:t2i|i2i|t2v|i2v|v2v|tts|asr|ocr)(?:[-_.:]|$)/u.test(normalized);
 }
 
-function extractOpenAiModels(data: unknown): ProviderModelOption[] {
-  const items = (data as { data?: unknown }).data;
+function extractOpenAiModels(data: any): ProviderModelOption[] {
+  const items = (data as { data?: any }).data;
   if (!Array.isArray(items)) return [];
   return uniqueModels(
     items
@@ -126,9 +126,9 @@ function extractOpenAiModels(data: unknown): ProviderModelOption[] {
   );
 }
 
-function openAiModelOption(item: unknown): ProviderModelOption | null {
+function openAiModelOption(item: any): ProviderModelOption | null {
   if (!item || typeof item !== 'object') return null;
-  const obj = item as { id?: unknown; metadata?: unknown };
+  const obj = item as { id?: any; metadata?: any };
   const id = typeof obj?.id === 'string' ? obj.id : '';
   if (!id || !isOpenAiChatModelId(id)) return null;
   const metadata = extractModelMetadata(obj.metadata);
@@ -139,9 +139,9 @@ function openAiModelOption(item: unknown): ProviderModelOption | null {
   };
 }
 
-function extractModelMetadata(value: unknown): ModelMetadata | null {
+function extractModelMetadata(value: any): ModelMetadata | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-  const metadata = value as { cost?: unknown; capability?: unknown };
+  const metadata = value as { cost?: any; capability?: any };
   const cost = parseModelCost(metadata.cost);
   const capability = parseModelCapability(metadata.capability);
   if (!cost && !capability) return null;
@@ -151,7 +151,7 @@ function extractModelMetadata(value: unknown): ModelMetadata | null {
   };
 }
 
-function parseModelCost(value: unknown): ModelCost | null {
+function parseModelCost(value: any): ModelCost | null {
   return value === 'low' ||
     value === 'medium' ||
     value === 'high' ||
@@ -160,7 +160,7 @@ function parseModelCost(value: unknown): ModelCost | null {
     : null;
 }
 
-function parseModelCapability(value: unknown): ModelCapability | null {
+function parseModelCapability(value: any): ModelCapability | null {
   return value === 'standard' ||
     value === 'advanced' ||
     value === 'best_quality'
@@ -168,14 +168,14 @@ function parseModelCapability(value: unknown): ModelCapability | null {
     : null;
 }
 
-function extractAnthropicModels(data: unknown): ProviderModelOption[] {
-  const items = (data as { data?: unknown }).data;
+function extractAnthropicModels(data: any): ProviderModelOption[] {
+  const items = (data as { data?: any }).data;
   if (!Array.isArray(items)) return [];
   return uniqueModels(
     items
       .map((item) => {
         const obj = item && typeof item === 'object'
-          ? item as { id?: unknown; display_name?: unknown; displayName?: unknown }
+          ? item as { id?: any; display_name?: any; displayName?: any }
           : null;
         const id = typeof obj?.id === 'string' ? obj.id : '';
         const label =
@@ -218,7 +218,7 @@ function providerModelsHeaders(
   return {};
 }
 
-function extractModels(protocol: ConnectionTestProtocol, data: unknown): ProviderModelOption[] {
+function extractModels(protocol: ConnectionTestProtocol, data: any): ProviderModelOption[] {
   if (protocol === 'openai') return extractOpenAiModels(data);
   if (protocol === 'anthropic') return extractAnthropicModels(data);
   return [];
@@ -242,7 +242,7 @@ export async function listProviderModels(
   let url: string;
   try {
     url = providerModelsUrl(input.protocol, input.baseUrl, input.apiKey);
-  } catch (err) {
+  } catch (err: any) {
     return {
       ok: false,
       kind: 'unsupported_protocol',
@@ -270,11 +270,11 @@ export async function listProviderModels(
     });
     const latencyMs = Date.now() - start;
     const rawText = await response.text();
-    let data: unknown = {};
+    let data: any = {};
     let parseError: string | undefined;
     try {
       data = rawText ? JSON.parse(rawText) : {};
-    } catch (err) {
+    } catch (err: any) {
       parseError = err instanceof Error ? err.message : String(err);
     }
 
@@ -321,7 +321,7 @@ export async function listProviderModels(
       status: response.status,
       models,
     };
-  } catch (err) {
+  } catch (err: any) {
     const latencyMs = Date.now() - start;
     const kind = networkErrorToKind(err);
     const message = err instanceof Error ? err.message : String(err);

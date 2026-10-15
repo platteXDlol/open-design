@@ -242,7 +242,7 @@ function extractFirst(raw: string, pattern: RegExp): string {
   return m ? m[1] ?? '' : '';
 }
 
-function decodeXml(raw: unknown): string {
+function decodeXml(raw: any): string {
   return String(raw)
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
@@ -278,7 +278,7 @@ function createLimiter<T>(limit: number): (task: () => Promise<T>) => Promise<T>
   const pending: Array<{
     task: () => Promise<T>;
     resolve: (value: T) => void;
-    reject: (reason?: unknown) => void;
+    reject: (reason?: any) => void;
   }> = [];
   const runNext = () => {
     if (active >= limit || pending.length === 0) return;

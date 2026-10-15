@@ -9,8 +9,8 @@ export interface PluginShareTask {
   action: PluginShareAction | undefined;
   path: string | undefined;
   progress: string[];
-  result: unknown;
-  error: unknown;
+  result: any;
+  error: any;
   startedAt: number;
   endedAt: number | null;
   waiters: Set<() => void>;
@@ -55,7 +55,7 @@ interface PluginShareCliPayload {
 
 function parsePluginShareCliPayload(value: string | undefined): PluginShareCliPayload | null {
   if (!value) return null;
-  const parsed: unknown = JSON.parse(value);
+  const parsed: any = JSON.parse(value);
   if (!parsed || typeof parsed !== 'object') return null;
   return parsed as PluginShareCliPayload;
 }
@@ -124,7 +124,7 @@ export function createPluginShareTaskStore(deps: CreatePluginShareTaskStoreDeps)
     return pluginShareTasks.get(taskId) ?? null;
   }
 
-  function appendProgress(task: PluginShareTask, line: unknown) {
+  function appendProgress(task: PluginShareTask, line: any) {
     task.progress.push(String(line ?? ''));
     notify(task);
   }
@@ -174,7 +174,7 @@ export function createPluginShareTaskStore(deps: CreatePluginShareTaskStoreDeps)
     let payload: PluginShareCliPayload | null = null;
     try {
       payload = parsePluginShareCliPayload(result.stdout);
-    } catch (error: unknown) {
+    } catch (error: any) {
       appendProgress(task, `Failed to parse CLI JSON output: ${error instanceof Error ? error.message : String(error)}`);
     }
     const stepLog = payload?.steps?.map((step) => step.stderr || step.stdout || step.command).filter(Boolean) ?? [];
@@ -208,7 +208,7 @@ export function createPluginShareTaskStore(deps: CreatePluginShareTaskStoreDeps)
     const task = create(taskId, projectId, info);
     task.status = 'running';
     notify(task);
-    void run(task, folder).catch((err: unknown) => {
+    void run(task, folder).catch((err: any) => {
       task.status = 'failed';
       task.error = {
         code: 'plugin-share-task-failed',

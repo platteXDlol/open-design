@@ -170,7 +170,7 @@ export function beginAutomaticComplexProduction(db: SqliteDb, input: {
   sourceRunId: string;
   nextRunId: string;
   finalText: string;
-  capabilitySnapshot?: unknown;
+  capabilitySnapshot?: any;
   updatedAt?: number;
 }): StrategyTaskExecutionRecord {
   const current = input.task;
@@ -611,7 +611,7 @@ export function prepareAutomaticStrategyContinuation<
         };
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     // A supplemental reply is consumed by the enclosing verdict transaction.
     // Re-finalizing here would commit its intent after the physical claim rolled back.
     if (input.resultSourceRunId !== undefined) throw error;

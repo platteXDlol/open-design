@@ -40,13 +40,13 @@ type SqliteDb = Database.Database;
 // Stable digest of a JSON-Schema-shaped object. Used by `genui_surfaces`
 // rows so a schema upgrade auto-invalidates cached answers (spec §10.3.3).
 // Canonical key order ensures parsing twice → same digest.
-export function schemaDigest(schema: unknown): string {
+export function schemaDigest(schema: any): string {
   if (schema === undefined || schema === null) return '';
   const canonical = canonicalize(schema);
   return createHash('sha256').update(JSON.stringify(canonical)).digest('hex');
 }
 
-function canonicalize(value: unknown): unknown {
+function canonicalize(value: any): any {
   if (Array.isArray(value)) return value.map(canonicalize);
   if (value && typeof value === 'object') {
     const out: Record<string, unknown> = {};
@@ -64,7 +64,7 @@ export interface RequestOrReuseInput {
   runId:            string;
   pluginSnapshotId: string;
   surface:          GenUISurfaceSpec;
-  payload?:         unknown;
+  payload?: any;
   emit?:            GenUIEventSink;
 }
 
@@ -160,8 +160,8 @@ export interface PrefillInput {
   surfaceId:        string;
   kind:             SurfaceKind;
   persist:          SurfaceTier;
-  value:            unknown;
-  schema?:          unknown;
+  value: any;
+  schema?: any;
   expiresAt?:       number | null;
 }
 

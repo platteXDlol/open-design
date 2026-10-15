@@ -81,7 +81,7 @@ interface HatcheryListResponse {
   pets?: HatcheryItem[];
 }
 
-function sanitizeFolder(value: unknown): string {
+function sanitizeFolder(value: any): string {
   return String(value ?? '')
     .toLowerCase()
     .replace(/[^a-z0-9._-]+/g, '-')
@@ -262,14 +262,14 @@ export async function syncCommunityPets(options: SyncOptions = {}): Promise<Sync
   if (sources.has('petshare')) {
     try {
       tasks.push(...(await listPetSharePets(limit)));
-    } catch (err) {
+    } catch (err: any) {
       errors.push((err as Error).message ?? String(err));
     }
   }
   if (sources.has('hatchery')) {
     try {
       tasks.push(...(await listHatcheryPets(limit)));
-    } catch (err) {
+    } catch (err: any) {
       errors.push((err as Error).message ?? String(err));
     }
   }
@@ -291,7 +291,7 @@ export async function syncCommunityPets(options: SyncOptions = {}): Promise<Sync
       const result = await writePet(task, rootDir, force);
       if (result === 'wrote') wrote++;
       else skipped++;
-    } catch (err) {
+    } catch (err: any) {
       failed++;
       const message = (err as Error).message ?? String(err);
       // Cap the surfaced errors so a fully-broken catalog doesn't ship

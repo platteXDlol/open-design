@@ -149,7 +149,7 @@ class FsChatArtifactBlobStore implements ChatArtifactBlobStore {
       // content is already installed, which is the dedupe signal. rename would
       // silently clobber a good object with an identical one.
       await fs.promises.link(tempPath, finalPath);
-    } catch (err) {
+    } catch (err: any) {
       if (!isExistsError(err)) {
         await this.discardTemp(tempKey);
         throw err;
@@ -266,12 +266,12 @@ async function hashFile(absolutePath: string): Promise<{ digest: string; byteSiz
   return { digest: `sha256:${hash.digest('hex')}`, byteSize };
 }
 
-function isExistsError(err: unknown): boolean {
+function isExistsError(err: any): boolean {
   return (
     typeof err === 'object' &&
     err !== null &&
     'code' in err &&
-    (err as { code?: unknown }).code === 'EEXIST'
+    (err as { code?: any }).code === 'EEXIST'
   );
 }
 

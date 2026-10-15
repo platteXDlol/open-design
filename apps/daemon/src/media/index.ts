@@ -93,7 +93,7 @@ import {
   resolveHyperFramesCliPath,
   resolveHyperFramesNodeBin,
 } from './hyperframes-runtime.js';
-import { renderVelaImage, renderVelaVideo } from './vela.js';
+import { renderVelaImage, renderVelaVideo } from '../v05-stubs.js';
 import {
   ensureProject,
   kindFor,
@@ -177,15 +177,15 @@ type MediaContext = {
 type RenderResult = { bytes: Buffer; providerNote: string; suggestedExt?: string };
 type JsonRecord = Record<string, unknown>;
 
-function isRecord(value: unknown): value is JsonRecord {
+function isRecord(value: any): value is JsonRecord {
   return value !== null && typeof value === 'object';
 }
 
-function errorMessage(err: unknown): string {
+function errorMessage(err: any): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-function errorStringProp(err: unknown, key: string): string {
+function errorStringProp(err: any, key: string): string {
   return isRecord(err) && typeof err[key] === 'string' ? err[key] : '';
 }
 const NANOBANANA_DEFAULT_BASE_URL = 'https://generativelanguage.googleapis.com';
@@ -235,7 +235,7 @@ function stubsAllowed() {
  * Without this guard, an agent (or a hallucinated arg) could ask the
  * daemon to upload `/etc/passwd` to a paid model.
  */
-async function resolveProjectImage(rel: unknown, projectDir: string): Promise<ImageRef | null> {
+async function resolveProjectImage(rel: any, projectDir: string): Promise<ImageRef | null> {
   if (typeof rel !== 'string' || !rel.trim()) return null;
   const projectRootResolved = path.resolve(projectDir);
   const abs = path.resolve(projectRootResolved, rel.trim());
@@ -291,7 +291,7 @@ async function resolveProjectImage(rel: unknown, projectDir: string): Promise<Im
   };
 }
 
-function clampNumber(value: unknown, allowed: number[]): number | undefined {
+function clampNumber(value: any, allowed: number[]): number | undefined {
   // Accept exact registry values; otherwise snap to the nearest allowed
   // bucket so a hallucinated `Number.MAX_SAFE_INTEGER` can't bill an
   // entire month of credits when real providers plug in.
@@ -310,7 +310,7 @@ function clampNumber(value: unknown, allowed: number[]): number | undefined {
   return best;
 }
 
-function clampWithWarning(value: unknown, allowed: number[], flagName: string): { value: number | undefined; warning: string | null } {
+function clampWithWarning(value: any, allowed: number[], flagName: string): { value: number | undefined; warning: string | null } {
   const clamped = clampNumber(value, allowed);
   if (
     typeof value === 'number'
@@ -811,7 +811,7 @@ export async function generateMedia(args: {
       providerNote = result.providerNote;
       intentionalStub = true;
     }
-  } catch (err) {
+  } catch (err: any) {
     // Stub-disabled errors are intentional — propagate so the daemon
     // maps them to 503 and the CLI surfaces a clear "configure a real
     // provider" message rather than writing fake bytes.
@@ -879,7 +879,7 @@ export async function generateMedia(args: {
         kind: kindFor(finalOut),
         mtime: st.mtimeMs,
       });
-    } catch (err) {
+    } catch (err: any) {
       // A snapshot is evidence, not a precondition. Losing it degrades one
       // chat card; failing the generation here would lose the file itself.
       console.warn('[media] onBytesWritten hook failed', err);
@@ -1005,7 +1005,7 @@ async function renderOpenAIImage(ctx: MediaContext, credentials: ProviderConfig)
     headers,
     body: JSON.stringify(body),
     dispatcher: ctx.requestInit.dispatcher
-      ?? openAIImageDispatcher as unknown as NonNullable<RequestInit['dispatcher']>,
+      ?? openAIImageDispatcher as any as NonNullable<RequestInit['dispatcher']>,
     signal: AbortSignal.timeout(Math.max(OPENAI_IMAGE_HEADERS_TIMEOUT_MS, OPENAI_IMAGE_BODY_TIMEOUT_MS)),
   }));
   const text = await resp.text();
@@ -2598,12 +2598,12 @@ const ELEVENLABS_SFX_MODEL_MAP = {
 const ELEVENLABS_SFX_MAX_PROMPT_CHARS = 450;
 const ELEVENLABS_SFX_DEFAULT_PROMPT_INFLUENCE = 0.3;
 
-function clampElevenLabsSfxDuration(value: unknown): number {
+function clampElevenLabsSfxDuration(value: any): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return 5;
   return Math.min(30, Math.max(0.5, value));
 }
 
-function clampElevenLabsSfxPromptInfluence(value: unknown): number {
+function clampElevenLabsSfxPromptInfluence(value: any): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
     return ELEVENLABS_SFX_DEFAULT_PROMPT_INFLUENCE;
   }
@@ -3963,7 +3963,7 @@ async function renderHyperFrames(
       providerNote: `hyperframes/${usesDesktopRenderer ? 'electron-html' : 'local-html'} · ${ctx.aspect} · ${bytes.length} bytes`,
       suggestedExt: '.mp4',
     };
-  } catch (err) {
+  } catch (err: any) {
     const stderr =
       errorStringProp(err, 'stderr').trim();
     const message = stderr || errorMessage(err);
@@ -4341,7 +4341,7 @@ async function renderStub(ctx: MediaContext, fileName: string): Promise<RenderRe
 
 function svgPlaceholder(ctx: MediaContext): string {
   const [w, h] = aspectToBox(ctx.aspect, 800);
-  const safe = (s: unknown): string =>
+  const safe = (s: any): string =>
     String(s || '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -4382,7 +4382,7 @@ function silentWav(seconds: number): Buffer {
   return buf;
 }
 
-function truncate(s: unknown, n: number): string {
+function truncate(s: any, n: number): string {
   const v = String(s || '');
   if (v.length <= n) return v;
   return v.slice(0, n - 1) + '…';

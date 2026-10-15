@@ -163,11 +163,11 @@ interface PendingObservation {
   observation: NormalizedAgentObservationV1;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-function finiteNonNegative(value: unknown): number | undefined {
+function finiteNonNegative(value: any): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
     ? value
     : undefined;
@@ -178,7 +178,7 @@ function boundedPositiveInteger(value: number | undefined, fallback: number): nu
   return Math.min(fallback, Math.max(1, Math.floor(value)));
 }
 
-function timestampMs(value: unknown): number | undefined {
+function timestampMs(value: any): number | undefined {
   if (typeof value === 'number' && Number.isFinite(value) && value >= 0) return value;
   if (typeof value !== 'string') return undefined;
   const parsed = Date.parse(value);
@@ -197,7 +197,7 @@ function stableDigest(parts: readonly string[]): string {
   return sha256(JSON.stringify([...parts]));
 }
 
-function normalizeActivityKind(value: unknown): string {
+function normalizeActivityKind(value: any): string {
   return typeof value === 'string'
     ? value.trim().toLowerCase().replace(/[^a-z0-9_-]/gu, '_').slice(0, 64)
     : '';
@@ -219,7 +219,7 @@ function terminalFromAbortPayload(payload: Record<string, unknown>): ChildTermin
     : 'failed';
 }
 
-function safeSessionId(value: unknown): string | undefined {
+function safeSessionId(value: any): string | undefined {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   return SESSION_ID_PATTERN.test(trimmed) ? trimmed : undefined;
@@ -262,7 +262,7 @@ function parseRolloutStructure(source: string, expectedSessionId: string): Parse
     const trimmed = line.trim();
     if (!trimmed) continue;
     try {
-      const parsed: unknown = JSON.parse(trimmed);
+      const parsed: any = JSON.parse(trimmed);
       if (isRecord(parsed)) records.push(parsed);
       else malformedLineCount += 1;
     } catch {

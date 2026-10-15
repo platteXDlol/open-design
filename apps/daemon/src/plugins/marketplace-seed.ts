@@ -7,7 +7,7 @@ export const OFFICIAL_PLUGIN_SOURCE_REPO = 'github:nexu-io/open-design@main';
 
 export interface MarketplaceSeedEntry {
   name: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export interface MarketplaceSeedConfig {
@@ -121,7 +121,7 @@ function mergeMarketplaceEntries(
   entries: readonly MarketplaceSeedEntry[],
 ): string {
   try {
-    const parsed = JSON.parse(manifestText) as { metadata?: unknown; plugins?: unknown };
+    const parsed = JSON.parse(manifestText) as { metadata?: any; plugins?: any };
     const plugins = Array.isArray(parsed.plugins) ? parsed.plugins : [];
     const seen = new Set(plugins.map((entry) => String(asRecord(entry)?.name ?? '').toLowerCase()));
     const generated = entries.filter((entry) => {
@@ -143,10 +143,10 @@ function mergeMarketplaceEntries(
   }
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function asRecord(value: unknown): Record<string, unknown> | null {
+function asRecord(value: any): Record<string, unknown> | null {
   return isRecord(value) ? value : null;
 }

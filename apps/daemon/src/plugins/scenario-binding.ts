@@ -20,7 +20,7 @@ interface ProjectBindingRow {
 function parseMetadata(value: string | null): ProjectMetadata | undefined {
   if (!value) return undefined;
   try {
-    const parsed = JSON.parse(value) as unknown;
+    const parsed = JSON.parse(value) as any;
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
       ? parsed as ProjectMetadata
       : undefined;
@@ -29,7 +29,7 @@ function parseMetadata(value: string | null): ProjectMetadata | undefined {
   }
 }
 
-export function isProjectScenarioBinding(value: unknown): value is ProjectScenarioBinding {
+export function isProjectScenarioBinding(value: any): value is ProjectScenarioBinding {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const binding = value as Partial<ProjectScenarioBinding>;
   return binding.schemaVersion === 1
@@ -176,7 +176,7 @@ export function readVerifiedProjectScenarioBinding(db: SqliteDb, input: {
     SELECT plugin_id AS pluginId
       FROM applied_plugin_snapshots
      WHERE id = ? AND project_id = ?
-  `).get(binding.snapshotId, input.projectId) as { pluginId?: unknown } | undefined;
+  `).get(binding.snapshotId, input.projectId) as { pluginId?: any } | undefined;
   if (row?.pluginId !== binding.pluginId) return null;
   if (binding.provenance !== 'automatic_default') {
     return binding.taskProfile === undefined ? binding : null;

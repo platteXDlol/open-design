@@ -148,7 +148,7 @@ function parseSimpleYaml(source: string): Record<string, unknown> {
   return root;
 }
 
-function parseScalar(raw: string): unknown {
+function parseScalar(raw: string): any {
   const trimmed = raw.trim();
   if (!trimmed) return '';
   if (
@@ -167,7 +167,7 @@ function parseScalar(raw: string): unknown {
   return trimmed.replace(/\s+#.*$/, '').trim();
 }
 
-function scalarString(value: unknown): string | null {
+function scalarString(value: any): string | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
@@ -193,7 +193,7 @@ function collectColors(parsed: ParsedDesignMd): DesignMdColor[] {
   return out;
 }
 
-function collectHexValues(value: unknown, path: string[], add: (key: string, raw: string) => void): void {
+function collectHexValues(value: any, path: string[], add: (key: string, raw: string) => void): void {
   if (typeof value === 'string') {
     for (const match of value.matchAll(/#?(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\b/g)) {
       add(path.join('.'), match[0] ?? '');
@@ -268,7 +268,7 @@ function collectFonts(frontmatter: Record<string, unknown>, body: string): FontC
   return out;
 }
 
-function collectFontValues(value: unknown, path: string[], add: (key: string, family: string) => void): void {
+function collectFontValues(value: any, path: string[], add: (key: string, family: string) => void): void {
   if (typeof value === 'string') {
     if (/font|family|type|body|display|heading|mono/i.test(path.join('.'))) add(path.join('.'), value);
     return;
@@ -308,7 +308,7 @@ function collectComponentNames(frontmatter: Record<string, unknown>, body: strin
   return Array.from(names);
 }
 
-function firstDimension(value: unknown): string | null {
+function firstDimension(value: any): string | null {
   if (typeof value === 'string') return value.trim() || null;
   if (!value || typeof value !== 'object') return null;
   for (const child of Object.values(value as Record<string, unknown>)) {

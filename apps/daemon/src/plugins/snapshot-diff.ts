@@ -86,27 +86,27 @@ export function diffSnapshots(input: DiffSnapshotsInput): SnapshotDiffReport {
 
   // Connectors / MCP.
   diffArray(entries, 'connectorsRequired',
-    nonEmptyStrings((a.connectorsRequired ?? []).map((c) => safeString((c as { id?: unknown })?.id))),
-    nonEmptyStrings((b.connectorsRequired ?? []).map((c) => safeString((c as { id?: unknown })?.id))));
+    nonEmptyStrings((a.connectorsRequired ?? []).map((c) => safeString((c as { id?: any })?.id))),
+    nonEmptyStrings((b.connectorsRequired ?? []).map((c) => safeString((c as { id?: any })?.id))));
   diffArray(entries, 'connectorsResolved',
-    nonEmptyStrings((a.connectorsResolved ?? []).map((c) => `${safeString((c as { id?: unknown })?.id)}:${safeString((c as { status?: unknown })?.status)}`)),
-    nonEmptyStrings((b.connectorsResolved ?? []).map((c) => `${safeString((c as { id?: unknown })?.id)}:${safeString((c as { status?: unknown })?.status)}`)));
+    nonEmptyStrings((a.connectorsResolved ?? []).map((c) => `${safeString((c as { id?: any })?.id)}:${safeString((c as { status?: any })?.status)}`)),
+    nonEmptyStrings((b.connectorsResolved ?? []).map((c) => `${safeString((c as { id?: any })?.id)}:${safeString((c as { status?: any })?.status)}`)));
   diffArray(entries, 'mcpServers',
-    nonEmptyStrings((a.mcpServers ?? []).map((m) => safeString((m as { id?: unknown })?.id))),
-    nonEmptyStrings((b.mcpServers ?? []).map((m) => safeString((m as { id?: unknown })?.id))));
+    nonEmptyStrings((a.mcpServers ?? []).map((m) => safeString((m as { id?: any })?.id))),
+    nonEmptyStrings((b.mcpServers ?? []).map((m) => safeString((m as { id?: any })?.id))));
 
   // GenUI surfaces (by id).
   diffArray(entries, 'genuiSurfaces',
-    nonEmptyStrings((a.genuiSurfaces ?? []).map((s) => safeString((s as { id?: unknown })?.id))),
-    nonEmptyStrings((b.genuiSurfaces ?? []).map((s) => safeString((s as { id?: unknown })?.id))));
+    nonEmptyStrings((a.genuiSurfaces ?? []).map((s) => safeString((s as { id?: any })?.id))),
+    nonEmptyStrings((b.genuiSurfaces ?? []).map((s) => safeString((s as { id?: any })?.id))));
 
   // Pipeline (by stage id roster + per-stage atoms).
   diffPipeline(entries, a.pipeline, b.pipeline);
 
   // Assets (by path).
   diffArray(entries, 'assetsStaged',
-    nonEmptyStrings((a.assetsStaged ?? []).map((x) => safeString((x as { path?: unknown })?.path))),
-    nonEmptyStrings((b.assetsStaged ?? []).map((x) => safeString((x as { path?: unknown })?.path))));
+    nonEmptyStrings((a.assetsStaged ?? []).map((x) => safeString((x as { path?: any })?.path))),
+    nonEmptyStrings((b.assetsStaged ?? []).map((x) => safeString((x as { path?: any })?.path))));
 
   entries.sort((x, y) => x.field.localeCompare(y.field));
 
@@ -129,7 +129,7 @@ function nonEmptyStrings(values: ReadonlyArray<string>): string[] {
   return values.filter((s): s is string => typeof s === 'string' && s.length > 0);
 }
 
-function safeString(value: unknown): string {
+function safeString(value: any): string {
   return typeof value === 'string' ? value : '';
 }
 
@@ -170,7 +170,7 @@ function diffPipeline(
   }
 }
 
-function diffScalar(out: SnapshotDiffEntry[], field: string, a: unknown, b: unknown): void {
+function diffScalar(out: SnapshotDiffEntry[], field: string, a: any, b: any): void {
   const aPresent = a !== undefined && a !== null;
   const bPresent = b !== undefined && b !== null;
   if (!aPresent && !bPresent) return;
@@ -215,7 +215,7 @@ function diffMap(out: SnapshotDiffEntry[], field: string, a: Record<string, stri
   });
 }
 
-function toComparable(value: unknown): string {
+function toComparable(value: any): string {
   if (value === undefined || value === null) return '';
   if (typeof value === 'string') return value;
   if (typeof value === 'number') return String(value);

@@ -4,7 +4,7 @@ import { resolveAgentLaunch } from '../launch.js';
 import type { RuntimeModelOption } from '../types.js';
 import type { RuntimeAgentDef } from '../types.js';
 
-function parseCodexStringList(raw: unknown): string[] | undefined {
+function parseCodexStringList(raw: any): string[] | undefined {
   if (!Array.isArray(raw)) return undefined;
   const values = raw
     .map((value) => (typeof value === 'string' ? value.trim() : ''))
@@ -12,16 +12,16 @@ function parseCodexStringList(raw: unknown): string[] | undefined {
   return values.length > 0 ? values : undefined;
 }
 
-function parseCodexServiceTiers(raw: unknown): RuntimeModelOption[] | undefined {
+function parseCodexServiceTiers(raw: any): RuntimeModelOption[] | undefined {
   if (!Array.isArray(raw)) return undefined;
   const out: RuntimeModelOption[] = [];
   const seen = new Set<string>();
   for (const tier of raw) {
     if (!tier || typeof tier !== 'object') continue;
     const entry = tier as {
-      id?: unknown;
-      name?: unknown;
-      label?: unknown;
+      id?: any;
+      name?: any;
+      label?: any;
     };
     const id = typeof entry.id === 'string' ? entry.id.trim() : '';
     if (!id || seen.has(id)) continue;
@@ -57,7 +57,7 @@ function parseCodexServiceTiersFromSpeedTiers(
 }
 
 export function parseCodexDebugModels(stdout: string): RuntimeModelOption[] | null {
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(String(stdout || ''));
   } catch {
@@ -66,7 +66,7 @@ export function parseCodexDebugModels(stdout: string): RuntimeModelOption[] | nu
   if (!parsed || typeof parsed !== 'object') return null;
   const models = Array.isArray(parsed)
     ? parsed
-    : (parsed as { models?: unknown }).models;
+    : (parsed as { models?: any }).models;
   if (!Array.isArray(models)) return null;
 
   const out = [DEFAULT_MODEL_OPTION];
@@ -74,13 +74,13 @@ export function parseCodexDebugModels(stdout: string): RuntimeModelOption[] | nu
   for (const raw of models) {
     if (!raw || typeof raw !== 'object') continue;
     const entry = raw as {
-      slug?: unknown;
-      id?: unknown;
-      display_name?: unknown;
-      name?: unknown;
-      visibility?: unknown;
-      additional_speed_tiers?: unknown;
-      service_tiers?: unknown;
+      slug?: any;
+      id?: any;
+      display_name?: any;
+      name?: any;
+      visibility?: any;
+      additional_speed_tiers?: any;
+      service_tiers?: any;
     };
     if (entry.visibility === 'hidden') continue;
     const id =

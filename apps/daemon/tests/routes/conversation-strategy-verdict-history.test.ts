@@ -323,7 +323,7 @@ describe('persisted strategy verdict in conversation history', () => {
     });
     const authorizeProjectRequest: NonNullable<
       RegisterProjectConversationRoutesDeps['authorizeProjectRequest']
-    > = async (_req, res, projectId) => {
+    > = async (_req: any, res: any, projectId: any) => {
       if (projectId === PROJECT_ID) return true;
       res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Fixture project denied.' } });
       return false;

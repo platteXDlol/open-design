@@ -39,7 +39,7 @@ export function managedMcpRegistrationEnv(
 function bootstrapTargetArgs(raw: string | undefined): string[] | null {
   if (raw == null || raw.length === 0) return null;
   try {
-    const parsed = JSON.parse(raw) as unknown;
+    const parsed = JSON.parse(raw) as any;
     if (!Array.isArray(parsed) || parsed.some((arg) => typeof arg !== 'string')) return null;
     return (parsed as string[]).filter((arg) => arg !== MCP_BOOTSTRAP_CONTRACT.MANAGED_ARG);
   } catch {

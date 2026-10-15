@@ -104,7 +104,7 @@ export async function resolvePluginFolder(opts: ResolveOptions): Promise<Resolve
   let stats: fs.Stats;
   try {
     stats = await fsp.stat(folder);
-  } catch (err) {
+  } catch (err: any) {
     return { ok: false, errors: [`Plugin folder not found: ${folder} (${(err as Error).message})`], warnings };
   }
   if (!stats.isDirectory()) {
@@ -258,7 +258,7 @@ function pluginVisibleFromWorkspace(
   let binding: ReturnType<typeof getWorkspaceResourceByResourceId>;
   try {
     binding = getWorkspaceResourceByResourceId(db, 'plugin', plugin.id);
-  } catch (error) {
+  } catch (error: any) {
     // Narrow plugin-library tests and external embedders may initialize only
     // the plugin schema. Unscoped/local reads do not require Workspace data;
     // a scoped read must still fail rather than silently bypass isolation.

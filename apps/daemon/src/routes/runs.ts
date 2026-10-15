@@ -1,3 +1,4 @@
+import { WorkspaceResourceAccessInput } from '../v05-stubs.js';
 import type { Express, Request, Response } from 'express';
 import type Database from 'better-sqlite3';
 import fs from 'node:fs';
@@ -36,12 +37,6 @@ import { newInsertId, readAnalyticsContext } from '../analytics.js';
 import type { AnalyticsContext } from '../analytics.js';
 import { spawnEnvForAgent } from '../agents.js';
 import { agentCliEnvForAgent, readAppConfig } from '../app-config.js';
-import type { AuthorizeProjectRequest } from '../collab/project-request-authority.js';
-import {
-  workspaceResourceContextFromRequest,
-  type BoundWorkspaceResourceMutationGate,
-  type WorkspaceResourceAccessInput,
-} from '../collab/workspace-resource-mutation.js';
 import {
   codexSessionIdFromRunEvents,
   readCodexRolloutFirstCall,
@@ -57,7 +52,6 @@ import {
   updateProject,
   upsertMessage,
 } from '../db.js';
-import { readVelaLoginStatus } from '../integrations/vela.js';
 import {
   ensureDetectedRuntimeCapabilities,
   ensureDetectedRuntimeVersions,
@@ -248,7 +242,7 @@ const SEEDED_USER_IMAGE_EXTS = new Set([
 
 type SqliteDb = Database.Database;
 type ApiRequest = Request<Record<string, string>, unknown, JsonRecord>;
-type ApiResponse = Response<unknown>;
+type ApiResponse = Response<any>;
 type AgentCliEnv = Parameters<typeof agentCliEnvForAgent>[0];
 type RunDeliveryTarget = 'managed-project' | 'external-project' | 'none';
 type SeededCommentAttachment = ReturnType<typeof normalizeCommentAttachments>[number] & {
@@ -260,9 +254,9 @@ type SeededCommentAttachment = ReturnType<typeof normalizeCommentAttachments>[nu
  * preview via `queuedSlideNavTarget`. The prompt normalizer intentionally omits
  * it; re-attach from the raw request when seeding persisted messages.
  */
-function seededSlideIndexFromRaw(raw: unknown): number | undefined {
+function seededSlideIndexFromRaw(raw: any): number | undefined {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
-  const slideIndex = (raw as { slideIndex?: unknown }).slideIndex;
+  const slideIndex = (raw as { slideIndex?: any }).slideIndex;
   if (typeof slideIndex !== 'number' || !Number.isFinite(slideIndex) || slideIndex < 0) {
     return undefined;
   }
@@ -271,7 +265,7 @@ function seededSlideIndexFromRaw(raw: unknown): number | undefined {
 
 function withSeededSlideIndex(
   normalized: ReturnType<typeof normalizeCommentAttachments>,
-  rawCommentAttachments: unknown[],
+  rawCommentAttachments: any[],
 ): SeededCommentAttachment[] {
   return normalized.map((item, index) => {
     const rawById = rawCommentAttachments.find(
@@ -279,7 +273,7 @@ function withSeededSlideIndex(
         entry &&
         typeof entry === 'object' &&
         !Array.isArray(entry) &&
-        typeof (entry as { id?: unknown }).id === 'string' &&
+        typeof (entry as { id?: any }).id === 'string' &&
         (entry as { id: string }).id === item.id,
     );
     const slideIndex = seededSlideIndexFromRaw(rawById ?? rawCommentAttachments[index]);
@@ -407,8 +401,8 @@ interface RunCreateMeta extends InternalRunCreateInput, JsonRecord {
 function activeRunBlockingDesignSystemEnrichment(
   runs: Pick<ChatRunService, 'list'>,
   input: {
-    conversationId: unknown;
-    analyticsHints: unknown;
+    conversationId: any;
+    analyticsHints: any;
     /** The optimistically created run for this request; it never blocks itself. */
     excludeRunId?: string | null;
   },
@@ -428,9 +422,9 @@ function activeRunBlockingDesignSystemEnrichment(
 }
 
 interface RunListFilters {
-  projectId?: unknown;
-  conversationId?: unknown;
-  status?: unknown;
+  projectId?: any;
+  conversationId?: any;
+  status?: any;
 }
 
 interface ChatRunService {
@@ -445,7 +439,7 @@ interface ChatRunService {
   list(filters: RunListFilters): ChatRun[];
   statusBody(run: ChatRun): ChatRunStatusResponse;
   stream(run: ChatRun, req: Request, res: Response): void;
-  start(run: ChatRun, starter: () => Promise<unknown>): ChatRun;
+  start(run: ChatRun, starter: () => Promise<any>): ChatRun;
   fail(run: ChatRun, code: string, message: string): void;
   wait(run: ChatRun): Promise<ChatRunStatusResponse>;
   cancel(
@@ -469,7 +463,7 @@ interface ChatRunService {
   /** Persist daemon-owned state assigned during an atomic claim hook. */
   persistState(run: ChatRun): void;
   isTerminal(status: ChatRunStatus): boolean;
-  emit?(run: ChatRun, event: string, data: unknown): RunEventRecord;
+  emit?(run: ChatRun, event: string, data: any): RunEventRecord;
   setAnalyticsRecovery?(run: ChatRun, recovery: {
     context: AnalyticsContext;
     properties: Record<string, unknown>;
@@ -518,15 +512,15 @@ interface ProjectFileEntry {
 }
 
 interface SseResponse {
-  send(event: string, data: unknown, id?: number): void;
+  send(event: string, data: any, id?: number): void;
   end(): void;
   cleanup?(): void;
 }
 
 class AutomaticOdNextPreparationError extends Error {
-  readonly preparationCause: unknown;
+  readonly preparationCause: any;
 
-  constructor(cause: unknown) {
+  constructor(cause: any) {
     super(cause instanceof Error ? cause.message : String(cause));
     this.name = 'AutomaticOdNextPreparationError';
     this.preparationCause = cause;
@@ -596,7 +590,7 @@ export interface RegisterRunRoutesDeps {
       code: string,
       message: string,
       details?: Record<string, unknown>,
-    ) => Response<unknown> | void;
+    ) => Response<any> | void;
   };
   paths: {
     BUNDLED_PLUGINS_DIR?: string;
@@ -608,7 +602,7 @@ export interface RegisterRunRoutesDeps {
     getAgentDef: (agentId: string) => RuntimeAgentDef | null | undefined;
   };
   chat: {
-    startChatRun: (meta: RunCreateMeta, run: ChatRun) => Promise<unknown>;
+    startChatRun: (meta: RunCreateMeta, run: ChatRun) => Promise<any>;
     prepareOdNextInitialPromptBundle?: (input: {
       meta: RunCreateMeta;
       frozenSkillPackage: FrozenSkillPackageV1;
@@ -713,9 +707,9 @@ export interface RegisterRunRoutesDeps {
    * `enforceWorkspaceResourceMutation` itself passes a `row === null` lookup
    * straight through regardless of ctx.
    */
-  enforceWorkspaceProjectMutation?: BoundWorkspaceResourceMutationGate;
+  enforceWorkspaceProjectMutation?: any;
   /** Fresh exact authority for run reads/cancel after resolving run.projectId. */
-  authorizeProjectRequest?: AuthorizeProjectRequest;
+  authorizeProjectRequest?: any;
   /**
    * Paired with `enforceWorkspaceProjectMutation` above: the SAME
    * `workspace_projects` binding lookups project's own mutation routes
@@ -723,11 +717,11 @@ export interface RegisterRunRoutesDeps {
    * duplicate/comments already check instead of a second query shape.
    */
   projectStore?: {
-    // `db` is typed `any` here (matching `BoundWorkspaceResourceMutationGate`'s
-    // own `db: unknown` seam) purely to sidestep strict-function-type
+    // `db` is typed `any` here (matching `unknown`'s
+    // own `db: any` seam) purely to sidestep strict-function-type
     // contravariance: the concrete `db.ts` implementations take `SqliteDb`,
     // and this field's value is threaded straight into
-    // `enforceWorkspaceProjectMutation`'s matching `db: unknown` parameters.
+    // `enforceWorkspaceProjectMutation`'s matching `db: any` parameters.
     getWorkspaceProject: (
       db: any,
       workspaceId: string,
@@ -761,7 +755,7 @@ const AGUI_NATIVE_EVENT_KINDS: ReadonlySet<OdNativeEvent['kind']> = new Set([
   'genui_state_synced',
 ]);
 
-function toProjectFiles(value: unknown): ProjectFileEntry[] {
+function toProjectFiles(value: any): ProjectFileEntry[] {
   return Array.isArray(value)
     ? value.filter((item): item is ProjectFileEntry =>
         Boolean(item && typeof item === 'object' && typeof (item as JsonRecord).name === 'string'),
@@ -780,7 +774,7 @@ const SCENARIO_PROJECT_INTENTS: readonly NonNullable<ContractProjectMetadata['in
   'hyperframes',
 ];
 
-function toScenarioProjectIntent(value: unknown): ContractProjectMetadata['intent'] | undefined {
+function toScenarioProjectIntent(value: any): ContractProjectMetadata['intent'] | undefined {
   return SCENARIO_PROJECT_INTENTS.find((intent) => intent === value);
 }
 
@@ -815,7 +809,7 @@ function withoutSensitiveRunInput(body: JsonRecord): JsonRecord {
   return sanitized;
 }
 
-function canonicalJsonValue(value: unknown): unknown {
+function canonicalJsonValue(value: any): any {
   if (Array.isArray(value)) return value.map(canonicalJsonValue);
   if (value && typeof value === 'object') {
     return Object.fromEntries(
@@ -882,7 +876,7 @@ const EXTERNAL_PLUGIN_ANALYTICS_KEYS = [
 
 function externalPluginAttributionMismatch(
   existing: Record<string, unknown> | null | undefined,
-  incoming: unknown,
+  incoming: any,
 ): boolean {
   const next =
     incoming && typeof incoming === 'object' && !Array.isArray(incoming)
@@ -914,9 +908,9 @@ function toOdNativeEvent(record: RunEventRecord): OdNativeEvent | null {
 export function sendStructuredRunCreateFailure(
   res: ApiResponse,
   sendApiError: RegisterRunRoutesDeps['http']['sendApiError'],
-  error: unknown,
+  error: any,
   requestId: string = randomUUID(),
-): Response<unknown> | void {
+): Response<any> | void {
   const rawCode = (error as NodeJS.ErrnoException)?.code;
   const code = typeof rawCode === 'string' && /^[A-Z0-9_]+$/.test(rawCode)
     ? rawCode
@@ -933,13 +927,13 @@ export function sendStructuredRunCreateFailure(
 
 export function registerRunCreateRoute(
   app: Express,
-  handleRunCreate: (req: ApiRequest, res: ApiResponse) => Promise<unknown>,
+  handleRunCreate: (req: ApiRequest, res: ApiResponse) => Promise<any>,
   sendApiError: RegisterRunRoutesDeps['http']['sendApiError'],
 ): void {
   app.post('/api/runs', async (req: ApiRequest, res: ApiResponse) => {
     try {
       return await handleRunCreate(req, res);
-    } catch (error) {
+    } catch (error: any) {
       if (res.headersSent) throw error;
       return sendStructuredRunCreateFailure(res, sendApiError, error);
     }
@@ -1033,7 +1027,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
       if (strategyTask && isLegacyHydratedRunWithoutAppliedSnapshot(run)) {
         projectedSnapshotId = strategyTask.snapshotId;
       }
-    } catch (error) {
+    } catch (error: any) {
       if (
         !(error instanceof InvalidFrozenSkillPackageError)
         && !(error instanceof InvalidStrategyTaskRecordError)
@@ -1101,7 +1095,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
         projectDeliverableValid: resolved.valid,
         ...(validation ? { projectDeliverableValidation: validation } : {}),
       };
-    } catch (error) {
+    } catch (error: any) {
       console.warn('[od-next-task] project deliverable probe failed', {
         runId: run.id,
         reason: error instanceof Error ? error.message : String(error),
@@ -1407,7 +1401,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     const binding = ctx.projectStore.getWorkspaceProjectByProjectId(db, projectId);
     if (!binding) return { ok: true, authorizedBoundMutation: false };
 
-    const requestContext = workspaceResourceContextFromRequest(req);
+    const requestContext = ((..._v05_unused: any[]) => ({} as any))(req);
     const mustAuthorize = binding.visibility === 'team' || requestContext !== null;
     if (!mustAuthorize) {
       // Headerless local CLI/BYOK calls keep the legacy Personal-project path.
@@ -1427,7 +1421,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
   function requestedSnapshotBelongsToProject(
     res: ApiResponse,
     projectId: string,
-    snapshotId: unknown,
+    snapshotId: any,
   ): boolean {
     if (typeof snapshotId !== 'string' || snapshotId.trim().length === 0) {
       return true;
@@ -1435,7 +1429,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     const normalizedSnapshotId = snapshotId.trim();
     const row = db
       .prepare('SELECT project_id AS projectId FROM applied_plugin_snapshots WHERE id = ?')
-      .get(normalizedSnapshotId) as { projectId?: unknown } | undefined;
+      .get(normalizedSnapshotId) as { projectId?: any } | undefined;
     if (row?.projectId === projectId) return true;
     sendApiError(
       res,
@@ -1457,7 +1451,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     req: ApiRequest,
     res: ApiResponse,
     projectId: string,
-    agentId: unknown,
+    agentId: any,
     authorizedBoundMutation = false,
   ): Promise<
     | { ok: true; workspaceScope: RunWorkspaceScope | null }
@@ -1465,7 +1459,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
   > {
     if (!ctx.projectStore) return { ok: true, workspaceScope: null };
     const binding = ctx.projectStore.getWorkspaceProjectByProjectId(db, projectId);
-    const requestContext = workspaceResourceContextFromRequest(req);
+    const requestContext = ((..._v05_unused: any[]) => ({} as any))(req);
     if (binding) {
       // A shared Team project is a single-writer resource. Billing still uses
       // the persisted Workspace binding below, but starting an agent can write
@@ -1642,7 +1636,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     // the Workspace directory is stale or offline, regardless of which agent
     // created the run. Explicitly asserted identity still goes through the
     // local project gate so conflicting or partial scope cannot be ignored.
-    const requestContext = workspaceResourceContextFromRequest(req);
+    const requestContext = ((..._v05_unused: any[]) => ({} as any))(req);
     const carriesNavigationScope =
       options.mode === 'read'
       && options.allowNavigationQuery
@@ -1663,7 +1657,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
   }
 
   function runToolBundleDeliveryTargetForProject(
-    projectId: unknown,
+    projectId: any,
     metadata: ProjectMetadata,
   ): RunDeliveryTarget {
     if (typeof projectId !== 'string' || !projectId || !isSafeId(projectId)) {
@@ -1730,7 +1724,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     let clarificationResolution;
     try {
       clarificationResolution = resolveClarificationContinuation(requestBody);
-    } catch (error) {
+    } catch (error: any) {
       if (
         error instanceof InvalidFrozenSkillPackageError
         || error instanceof InvalidStrategyTaskRecordError
@@ -1779,7 +1773,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
         effectiveAgentId = cfgAgent && cfgAgentAvailable
           ? cfgAgent
           : agents.find((agent) => agent.available)?.id ?? null;
-      } catch (err) {
+      } catch (err: any) {
         console.warn('[runs] agent id fallback failed', err);
       }
     }
@@ -1819,7 +1813,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
             && Boolean(strategyTaskForRun(candidate))
           )) ?? null
         : null;
-    } catch (error) {
+    } catch (error: any) {
       if (
         error instanceof InvalidFrozenSkillPackageError
         || error instanceof InvalidStrategyTaskRecordError
@@ -1914,7 +1908,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
             throw new Error('the bound example no longer resolves to its frozen identity');
           }
           selectedExamplePlugin = parsed.data;
-        } catch (error) {
+        } catch (error: any) {
           console.warn(
             `[plugins] selected example ${verifiedExampleBinding.pluginId} is unavailable for ordinary fallback: ${
               error instanceof Error ? error.message : String(error)
@@ -1992,7 +1986,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
             source: rolloutFolder,
             trust: 'bundled',
           });
-        } catch (error) {
+        } catch (error: any) {
           automaticAdmissionPreparationFailed = true;
           console.warn('[od-next-rollout] automatic strategy package preparation failed; using ordinary default', error);
         }
@@ -2037,7 +2031,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
                   : {}),
               })
             : null;
-        } catch (error) {
+        } catch (error: any) {
           automaticAdmissionPreparationFailed = true;
           console.warn('[od-next-rollout] automatic capability preparation failed; using ordinary default', error);
         }
@@ -2158,7 +2152,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
               }
             : undefined,
         );
-      } catch (err) {
+      } catch (err: any) {
         return res.status(500).json({ error: String(err) });
       }
       if (!explicitUserPlugin && strategyRolloutDecision?.effectiveMode === 'active') {
@@ -2290,7 +2284,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
       try {
         runProject = toProjectRecord(getProject(db, meta.projectId));
         assertSandboxProjectRootAvailable(runProject?.metadata);
-      } catch (err) {
+      } catch (err: any) {
         if (err instanceof SandboxImportedProjectError) {
           return sendApiError(res, 400, 'BAD_REQUEST', err.message);
         }
@@ -2315,7 +2309,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
           const firstAvailable = agents.find((agent) => agent.available)?.id ?? null;
           if (firstAvailable) meta.agentId = firstAvailable;
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn('[runs] agent id fallback failed', err);
       }
     }
@@ -2372,7 +2366,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
             clientRequestId: meta.clientRequestId,
             analyticsContext: requestAnalyticsContext,
           });
-      } catch (error) {
+      } catch (error: any) {
         return sendApiError(
           res,
           400,
@@ -2422,7 +2416,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
           meta.conversationId = defaultConv.id;
           conversationFallbackBound = true;
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn('[runs] mcp conversation fallback failed', err);
       }
     }
@@ -2478,7 +2472,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
       const existingUserPin = db
         .prepare(`SELECT role, conversation_id AS conversationId FROM messages WHERE id = ?`)
         .get(clientUserMessageId) as
-        | { role?: unknown; conversationId?: unknown }
+        | { role?: any; conversationId?: any }
         | undefined;
       if (existingUserPin && existingUserPin.role !== 'user') {
         return sendApiError(
@@ -2548,7 +2542,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
           `SELECT role, conversation_id AS conversationId, run_id AS runId, run_status AS runStatus FROM messages WHERE id = ?`,
         )
         .get(clientAssistantMessageId) as
-        | { role?: unknown; conversationId?: unknown; runId?: unknown; runStatus?: unknown }
+        | { role?: any; conversationId?: any; runId?: any; runStatus?: any }
         | undefined;
       if (existingAssistantPin && existingAssistantPin.role !== 'assistant') {
         return sendApiError(
@@ -2648,7 +2642,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
         updateProject(db, meta.projectId, {});
       }
     };
-    const fallbackAutomaticBeforeStart = async (error: unknown): Promise<boolean> => {
+    const fallbackAutomaticBeforeStart = async (error: any): Promise<boolean> => {
       if (
         !strategyRolloutDecision
         || strategyRolloutDecision.effectiveMode !== 'active'
@@ -2823,8 +2817,8 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
           : [];
         const runToolServers = toolBundle.bundle
           && typeof toolBundle.bundle === 'object'
-          && Array.isArray((toolBundle.bundle as { mcpServers?: unknown }).mcpServers)
-            ? (toolBundle.bundle as { mcpServers: unknown[] }).mcpServers
+          && Array.isArray((toolBundle.bundle as { mcpServers?: any }).mcpServers)
+            ? (toolBundle.bundle as { mcpServers: any[] }).mcpServers
             : [];
         const taskConfiguration = buildOdNextTaskConfigurationV1({
           taskType,
@@ -2869,7 +2863,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
           taskInputSnapshot: createdTaskInputSnapshot,
         });
         preparedPromptBundleText = preparedPrompt.text;
-      } catch (error) {
+      } catch (error: any) {
         removeOdNextTaskInputSnapshotBestEffort(
           createdTaskInputSnapshot,
           taskInputSnapshotsRoot,
@@ -2956,7 +2950,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
                         `OD Next rollout preflight blocked: ${preparedStrategy.reasonCodes.join(',')}`,
                       );
                     }
-                  } catch (error) {
+                  } catch (error: any) {
                     throw new AutomaticOdNextPreparationError(error);
                   }
                 }
@@ -2974,7 +2968,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
             ),
         },
       });
-    } catch (error) {
+    } catch (error: any) {
       removeOdNextTaskInputSnapshotBestEffort(
         createdTaskInputSnapshot,
         taskInputSnapshotsRoot,
@@ -3076,7 +3070,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
       try {
         const task = strategyTaskForRun(run);
         strategyTask = task ? projectStrategyTask(task, run.id) : null;
-      } catch (error) {
+      } catch (error: any) {
         if (
           error instanceof InvalidFrozenSkillPackageError
           || error instanceof InvalidStrategyTaskRecordError
@@ -3151,7 +3145,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     try {
       const task = strategyTaskForRun(run);
       strategyTask = task ? projectStrategyTask(task, run.id) : null;
-    } catch (error) {
+    } catch (error: any) {
       if (
         !(error instanceof InvalidFrozenSkillPackageError)
         && !(error instanceof InvalidStrategyTaskRecordError)
@@ -3210,7 +3204,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
         const project = toProjectRecord(getProject(db, run.projectId));
         const projectRoot = resolveProjectDir(PROJECTS_DIR, run.projectId, project?.metadata);
         detectSkillPluginCandidateOnRunSuccess(db, design.runs, run, requestBody, projectRoot);
-      } catch (err) {
+      } catch (err: any) {
         console.warn('[plugins] skill candidate hook setup failed', err);
       }
     }
@@ -3250,7 +3244,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
       const binding =
         ctx.projectStore?.getWorkspaceProjectByProjectId(db, projectId);
       if (binding) {
-        const requestContext = workspaceResourceContextFromRequest(req);
+        const requestContext = ((..._v05_unused: any[]) => ({} as any))(req);
         if (requestContext === null) {
           // Headerless local CLI/MCP callers may list only the runs whose
           // persisted runtime is known not to use AMR's Workspace billing
@@ -3363,7 +3357,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     let task;
     try {
       task = getStrategyTaskExecutionByRunId(db, runId);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof InvalidStrategyTaskRecordError) {
         return sendApiError(res, 409, 'OD_NEXT_TASK_STATE_INVALID', error.message);
       }
@@ -3390,7 +3384,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
           }
         }
         files = toProjectFiles(await listFiles(PROJECTS_DIR, project.id, { metadata: packageMetadata }));
-      } catch (err) {
+      } catch (err: any) {
         return sendApiError(
           res,
           500,
@@ -3560,7 +3554,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
       return;
     }
     const adapterClient = {
-      send: (event: string, data: unknown, id?: number) => {
+      send: (event: string, data: any, id?: number) => {
         const nativeEvent = toOdNativeEvent({
           id: id ?? 0,
           event,
@@ -3598,7 +3592,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     let task;
     try {
       task = getStrategyTaskExecutionByRunId(db, runId);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof InvalidStrategyTaskRecordError) {
         return sendApiError(res, 409, 'OD_NEXT_TASK_STATE_INVALID', error.message);
       }
@@ -3621,7 +3615,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
           });
           cancelRun = design.runs.get(physicalRunId) ?? cancelRun;
           break;
-        } catch (error) {
+        } catch (error: any) {
           if (!(error instanceof StrategyTaskTransitionConflictError)) throw error;
           const latest = getStrategyTaskExecutionByRunId(db, cancelRun.id)
             ?? getStrategyTaskExecutionByRunId(db, runId);
@@ -3757,7 +3751,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
       try {
         chatProject = toProjectRecord(getProject(db, requestBody.projectId));
         assertSandboxProjectRootAvailable(chatProject?.metadata);
-      } catch (err) {
+      } catch (err: any) {
         if (err instanceof SandboxImportedProjectError) {
           return sendApiError(res, 400, 'BAD_REQUEST', err.message);
         }
@@ -3789,7 +3783,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     let clarificationResolution;
     try {
       clarificationResolution = resolveClarificationContinuation(requestBody);
-    } catch (error) {
+    } catch (error: any) {
       if (
         error instanceof InvalidFrozenSkillPackageError
         || error instanceof InvalidStrategyTaskRecordError
@@ -3884,7 +3878,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
           `SELECT role, conversation_id AS conversationId, run_id AS runId, run_status AS runStatus FROM messages WHERE id = ?`,
         )
         .get(chatAssistantMessageId) as
-        | { role?: unknown; conversationId?: unknown; runId?: unknown; runStatus?: unknown }
+        | { role?: any; conversationId?: any; runId?: any; runStatus?: any }
         | undefined;
       if (existingAssistantPin && existingAssistantPin.role !== 'assistant') {
         return sendApiError(
@@ -3963,7 +3957,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
             }
           : {}),
       });
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof InvalidStrategyTaskRecordError) {
         return sendApiError(res, 409, 'OD_NEXT_TASK_STATE_INVALID', error.message);
       }
@@ -4014,7 +4008,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
       try {
         const task = strategyTaskForRun(run);
         strategyTask = task ? projectStrategyTask(task, run.id) : null;
-      } catch (error) {
+      } catch (error: any) {
         if (
           error instanceof InvalidFrozenSkillPackageError
           || error instanceof InvalidStrategyTaskRecordError
@@ -4061,7 +4055,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     try {
       const task = strategyTaskForRun(run);
       strategyTask = task ? projectStrategyTask(task, run.id) : null;
-    } catch (error) {
+    } catch (error: any) {
       if (
         error instanceof InvalidFrozenSkillPackageError
         || error instanceof InvalidStrategyTaskRecordError

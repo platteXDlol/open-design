@@ -9,7 +9,7 @@ import { isHostSynthesizedAcpEmission } from './agent-protocol/acp/emission-prov
 
 export interface RunEventForDiagnostics {
   event: string;
-  data: unknown;
+  data: any;
 }
 
 export type RunDiagnosticSource =
@@ -107,13 +107,13 @@ const STDERR_TAIL_MAX_LINES = 20;
 export const STDERR_TAIL_MAX_BYTES = 4 * 1024;
 const PROMPT_BUDGET_MAX_NUMERIC_VALUE = 1_000_000_000;
 
-function recordValue(value: unknown): Record<string, unknown> | null {
+function recordValue(value: any): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
     : null;
 }
 
-function promptBudgetInteger(value: unknown): number | undefined {
+function promptBudgetInteger(value: any): number | undefined {
   return typeof value === 'number' &&
     Number.isSafeInteger(value) &&
     value >= 0 &&
@@ -122,7 +122,7 @@ function promptBudgetInteger(value: unknown): number | undefined {
     : undefined;
 }
 
-function promptBudgetModelId(value: unknown): string {
+function promptBudgetModelId(value: any): string {
   const trimmed = typeof value === 'string' ? value.trim() : '';
   if (!trimmed) return 'default';
   if (trimmed.length > 128 || !/^[A-Za-z0-9][A-Za-z0-9._/:@-]*$/.test(trimmed)) {
@@ -178,7 +178,7 @@ export function promptBudgetAnalyticsFromDiagnostic(
   };
 }
 
-function amrOpenCodeErrorPhase(value: unknown): TrackingAmrOpenCodeErrorPhase | undefined {
+function amrOpenCodeErrorPhase(value: any): TrackingAmrOpenCodeErrorPhase | undefined {
   if (typeof value !== 'string' || !value.trim()) return undefined;
   switch (value.trim()) {
     case 'timeout':
@@ -191,7 +191,7 @@ function amrOpenCodeErrorPhase(value: unknown): TrackingAmrOpenCodeErrorPhase | 
   }
 }
 
-function amrOpenCodeLastEventType(value: unknown): TrackingAmrOpenCodeLastEventType | undefined {
+function amrOpenCodeLastEventType(value: any): TrackingAmrOpenCodeLastEventType | undefined {
   if (typeof value !== 'string' || !value.trim()) return undefined;
   switch (value.trim()) {
     case 'tool_call':
@@ -205,7 +205,7 @@ function amrOpenCodeLastEventType(value: unknown): TrackingAmrOpenCodeLastEventT
   }
 }
 
-function amrOpenCodeLastToolStatus(value: unknown): TrackingAmrOpenCodeLastToolStatus | undefined {
+function amrOpenCodeLastToolStatus(value: any): TrackingAmrOpenCodeLastToolStatus | undefined {
   if (typeof value !== 'string' || !value.trim()) return undefined;
   const status = value.trim().toLowerCase().replace(/[\s-]+/g, '_');
   if (status === 'pending') return 'pending';
@@ -225,7 +225,7 @@ function amrOpenCodeLastToolStatus(value: unknown): TrackingAmrOpenCodeLastToolS
   return 'other';
 }
 
-function amrOpenCodeLastToolKind(value: unknown): TrackingAmrOpenCodeLastToolKind | undefined {
+function amrOpenCodeLastToolKind(value: any): TrackingAmrOpenCodeLastToolKind | undefined {
   if (typeof value !== 'string' || !value.trim()) return undefined;
   const kind = value.trim().toLowerCase().replace(/[\s-]+/g, '_');
   if (/^(?:read|view|cat)$/.test(kind)) return 'read';
@@ -237,7 +237,7 @@ function amrOpenCodeLastToolKind(value: unknown): TrackingAmrOpenCodeLastToolKin
   return 'other';
 }
 
-function amrOpenCodeDiagnosticsFromError(data: unknown): Partial<RunDiagnosticsAnalytics> | null {
+function amrOpenCodeDiagnosticsFromError(data: any): Partial<RunDiagnosticsAnalytics> | null {
   const error = recordValue(recordValue(data)?.error);
   const details = recordValue(error?.details);
   if (
@@ -461,7 +461,7 @@ export function summarizeRunToolProgress(
   };
 }
 
-function readStderrChunk(data: unknown): string | null {
+function readStderrChunk(data: any): string | null {
   if (typeof data === 'string') return data;
   if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
   const obj = data as Record<string, unknown>;
@@ -470,7 +470,7 @@ function readStderrChunk(data: unknown): string | null {
   return null;
 }
 
-function readStdoutChunk(data: unknown): string | null {
+function readStdoutChunk(data: any): string | null {
   if (typeof data === 'string') return data;
   if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
   const obj = data as Record<string, unknown>;
@@ -564,9 +564,9 @@ export function failureCardStderrTail(streamText: string): string | undefined {
  */
 export function withFailureStderrTail(
   event: string,
-  data: unknown,
+  data: any,
   stderrText: string,
-): unknown {
+): any {
   if (event !== 'error') return data;
   if (!data || typeof data !== 'object' || Array.isArray(data)) return data;
   const payload = data as Record<string, unknown>;
@@ -579,7 +579,7 @@ export function withFailureStderrTail(
 function collectStreamTailSummary(
   events: RunEventForDiagnostics[] = [],
   eventName: string,
-  readChunk: (data: unknown) => string | null,
+  readChunk: (data: any) => string | null,
 ): StreamTailSummary | undefined {
   let streamText = '';
   for (const event of events) {

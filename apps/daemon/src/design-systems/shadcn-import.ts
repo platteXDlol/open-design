@@ -103,8 +103,8 @@ type ShadcnRegistryItem = {
   author?: string;
   homepage?: string;
   cssVars?: ShadcnCssVars;
-  dependencies?: unknown;
-  registryDependencies?: unknown;
+  dependencies?: any;
+  registryDependencies?: any;
   files?: ShadcnRegistryFile[];
 };
 
@@ -113,7 +113,7 @@ type ShadcnRegistry = {
   homepage?: string;
   items?: ShadcnRegistryItem[];
   /** Relative paths to nested registry.json files (shadcn `include` layout). */
-  include?: unknown;
+  include?: any;
 };
 
 type RegistryItemMatch = {
@@ -373,7 +373,7 @@ async function resolveShadcnItem(
   }
 
   const refs = parsed.ref ? [parsed.ref] : [...DEFAULT_GITHUB_REFS];
-  let lastError: unknown;
+  let lastError: any;
   for (const ref of refs) {
     // Encode per path segment so a valid slashed ref (e.g. "feature/foo")
     // survives instead of becoming "feature%2Ffoo".
@@ -382,7 +382,7 @@ async function resolveShadcnItem(
     let match: RegistryItemMatch | undefined;
     try {
       match = await locateItemInRegistry(registryUrl, parsed.item, fetchImpl, new Set(), 0);
-    } catch (err) {
+    } catch (err: any) {
       lastError = err;
       continue;
     }
@@ -463,7 +463,7 @@ function registryFileDir(url: string): string {
   }
 }
 
-function isUsableItem(item: unknown): item is ShadcnRegistryItem {
+function isUsableItem(item: any): item is ShadcnRegistryItem {
   if (typeof item !== 'object' || item === null) return false;
   const candidate = item as ShadcnRegistryItem;
   return (
@@ -473,10 +473,10 @@ function isUsableItem(item: unknown): item is ShadcnRegistryItem {
   );
 }
 
-async function fetchJsonDocument(url: string, fetchImpl: ShadcnFetch): Promise<unknown> {
+async function fetchJsonDocument(url: string, fetchImpl: ShadcnFetch): Promise<any> {
   const text = await fetchText(url, fetchImpl);
   try {
-    return JSON.parse(text) as unknown;
+    return JSON.parse(text) as any;
   } catch {
     throw new LocalDesignSystemImportError('BAD_REQUEST', `registry document at ${url} is not valid JSON`);
   }
@@ -501,7 +501,7 @@ async function fetchText(url: string, fetchImpl: ShadcnFetch): Promise<string> {
     let response: ShadcnFetchResponse;
     try {
       response = await fetchImpl(url, { signal: controller.signal });
-    } catch (err) {
+    } catch (err: any) {
       if (err instanceof LocalDesignSystemImportError) throw err;
       if (isAbortError(err)) {
         throw new LocalDesignSystemImportError('BAD_REQUEST', `timed out fetching ${url}`);
@@ -531,7 +531,7 @@ async function fetchText(url: string, fetchImpl: ShadcnFetch): Promise<string> {
     let text: string;
     try {
       text = await response.text();
-    } catch (err) {
+    } catch (err: any) {
       if (isAbortError(err)) {
         throw new LocalDesignSystemImportError('BAD_REQUEST', `timed out reading ${url}`);
       }
@@ -572,7 +572,7 @@ async function readBoundedStream(
       }
       chunks.push(value);
     }
-  } catch (err) {
+  } catch (err: any) {
     if (err instanceof LocalDesignSystemImportError) throw err;
     if (isAbortError(err)) {
       throw new LocalDesignSystemImportError('BAD_REQUEST', `timed out reading ${url}`);
@@ -633,7 +633,7 @@ export function renderShadcnSourceCss(cssVars: ShadcnCssVars | undefined): strin
   return css;
 }
 
-function declaration(key: string, value: unknown): string {
+function declaration(key: string, value: any): string {
   const name = normalizeVarName(key);
   // Reject anything that isn't a clean custom-property ident or whose value
   // could break out of the declaration — otherwise a hostile cssVars entry
@@ -837,11 +837,11 @@ function defaultShadcnFetch(): ShadcnFetch {
   return (url, init) => fetch(url, { ...init, redirect: 'error' });
 }
 
-function isAbortError(err: unknown): boolean {
-  return typeof err === 'object' && err !== null && (err as { name?: unknown }).name === 'AbortError';
+function isAbortError(err: any): boolean {
+  return typeof err === 'object' && err !== null && (err as { name?: any }).name === 'AbortError';
 }
 
-function stringArray(value: unknown): string[] {
+function stringArray(value: any): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((entry): entry is string => typeof entry === 'string' && entry.trim().length > 0);
 }
@@ -854,7 +854,7 @@ function badReference(message: string): LocalDesignSystemImportError {
   return new LocalDesignSystemImportError('BAD_REQUEST', message);
 }
 
-function formatError(err: unknown): string {
+function formatError(err: any): string {
   if (err instanceof Error && err.message) return err.message;
   return String(err);
 }

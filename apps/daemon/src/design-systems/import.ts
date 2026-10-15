@@ -489,11 +489,11 @@ function renderManifest(
   };
 }
 
-function normalizeImportMode(value: unknown): 'normalized' | 'hybrid' | 'verbatim' {
+function normalizeImportMode(value: any): 'normalized' | 'hybrid' | 'verbatim' {
   return value === 'normalized' || value === 'verbatim' || value === 'hybrid' ? value : 'hybrid';
 }
 
-function normalizeCraftList(value: unknown): string[] {
+function normalizeCraftList(value: any): string[] {
   if (!Array.isArray(value)) return [];
   const seen = new Set<string>();
   const out: string[] = [];
@@ -953,6 +953,6 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;');
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

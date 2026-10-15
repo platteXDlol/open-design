@@ -104,7 +104,7 @@ export async function probeCodexInstall(name: string): Promise<CodexInstallStatu
   try {
     const result = await activeRunner().run(['mcp', 'get', name]);
     return { available: true, installed: result.exitCode === 0 };
-  } catch (err) {
+  } catch (err: any) {
     const code = (err as NodeJS.ErrnoException | undefined)?.code;
     if (code === 'ENOENT') {
       return { available: false, installed: false };
@@ -145,7 +145,7 @@ export interface CodexMcpRegistration {
 // transport or an unrecognized shape.
 export function parseCodexMcpRegistration(stdout: string): CodexMcpRegistration | null {
   try {
-    const parsed = JSON.parse(stdout) as { transport?: { command?: unknown; args?: unknown; env?: unknown } };
+    const parsed = JSON.parse(stdout) as { transport?: { command?: any; args?: any; env?: any } };
     const transport = parsed.transport;
     if (transport == null || typeof transport.command !== 'string') return null;
     const args = Array.isArray(transport.args) && transport.args.every((arg) => typeof arg === 'string')
@@ -177,7 +177,7 @@ export async function refreshOwnedCodexMcp(
   let result: CodexRunnerResult;
   try {
     result = await activeRunner().run(['mcp', 'get', spec.name, '--json']);
-  } catch (err) {
+  } catch (err: any) {
     if ((err as NodeJS.ErrnoException | undefined)?.code === 'ENOENT') return 'unavailable';
     throw err;
   }

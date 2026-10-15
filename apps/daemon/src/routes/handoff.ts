@@ -1,12 +1,11 @@
 import type { Express } from 'express';
 import type { RouteDeps } from '../server-context.js';
-import type { AuthorizeProjectRequest } from '../collab/project-request-authority.js';
 
 export interface RegisterHandoffRoutesDeps
   extends RouteDeps<
     'db' | 'http' | 'paths' | 'projectStore' | 'conversations' | 'validation' | 'handoff'
   > {
-  authorizeProjectRequest: AuthorizeProjectRequest;
+  authorizeProjectRequest: any;
 }
 
 /**
@@ -167,7 +166,7 @@ export function registerHandoffRoutes(app: Express, ctx: RegisterHandoffRoutesDe
       }
 
       const errName =
-        err && typeof err === 'object' && 'name' in err ? (err as { name?: unknown }).name : '';
+        err && typeof err === 'object' && 'name' in err ? (err as { name?: any }).name : '';
       if (errName === 'AbortError') {
         return sendApiError(res, 503, 'UPSTREAM_UNAVAILABLE', 'handoff timed out');
       }

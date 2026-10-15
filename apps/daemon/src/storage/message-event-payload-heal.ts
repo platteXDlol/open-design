@@ -154,7 +154,7 @@ export async function runMessageEventPayloadHealPass(
       report.messagesExamined += 1;
       try {
         account('messages', healOversizedMessageEvents(db, candidate.id));
-      } catch (error) {
+      } catch (error: any) {
         report.errors += 1;
         log(`[db] run-event payload heal failed for message ${candidate.id}: ${String(error)}`);
       }
@@ -173,7 +173,7 @@ export async function runMessageEventPayloadHealPass(
       report.batchesExamined += 1;
       try {
         account('message_event_batches', healOversizedMessageEventBatch(db, candidate.id));
-      } catch (error) {
+      } catch (error: any) {
         report.errors += 1;
         log(`[db] run-event payload heal failed for event batch ${candidate.id}: ${String(error)}`);
       }

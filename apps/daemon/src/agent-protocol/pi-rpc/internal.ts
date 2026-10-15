@@ -20,7 +20,7 @@ export type TokenUsage = {
  * Returns `true` when `value` is a non-null object, narrowing it to
  * `JsonRecord` for safe property access on RPC message payloads.
  */
-export function isRecord(value: unknown): value is JsonRecord {
+export function isRecord(value: any): value is JsonRecord {
   return typeof value === 'object' && value !== null;
 }
 /**
@@ -29,7 +29,7 @@ export function isRecord(value: unknown): value is JsonRecord {
  *
  * @param err - Any caught value from a try/catch or error callback.
  */
-export function errorMessage(err: unknown): string {
+export function errorMessage(err: any): string {
   return err instanceof Error ? err.message : String(err);
 }
 /**
@@ -39,7 +39,7 @@ export function errorMessage(err: unknown): string {
  *
  * @param err - Any caught value from a try/catch or error callback.
  */
-export function errorCode(err: unknown): string | undefined {
+export function errorCode(err: any): string | undefined {
   return isRecord(err) && typeof err.code === 'string' ? err.code : undefined;
 }
 /**
@@ -48,6 +48,6 @@ export function errorCode(err: unknown): string | undefined {
  *
  * @param value - An arbitrary value from a parsed JSON payload.
  */
-export function getRecord(value: unknown): JsonRecord | undefined {
+export function getRecord(value: any): JsonRecord | undefined {
   return isRecord(value) ? value : undefined;
 }

@@ -70,7 +70,7 @@ const FINALIZE_PROVIDER_PROTOCOLS = new Set<FinalizeProviderProtocol>([
   'ollama',
 ]);
 
-export function isFinalizeProviderProtocol(value: unknown): value is FinalizeProviderProtocol {
+export function isFinalizeProviderProtocol(value: any): value is FinalizeProviderProtocol {
   return typeof value === 'string' && FINALIZE_PROVIDER_PROTOCOLS.has(value as FinalizeProviderProtocol);
 }
 
@@ -160,7 +160,7 @@ export async function resolveCurrentArtifact(
 
   const activeTabRow = db
     .prepare(`SELECT name FROM tabs WHERE project_id = ? AND is_active = 1 LIMIT 1`)
-    .get(projectId) as { name?: unknown } | undefined;
+    .get(projectId) as { name?: any } | undefined;
   const activeTabName =
     activeTabRow && typeof activeTabRow.name === 'string' ? activeTabRow.name : null;
 
@@ -229,7 +229,7 @@ export async function resolveCurrentArtifact(
     .map((f) => {
       const manifest =
         f.artifactManifest && typeof f.artifactManifest === 'object'
-          ? f.artifactManifest as { updatedAt?: unknown }
+          ? f.artifactManifest as { updatedAt?: any }
           : null;
       return {
         name: f.name,
@@ -294,7 +294,7 @@ export async function finalizeDesignPackage(
   let lockFd: number | null = null;
   try {
     lockFd = fs.openSync(lockPath, 'wx');
-  } catch (err: unknown) {
+  } catch (err: any) {
     if ((err as NodeJS.ErrnoException)?.code === 'EEXIST') {
       throw new FinalizePackageLockedError(
         `finalize is already in progress for project ${projectId}`,
@@ -315,7 +315,7 @@ export async function finalizeDesignPackage(
     // returns null on missing DESIGN.md so the prompt's design-system section
     // gracefully falls back to "(no design system selected for this project)".
     const designSystemId =
-      typeof (project as { designSystemId?: unknown }).designSystemId === 'string'
+      typeof (project as { designSystemId?: any }).designSystemId === 'string'
         ? ((project as { designSystemId: string }).designSystemId)
         : null;
     const designSystemBody = designSystemId
@@ -377,11 +377,11 @@ export async function finalizeDesignPackage(
       if (options.fetchImpl) callParams.fetchImpl = options.fetchImpl;
       try {
         response = await callFinalizeProviderWithRetry(callParams);
-      } catch (err: unknown) {
+      } catch (err: any) {
         if (err instanceof FinalizeUpstreamError) throw err;
         const errName =
           err && typeof err === 'object' && 'name' in err
-            ? (err as { name?: unknown }).name
+            ? (err as { name?: any }).name
             : '';
         if (errName === 'AbortError') throw err; // route handler maps to 503
         // Network-level failure (TypeError from fetch, ENOTFOUND/ECONNREFUSED
@@ -397,10 +397,10 @@ export async function finalizeDesignPackage(
     // Phase 8: extract DESIGN.md body and usage counters. A 200 with a body
     // that isn't valid JSON (or isn't an object) is treated as an upstream
     // failure rather than letting JSON.parse's SyntaxError surface as 500.
-    let payload: unknown;
+    let payload: any;
     try {
       payload = await response.json();
-    } catch (err: unknown) {
+    } catch (err: any) {
       const message = err instanceof Error ? err.message : String(err);
       throw new FinalizeUpstreamError(
         502,
@@ -424,7 +424,7 @@ export async function finalizeDesignPackage(
         fs.closeSync(fsyncFd);
       }
       fs.renameSync(tmpPath, finalPath);
-    } catch (err) {
+    } catch (err: any) {
       try {
         fs.unlinkSync(tmpPath);
       } catch {
@@ -501,7 +501,7 @@ const defaultSleep = (ms: number): Promise<void> => new Promise((r) => setTimeou
 interface FinalizeProviderHttpRequest {
   url: string;
   headers: Record<string, string>;
-  body: unknown;
+  body: any;
 }
 
 function buildAzureChatCompletionsUrl(baseUrl: string, model: string, apiVersion?: string): {
@@ -687,7 +687,7 @@ export async function callAnthropicWithRetry(
  * producing an empty DESIGN.md on disk.
  */
 export function extractDesignMd(
-  payload: unknown,
+  payload: any,
   protocol: FinalizeProviderProtocol = 'anthropic',
 ): string {
   if (!payload || typeof payload !== 'object') {
@@ -701,7 +701,7 @@ export function extractDesignMd(
   let out = '';
 
   if (protocol === 'anthropic') {
-    const content = (payload as { content?: unknown }).content;
+    const content = (payload as { content?: any }).content;
     if (!Array.isArray(content)) {
       throw new FinalizeUpstreamError(
         502,
@@ -711,11 +711,11 @@ export function extractDesignMd(
     }
     for (const block of content) {
       if (!block || typeof block !== 'object') continue;
-      const b = block as { type?: unknown; text?: unknown };
+      const b = block as { type?: any; text?: any };
       if (b.type === 'text' && typeof b.text === 'string') out += b.text;
     }
   } else if (protocol === 'openai' || protocol === 'azure') {
-    const choices = (payload as { choices?: unknown }).choices;
+    const choices = (payload as { choices?: any }).choices;
     if (!Array.isArray(choices)) {
       throw new FinalizeUpstreamError(
         502,
@@ -725,14 +725,14 @@ export function extractDesignMd(
     }
     for (const choice of choices) {
       if (!choice || typeof choice !== 'object') continue;
-      const message = (choice as { message?: { content?: unknown }; text?: unknown }).message;
+      const message = (choice as { message?: { content?: any }; text?: any }).message;
       if (typeof message?.content === 'string') out += message.content;
-      if (typeof (choice as { text?: unknown }).text === 'string') {
+      if (typeof (choice as { text?: any }).text === 'string') {
         out += (choice as { text: string }).text;
       }
     }
   } else {
-    const message = (payload as { message?: { content?: unknown } }).message;
+    const message = (payload as { message?: { content?: any } }).message;
     if (typeof message?.content === 'string') out += message.content;
   }
 
@@ -747,7 +747,7 @@ export function extractDesignMd(
 }
 
 function extractTokenUsage(
-  payload: unknown,
+  payload: any,
   protocol: FinalizeProviderProtocol,
 ): { inputTokens: number; outputTokens: number } {
   if (!payload || typeof payload !== 'object') {
@@ -755,7 +755,7 @@ function extractTokenUsage(
   }
 
   if (protocol === 'anthropic') {
-    const usage = (payload as { usage?: { input_tokens?: unknown; output_tokens?: unknown } }).usage;
+    const usage = (payload as { usage?: { input_tokens?: any; output_tokens?: any } }).usage;
     return {
       inputTokens: typeof usage?.input_tokens === 'number' ? usage.input_tokens : 0,
       outputTokens: typeof usage?.output_tokens === 'number' ? usage.output_tokens : 0,
@@ -763,7 +763,7 @@ function extractTokenUsage(
   }
 
   if (protocol === 'openai' || protocol === 'azure') {
-    const usage = (payload as { usage?: { prompt_tokens?: unknown; completion_tokens?: unknown } }).usage;
+    const usage = (payload as { usage?: { prompt_tokens?: any; completion_tokens?: any } }).usage;
     return {
       inputTokens: typeof usage?.prompt_tokens === 'number' ? usage.prompt_tokens : 0,
       outputTokens: typeof usage?.completion_tokens === 'number' ? usage.completion_tokens : 0,
@@ -772,11 +772,11 @@ function extractTokenUsage(
 
   return {
     inputTokens:
-      typeof (payload as { prompt_eval_count?: unknown }).prompt_eval_count === 'number'
+      typeof (payload as { prompt_eval_count?: any }).prompt_eval_count === 'number'
         ? (payload as { prompt_eval_count: number }).prompt_eval_count
         : 0,
     outputTokens:
-      typeof (payload as { eval_count?: unknown }).eval_count === 'number'
+      typeof (payload as { eval_count?: any }).eval_count === 'number'
         ? (payload as { eval_count: number }).eval_count
         : 0,
   };

@@ -425,7 +425,7 @@ export function createStrategyTaskExecution(
       db.prepare(`
         UPDATE applied_plugin_snapshots SET expires_at = NULL WHERE id = ?
       `).run(snapshotId);
-    } catch (error) {
+    } catch (error: any) {
       throw new InvalidStrategyTaskRecordError(
         `Strategy task identity or initial Run is already bound: ${errorMessage(error)}`,
       );
@@ -537,7 +537,7 @@ export function strategyTaskTurnsForRunIds(
         });
       }
     }
-  } catch (error) {
+  } catch (error: any) {
     if (isMissingTaskStoreError(error)) return turns;
     throw error;
   }
@@ -566,7 +566,7 @@ export function getAwaitingClarificationStrategyTaskExecution(
       );
     }
     return rows.length === 1 ? rowToTask(db, rows[0]!) : null;
-  } catch (error) {
+  } catch (error: any) {
     if (isMissingTaskStoreError(error)) return null;
     throw error;
   }
@@ -766,7 +766,7 @@ export function compareAndTransitionStrategyTaskExecution(
           nextRunFinalText!.sha256,
           updatedAt,
         );
-      } catch (error) {
+      } catch (error: any) {
         throw new StrategyTaskTransitionConflictError(
           `Strategy next Run is already claimed: ${errorMessage(error)}`,
         );
@@ -867,7 +867,7 @@ export function reconcileStrategyTaskRunTerminal(
       return result.changes === 1;
     });
     return reconcile.immediate();
-  } catch (error) {
+  } catch (error: any) {
     if (isMissingTaskStoreError(error)) return false;
     throw error;
   }
@@ -985,16 +985,16 @@ function rowToTask(db: SqliteDb, row: DbRow): StrategyTaskExecutionRecord {
      WHERE task_execution_id = ?
      ORDER BY task_run_index ASC
   `).all(taskExecutionId) as Array<{
-    runId: unknown;
-    inputStage: unknown;
-    taskRunIndex: unknown;
-    sourceRunId: unknown;
-    finalTextKind: unknown;
-    finalTextSchema: unknown;
-    finalText: unknown;
-    finalTextUtf8Bytes: unknown;
-    finalTextSha256: unknown;
-    createdAt: unknown;
+    runId: any;
+    inputStage: any;
+    taskRunIndex: any;
+    sourceRunId: any;
+    finalTextKind: any;
+    finalTextSchema: any;
+    finalText: any;
+    finalTextUtf8Bytes: any;
+    finalTextSha256: any;
+    createdAt: any;
   }>;
   const createdAt = requireNonNegativeInteger(row['created_at'], 'created_at');
   const updatedAt = requireNonNegativeInteger(row['updated_at'], 'updated_at');
@@ -1152,8 +1152,8 @@ function normalizeBlockedContext(
 }
 
 function parseStoredBlockedContext(
-  reasonCodesJson: unknown,
-  visibleText: unknown,
+  reasonCodesJson: any,
+  visibleText: any,
   outcome: StrategyTaskOutcome,
 ): StrategyTaskBlockedContext | null {
   if (reasonCodesJson == null) return null;
@@ -1163,7 +1163,7 @@ function parseStoredBlockedContext(
     );
   }
   const raw = requireStoredString(reasonCodesJson, 'blocked_reason_codes_json');
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(raw);
   } catch {
@@ -1240,7 +1240,7 @@ function finalTextIdentity(input: {
  */
 function acceptedFinalTextSchema(
   kind: StrategyTaskFinalTextKind,
-  schema: unknown,
+  schema: any,
 ): StrategyTaskFinalTextSchema {
   const accepted: ReadonlyArray<StrategyTaskFinalTextSchema> = ACCEPTED_FINAL_TEXT_SCHEMAS[kind];
   const match = accepted.find((candidate): boolean => candidate === schema);
@@ -1321,11 +1321,11 @@ function continuationFinalTextIdentity(input: {
 }
 
 function parseStoredFinalText(input: {
-  kind: unknown;
-  schema: unknown;
-  text: unknown;
-  utf8Bytes: unknown;
-  sha256: unknown;
+  kind: any;
+  schema: any;
+  text: any;
+  utf8Bytes: any;
+  sha256: any;
 }): StrategyTaskFinalTextIdentity {
   if (input.kind !== 'bundle' && input.kind !== 'turn') {
     throw new InvalidStrategyTaskRecordError(
@@ -1403,7 +1403,7 @@ function sameFinalTextIdentity(
 }
 
 function parseFrozenInputIdentity(
-  value: unknown,
+  value: any,
   expected: Omit<StrategyTaskFrozenInputIdentity, 'schema' | 'taskInputManifestSha256'>,
 ): StrategyTaskFrozenInputIdentity {
   if (typeof value !== 'string') {
@@ -1411,7 +1411,7 @@ function parseFrozenInputIdentity(
       'Mapped OD Next task is missing its frozen input identity.',
     );
   }
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(value);
   } catch {
@@ -1443,7 +1443,7 @@ function parseFrozenInputIdentity(
   };
 }
 
-function requireSha256(value: unknown, field: string): string {
+function requireSha256(value: any, field: string): string {
   if (typeof value === 'string' && /^[a-f0-9]{64}$/u.test(value)) return value;
   throw new InvalidStrategyTaskRecordError(`${field} must contain a SHA-256 digest.`);
 }
@@ -1457,7 +1457,7 @@ function assertSnapshotOwnership(
   const owner = db.prepare(`
     SELECT project_id AS projectId, conversation_id AS conversationId
       FROM applied_plugin_snapshots WHERE id = ?
-  `).get(snapshotId) as { projectId?: unknown; conversationId?: unknown } | undefined;
+  `).get(snapshotId) as { projectId?: any; conversationId?: any } | undefined;
   if (
     owner?.projectId !== projectId
     || owner.conversationId !== conversationId
@@ -1732,8 +1732,8 @@ function validatePlanIdentity(
 }
 
 function parseStoredPlanContract(
-  json: unknown,
-  hash: unknown,
+  json: any,
+  hash: any,
 ): { contract?: OpenDesignPlanContractV2; hash?: string } {
   if (json == null && hash == null) return {};
   if (typeof json !== 'string' || typeof hash !== 'string' || !/^[a-f0-9]{64}$/u.test(hash)) {
@@ -1741,7 +1741,7 @@ function parseStoredPlanContract(
       'Stored Plan Contract JSON and hash must be present together.',
     );
   }
-  let value: unknown;
+  let value: any;
   try {
     value = JSON.parse(json);
   } catch {
@@ -1762,7 +1762,7 @@ export function strategyPlanContractHash(plan: OpenDesignPlanContractV2): string
     .digest('hex');
 }
 
-function canonicalJsonValue(value: unknown): unknown {
+function canonicalJsonValue(value: any): any {
   if (Array.isArray(value)) return value.map(canonicalJsonValue);
   if (value && typeof value === 'object') {
     return Object.fromEntries(
@@ -1826,13 +1826,13 @@ function validateStoredState(state: {
   }
 }
 
-function parseNullableRoute(value: unknown): StrategyRouteV2 | null {
+function parseNullableRoute(value: any): StrategyRouteV2 | null {
   if (value == null) return null;
   if (value === 'direct_edit' || value === 'full_plan') return value;
   throw new InvalidStrategyTaskRecordError('Stored strategy route is invalid.');
 }
 
-function parseStage(value: unknown): StrategyInputStageV2 {
+function parseStage(value: any): StrategyInputStageV2 {
   if (
     value === 'request'
     || value === 'clarification'
@@ -1842,7 +1842,7 @@ function parseStage(value: unknown): StrategyInputStageV2 {
   throw new InvalidStrategyTaskRecordError('Stored strategy input stage is invalid.');
 }
 
-function parseOutcome(value: unknown): StrategyTaskOutcome {
+function parseOutcome(value: any): StrategyTaskOutcome {
   if (
     value === 'running'
     || value === 'clarification_required'
@@ -1854,18 +1854,18 @@ function parseOutcome(value: unknown): StrategyTaskOutcome {
   throw new InvalidStrategyTaskRecordError('Stored strategy outcome is invalid.');
 }
 
-function parseNullableExecutionMode(value: unknown): StrategyExecutionModeV2 | null {
+function parseNullableExecutionMode(value: any): StrategyExecutionModeV2 | null {
   if (value == null) return null;
   if (value === 'simple' || value === 'complex') return value;
   throw new InvalidStrategyTaskRecordError('Stored strategy execution mode is invalid.');
 }
 
-function requireBoundedCount(value: unknown, field: string): 0 | 1 {
+function requireBoundedCount(value: any, field: string): 0 | 1 {
   if (value === 0 || value === 1) return value;
   throw new InvalidStrategyTaskRecordError(`${field} must be zero or one.`);
 }
 
-function requireNonNegativeInteger(value: unknown, field: string): number {
+function requireNonNegativeInteger(value: any, field: string): number {
   if (typeof value === 'number' && Number.isInteger(value) && value >= 0) return value;
   throw new InvalidStrategyTaskRecordError(`${field} must be a non-negative integer.`);
 }
@@ -1881,18 +1881,18 @@ function requireNonEmpty(value: string, field: string): string {
   return normalized;
 }
 
-function requireStoredString(value: unknown, field: string): string {
+function requireStoredString(value: any, field: string): string {
   if (typeof value !== 'string' || !value.trim()) {
     throw new InvalidStrategyTaskRecordError(`${field} must contain a non-empty string.`);
   }
   return value;
 }
 
-function errorMessage(error: unknown): string {
+function errorMessage(error: any): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function isMissingTaskStoreError(error: unknown): boolean {
+function isMissingTaskStoreError(error: any): boolean {
   return error instanceof Error
     && /no such table: strategy_task_(?:executions|runs)/iu.test(error.message);
 }

@@ -110,7 +110,7 @@ export async function readConformanceHistory(
       for (const line of body.split('\n')) {
         if (line.length === 0) continue;
         try {
-          const candidate = JSON.parse(line) as unknown;
+          const candidate = JSON.parse(line) as any;
           if (
             candidate
             && typeof candidate === 'object'

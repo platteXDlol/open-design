@@ -51,9 +51,9 @@ export const WRITE_OR_EDIT_TOOL_NAMES: ReadonlySet<string> = new Set([
 ]);
 
 // Exported so the incremental ledger extracts the written path identically.
-export function extractToolFilePath(input: unknown): string | null {
+export function extractToolFilePath(input: any): string | null {
   if (!input || typeof input !== 'object') return null;
-  const obj = input as { file_path?: unknown; path?: unknown };
+  const obj = input as { file_path?: any; path?: any };
   if (typeof obj.file_path === 'string' && obj.file_path) return obj.file_path;
   if (typeof obj.path === 'string' && obj.path) return obj.path;
   return null;
@@ -117,7 +117,7 @@ export function isPreviewModulePath(path: string): boolean {
 
 export interface RunEventLike {
   event?: string;
-  data?: unknown;
+  data?: any;
 }
 
 // Join key the daemon-stream uses for tool_use → tool_result pairing.
@@ -125,23 +125,23 @@ export interface RunEventLike {
 // event and reference it via `toolUseId` on the subsequent
 // `tool_result`; see `apps/daemon/src/langfuse-bridge.ts#collectToolCalls`
 // for the canonical implementation.
-export function readToolUseId(data: unknown): string | null {
+export function readToolUseId(data: any): string | null {
   if (!data || typeof data !== 'object') return null;
-  const obj = data as { id?: unknown };
+  const obj = data as { id?: any };
   return typeof obj.id === 'string' && obj.id ? obj.id : null;
 }
 
-export function readToolResultId(data: unknown): string | null {
+export function readToolResultId(data: any): string | null {
   if (!data || typeof data !== 'object') return null;
-  const obj = data as { toolUseId?: unknown };
+  const obj = data as { toolUseId?: any };
   return typeof obj.toolUseId === 'string' && obj.toolUseId
     ? obj.toolUseId
     : null;
 }
 
-export function readToolResultIsError(data: unknown): boolean {
+export function readToolResultIsError(data: any): boolean {
   if (!data || typeof data !== 'object') return false;
-  return (data as { isError?: unknown }).isError === true;
+  return (data as { isError?: any }).isError === true;
 }
 
 // Generic write counter shared by all three predicates. Returns the
@@ -166,7 +166,7 @@ function collectWrittenPathsMatching(
   for (const rec of events) {
     if (rec?.event !== 'agent') continue;
     const data = rec.data as
-      | { type?: string; name?: unknown; input?: unknown }
+      | { type?: string; name?: any; input?: any }
       | null
       | undefined;
     if (data?.type !== 'tool_use') continue;
@@ -268,7 +268,7 @@ export function reconstructAssistantText(
   for (const rec of events) {
     if (rec?.event !== 'agent') continue;
     const data = rec.data as
-      | { type?: unknown; text?: unknown; delta?: unknown }
+      | { type?: any; text?: any; delta?: any }
       | null
       | undefined;
     if (!data) continue;

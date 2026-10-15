@@ -10,14 +10,14 @@ import { DiagnosticConsentFence } from './diagnostic-consent.js';
 export interface FaultEvidence {
   sourceId: string; kind: string; at: number;
   runId?: string; agentId?: string; projectId?: string; conversationId?: string;
-  attempt?: number; errorCode?: string; detail?: unknown;
+  attempt?: number; errorCode?: string; detail?: any;
 }
 interface Options {
   dataRoot: string; relayOrigin: string | null;
   consent(): boolean;
   sources(evidence: FaultEvidence): Promise<AutomaticDiagnosticSource[]>;
   baselineSources?(): Promise<LogSource[]>;
-  context?(): unknown;
+  context?(): any;
   onDelivered?(incidentId: string, receipt: string, evidence: FaultEvidence): void;
   fetcher?: typeof fetch;
 }
@@ -136,7 +136,7 @@ export class AutomaticDiagnostics {
     try {
       const value = JSON.parse(await readFile(file, 'utf8'));
       if (value.origin === this.options.relayOrigin && typeof value.device_id === 'string' && typeof value.device_token === 'string') device = value;
-    } catch (error) {
+    } catch (error: any) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw new DiagnosticRelayError('device_identity_unreadable', 0, true);
     }
     if (item.deviceId && item.deviceId !== device?.device_id) throw new DiagnosticRelayError('device_identity_lost', 0, true);
@@ -192,7 +192,7 @@ export class AutomaticDiagnostics {
           const receipt = await this.relay.upload(device, JSON.parse(item.manifest!) as AutomaticDiagnosticManifest, directory, signal);
           if (this.allowed() && this.outbox.delivered(item, receipt)) this.options.onDelivered?.(item.id, receipt, JSON.parse(item.summary) as FaultEvidence);
         }
-      } catch (error) {
+      } catch (error: any) {
         await rm(`${directory}.tmp`, { recursive: true, force: true });
         if (error instanceof DiagnosticRelayError && error.permanent) {
           this.outbox.discard(item.id, error.code);

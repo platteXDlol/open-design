@@ -12,11 +12,11 @@ import type { ResolvedFrozenSkillSourceV1 } from './frozen-skill-package.js';
 
 /** The subset of an installed plugin record this resolver needs. */
 export interface ResolvedExamplePluginRecord {
-  id?: unknown;
-  source?: unknown;
-  fsPath?: unknown;
-  title?: unknown;
-  manifest?: unknown;
+  id?: any;
+  source?: any;
+  fsPath?: any;
+  title?: any;
+  manifest?: any;
 }
 
 export type ResolveLocalPluginBySource = (
@@ -77,7 +77,7 @@ export async function resolveProjectExampleSkillSource(input: {
       expectedManifestDigest: binding.manifestSourceDigest,
       label: `Example card ${binding.pluginId}`,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.warn(
       `[od-next-example] example ${binding.pluginId} could not be frozen; running without it: ${
         error instanceof Error ? error.message : String(error)
@@ -105,12 +105,12 @@ export async function resolveProjectExampleSkillSource(input: {
 function manifestInputDefaults(
   manifest: PluginManifest | null,
 ): Record<string, string | number | boolean | null | undefined> {
-  const declared = (manifest?.od as { inputs?: unknown } | undefined)?.inputs;
+  const declared = (manifest?.od as { inputs?: any } | undefined)?.inputs;
   if (!Array.isArray(declared)) return {};
   const defaults: Record<string, string | number | boolean | null | undefined> = {};
   for (const field of declared) {
     if (!field || typeof field !== 'object') continue;
-    const { name, default: fallback } = field as { name?: unknown; default?: unknown };
+    const { name, default: fallback } = field as { name?: any; default?: any };
     if (typeof name !== 'string' || !name.trim()) continue;
     if (
       typeof fallback === 'string'

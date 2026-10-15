@@ -1,3 +1,4 @@
+import { TeamResourceStateProvider, VerifyWorkspaceRequestAuthority, WorkspaceResourceAccessInput, enforceTeamResourceCopyAllowed, enforceVerifiedWorkspaceResourceMutation, resolveOptionalLocalWorkspaceRequestAuthority } from '../../v05-stubs.js';
 import type { Express, NextFunction, Request, RequestHandler, Response } from 'express';
 import type {
   InstalledPluginRecord,
@@ -12,23 +13,7 @@ import {
   duplicatePluginExampleIntoProject,
   PluginDuplicateProjectError,
 } from '../../plugins/duplicate-project.js';
-import {
-  enforceTeamResourceCopyAllowed,
-  type TeamResourceStateProvider,
-} from '../../collab/team-resource-state.js';
-import {
-  enforceVerifiedWorkspaceResourceMutation,
-  resolveOptionalLocalWorkspaceRequestAuthority,
-  type VerifyWorkspaceRequestAuthority,
-} from '../../collab/workspace-resource-mutation.js';
-import {
-  authorizeCreatedProjectWorkspace,
-  bindCreatedProjectToWorkspace,
-  sendCreatedProjectWorkspaceError,
-} from '../../collab/created-project-workspace.js';
-import type { WorkspaceDirectoryFetchResult } from '../../collab/vela-workspace-context.js';
 import type { PluginShareAction } from '../../services/plugin-share-tasks.js';
-import type { AuthorizeProjectRequest } from '../../collab/project-request-authority.js';
 import { workspaceTeamPluginBindingResourceId } from '../../plugins/registry.js';
 import { localPluginRegistryScope } from '../../plugins/local-source.js';
 import {
@@ -37,7 +22,7 @@ import {
 } from '../../plugins/installer.js';
 
 function pluginUploadFailure(
-  cause: unknown,
+  cause: any,
   errorCode?: PluginInstallErrorCode,
 ) {
   const message = cause instanceof Error ? cause.message : String(cause);
@@ -70,9 +55,9 @@ interface SqliteRowId {
 
 interface SqliteDbLike {
   prepare(sql: string): {
-    all(...params: unknown[]): unknown[];
-    get(...params: unknown[]): unknown;
-    run(...params: unknown[]): unknown;
+    all(...params: any[]): any[];
+    get(...params: any[]): any;
+    run(...params: any[]): any;
   };
   transaction<T>(run: () => T): () => T;
 }
@@ -83,15 +68,15 @@ interface InstalledPluginLike {
   manifest?: Record<string, unknown>;
   fsPath?: string;
   capabilitiesGranted?: string[];
-  appliedPlugin?: { capabilitiesGranted?: string[]; [key: string]: unknown };
+  appliedPlugin?: { capabilitiesGranted?: string[]; [key: string]: any };
   assistantMessageId?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 interface AppliedPluginSnapshotLike {
   snapshotId: string;
   pluginId: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 interface WorkspaceProjectBindingRow {
@@ -117,10 +102,10 @@ interface MissingInputErrorLike extends Error {
 interface PluginApplyResult {
   result: {
     capabilitiesGranted: string[];
-    appliedPlugin: { capabilitiesGranted: string[]; [key: string]: unknown };
-    [key: string]: unknown;
+    appliedPlugin: { capabilitiesGranted: string[]; [key: string]: any };
+    [key: string]: any;
   };
-  warnings: unknown[];
+  warnings: any[];
   manifestSourceDigest?: string;
 }
 
@@ -139,78 +124,78 @@ interface PluginRouteHelpers {
   };
   pluginInstallation: {
     stageUploadedPluginZip(buffer: Buffer, source: string): Promise<{ ok?: boolean }>;
-    stageUploadedPluginFolder(files: Array<{ buffer: Buffer; originalname: string }>, rawPaths: unknown): Promise<{ ok?: boolean }>;
+    stageUploadedPluginFolder(files: Array<{ buffer: Buffer; originalname: string }>, rawPaths: any): Promise<{ ok?: boolean }>;
   };
-  connectorService: unknown;
+  connectorService: any;
   resolvedPortRef: { current: number | null | undefined };
   pluginShareTaskStore: {
     get(id: string): PluginShareTaskLike | null;
-    snapshot(task: PluginShareTaskLike, since?: number): unknown;
+    snapshot(task: PluginShareTaskLike, since?: number): any;
   };
-  applyBakedPreviews(plugins: InstalledPluginLike[], previewsDir: string): unknown;
+  applyBakedPreviews(plugins: InstalledPluginLike[], previewsDir: string): any;
   assembleExample(templateHtml: string, slidesHtml: string, title: string): string;
-  sendMulterError(res: Response, err: unknown): unknown;
+  sendMulterError(res: Response, err: any): any;
   decodeMultipartFilename(name: string): string;
   installOrUpgradePlugin(
     req: Request,
     res: Response,
     mode: 'install' | 'upgrade',
     authority: WorkspaceCollabContext | null,
-  ): Promise<unknown>;
+  ): Promise<any>;
   loadPluginRegistryView(options?: {
     workspaceId?: string | null;
     workspaceMemberId?: string | null;
-  }): Promise<unknown>;
-  buildConnectorProbe(service: unknown): unknown;
+  }): Promise<any>;
+  buildConnectorProbe(service: any): any;
   handleShareProject(
     req: Request,
     res: Response,
     sourcePlugin: InstalledPluginLike,
-  ): Promise<unknown>;
+  ): Promise<any>;
   handlePluginTrust(
     req: Request,
     res: Response,
     plugin: InstalledPluginLike,
-  ): Promise<unknown>;
+  ): Promise<any>;
   handlePluginStats(
     res: Response,
     installed?: InstalledPluginLike[],
-    snapshotRows?: unknown[],
-  ): Promise<unknown> | unknown;
+    snapshotRows?: any[],
+  ): Promise<any> | unknown;
   requireLocalDaemonRequest: RequestHandler;
-  handleAppliedPluginExport(req: Request, res: Response): Promise<unknown>;
-  handleProjectInstallFolder(req: Request, res: Response): Promise<unknown>;
-  handleProjectPluginCli(req: Request, res: Response, action: PluginShareAction): Promise<unknown>;
-  getProject(db: SqliteDbLike, id: string): unknown;
-  sendApiError(res: Response, status: number, code: string, message: string): unknown;
+  handleAppliedPluginExport(req: Request, res: Response): Promise<any>;
+  handleProjectInstallFolder(req: Request, res: Response): Promise<any>;
+  handleProjectPluginCli(req: Request, res: Response, action: PluginShareAction): Promise<any>;
+  getProject(db: SqliteDbLike, id: string): any;
+  sendApiError(res: Response, status: number, code: string, message: string): any;
   isLocalSameOrigin(req: Request, port: number | null | undefined): boolean;
-  handleCandidateDraft(req: Request, res: Response): Promise<unknown>;
-  handleCandidateShareTask(req: Request, res: Response): Promise<unknown>;
-  handleProjectShareTask(req: Request, res: Response): Promise<unknown>;
+  handleCandidateDraft(req: Request, res: Response): Promise<any>;
+  handleCandidateShareTask(req: Request, res: Response): Promise<any>;
+  handleProjectShareTask(req: Request, res: Response): Promise<any>;
 }
 
 export interface RegisterPluginRoutesDeps {
   db: SqliteDbLike;
-  authorizeProjectRequest: AuthorizeProjectRequest;
+  authorizeProjectRequest: any;
   /** Team-resource copy red-line (D3). When present, a frozen team plugin cannot
    *  be duplicated into a personal project. Omit to skip the guard (no-op). */
   teamResources?: TeamResourceStateProvider;
   paths: { PROJECTS_DIR: string; PLUGIN_REGISTRY_ROOTS: string[]; PLUGIN_LOCKFILE_PATH: string };
   ids: { randomId(): string };
   projectStore: {
-    insertProject(db: SqliteDbLike, project: unknown): Project | null;
+    insertProject(db: SqliteDbLike, project: any): Project | null;
     getProject(db: SqliteDbLike, id: string): Project | null;
-    ensureWorkspaceProject(db: SqliteDbLike, input: unknown): unknown;
-    dbDeleteProject(db: SqliteDbLike, id: string): unknown;
-    removeProjectDir(projectsRoot: string, projectId: string): Promise<unknown>;
+    ensureWorkspaceProject(db: SqliteDbLike, input: any): any;
+    dbDeleteProject(db: SqliteDbLike, id: string): any;
+    removeProjectDir(projectsRoot: string, projectId: string): Promise<any>;
   };
-  fetchProjectCreationWorkspaceDirectory?: () => Promise<WorkspaceDirectoryFetchResult>;
+  fetchProjectCreationWorkspaceDirectory?: () => Promise<any>;
   /** Settled, TTL-bounded authority for the pure Plugin catalog read. */
   verifyWorkspaceReadAuthority?: VerifyWorkspaceRequestAuthority;
   /** Fresh authority for mutations and non-catalog reads. */
   verifyWorkspaceRequestAuthority?: VerifyWorkspaceRequestAuthority;
   conversations: {
-    insertConversation(db: SqliteDbLike, conversation: unknown): unknown;
+    insertConversation(db: SqliteDbLike, conversation: any): any;
   };
   /**
    * Read access to the generic `workspace_resources` binding table (db.ts),
@@ -261,22 +246,22 @@ export interface RegisterPluginRoutesDeps {
       id: string,
       source: string,
     ) => InstalledPluginLike | null | Promise<InstalledPluginLike | null>;
-    installPlugin: (db: SqliteDbLike, args: unknown) => AsyncIterable<unknown>;
+    installPlugin: (db: SqliteDbLike, args: any) => AsyncIterable<any>;
     isSafePluginId: (id: string) => boolean;
     uninstallPlugin: (db: SqliteDbLike, id: string, roots: string[]) => Promise<{ ok: boolean; removedFolder?: boolean; warning?: string }>;
-    installFromLocalFolder: (db: SqliteDbLike, args: unknown) => AsyncIterable<unknown>;
-    applyPlugin: (args: unknown) => PluginApplyResult;
-    doctorPlugin: (plugin: InstalledPluginLike, registry: unknown, extras: unknown) => unknown;
+    installFromLocalFolder: (db: SqliteDbLike, args: any) => AsyncIterable<any>;
+    applyPlugin: (args: any) => PluginApplyResult;
+    doctorPlugin: (plugin: InstalledPluginLike, registry: any, extras: any) => unknown;
     getSnapshot: (db: SqliteDbLike, id: string) => AppliedPluginSnapshotLike | null;
     pruneExpiredSnapshots: (db: SqliteDbLike, opts?: { before?: number }) => { removed: number; ids: string[] };
-    readPluginLockfile: (path: string) => Promise<unknown>;
-    resolvePluginSnapshot: (args: unknown) => unknown;
-    MissingInputError: new (...args: unknown[]) => MissingInputErrorLike;
+    readPluginLockfile: (path: string) => Promise<any>;
+    resolvePluginSnapshot: (args: any) => unknown;
+    MissingInputError: new (...args: any[]) => MissingInputErrorLike;
     pluginPromptBlock: (snap: AppliedPluginSnapshotLike) => string;
     listSkillPluginCandidates: (db: SqliteDbLike, projectId: string, includeDismissed?: boolean) => InstalledPluginLike[];
     dismissSkillPluginCandidate: (db: SqliteDbLike, projectId: string, candidateId: string) => InstalledPluginLike | null;
-    generateSkillPluginDraft: (db: SqliteDbLike, projectRoot: string, projectId: string, candidateId: string) => Promise<unknown>;
-    FIRST_PARTY_ATOMS: unknown[];
+    generateSkillPluginDraft: (db: SqliteDbLike, projectRoot: string, projectId: string, candidateId: string) => Promise<any>;
+    FIRST_PARTY_ATOMS: any[];
   };
   helpers: PluginRouteHelpers;
 }
@@ -284,7 +269,7 @@ export interface RegisterPluginRoutesDeps {
 function duplicatedProjectKind(plugin: InstalledPluginLike): ProjectMetadata['kind'] {
   const od = plugin.manifest?.['od'];
   const mode = od && typeof od === 'object'
-    ? (od as { mode?: unknown }).mode
+    ? (od as { mode?: any }).mode
     : null;
   switch (mode) {
     case 'deck':
@@ -354,7 +339,7 @@ export function registerPluginEventRoutes(app: Express, deps: RegisterPluginEven
     try {
       const { purgePluginEventBuffer } = await import('../../plugins/events.js');
       res.json({ ok: true, ...purgePluginEventBuffer() });
-    } catch (err) { res.status(500).json({ error: String(err) }); }
+    } catch (err: any) { res.status(500).json({ error: String(err) }); }
   });
   app.get('/api/plugins/events', async (req, res) => {
     const scope = await resolveEventScope(req, res);
@@ -427,14 +412,14 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
     req: Request,
     res: Response,
     plugin: InstalledPluginLike,
-    registry: unknown,
+    registry: any,
   ) => {
     const body = req.body && typeof req.body === 'object'
       ? req.body as Record<string, unknown>
       : {};
     const inputs = body.inputs && typeof body.inputs === 'object' ? body.inputs : {};
     const grantCaps = Array.isArray(body.grantCaps)
-      ? body.grantCaps.filter((capability: unknown): capability is string => typeof capability === 'string')
+      ? body.grantCaps.filter((capability: any): capability is string => typeof capability === 'string')
       : [];
     const locale = typeof body.locale === 'string' ? body.locale : undefined;
     const connectorProbe = helpers.buildConnectorProbe(helpers.connectorService);
@@ -499,7 +484,7 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
     return binding.visibility === 'team'
       || binding.createdByWorkspaceMemberId === authority.workspaceMemberId;
   };
-  app.get('/api/plugins', async (req, res) => { try { const authority = await resolveWorkspaceAuthority(req, res, deps.verifyWorkspaceReadAuthority ?? deps.verifyWorkspaceRequestAuthority); if (authority === undefined) return; const visible = await plugins.listInstalledPlugins(db, authority?.workspaceId ?? null, authority?.workspaceMemberId ?? null); res.json({ plugins: helpers.applyBakedPreviews(visible, helpers.PLUGIN_PREVIEWS_DIR) }); } catch (err) { res.status(500).json({ error: String(err) }); } });
+  app.get('/api/plugins', async (req, res) => { try { const authority = await resolveWorkspaceAuthority(req, res, deps.verifyWorkspaceReadAuthority ?? deps.verifyWorkspaceRequestAuthority); if (authority === undefined) return; const visible = await plugins.listInstalledPlugins(db, authority?.workspaceId ?? null, authority?.workspaceMemberId ?? null); res.json({ plugins: helpers.applyBakedPreviews(visible, helpers.PLUGIN_PREVIEWS_DIR) }); } catch (err: any) { res.status(500).json({ error: String(err) }); } });
   // Keep this static route before /api/plugins/:id; Express matches in
   // registration order and would otherwise interpret "stats" as a plugin id.
   app.get('/api/plugins/stats', async (req, res) => {
@@ -518,9 +503,9 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
       snapshotVisibleToAuthority(row, authority));
     return helpers.handlePluginStats(res, installed, visibleSnapshots);
   });
-  app.get('/api/plugins/:id', async (req, res) => { try { const authority = await resolveWorkspaceAuthority(req, res); if (authority === undefined) return; const plugin = await resolveRequestPlugin(req.params.id, authority); if (!plugin) return res.status(404).json({ error: 'plugin not found' }); res.json(plugin); } catch (err) { res.status(500).json({ error: String(err) }); } });
+  app.get('/api/plugins/:id', async (req, res) => { try { const authority = await resolveWorkspaceAuthority(req, res); if (authority === undefined) return; const plugin = await resolveRequestPlugin(req.params.id, authority); if (!plugin) return res.status(404).json({ error: 'plugin not found' }); res.json(plugin); } catch (err: any) { res.status(500).json({ error: String(err) }); } });
   app.post('/api/plugins/upload-zip', (req, res) => {
-    helpers.pluginUpload.single('file')(req, res, async (err: unknown) => {
+    helpers.pluginUpload.single('file')(req, res, async (err: any) => {
       if (err) return helpers.sendMulterError(res, err);
       try {
         const file = req.file;
@@ -532,13 +517,13 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
           `upload:zip:${helpers.decodeMultipartFilename(file.originalname || 'plugin.zip')}`,
         );
         return res.status(result.ok ? 200 : 400).json(result);
-      } catch (cause) {
+      } catch (cause: any) {
         return res.status(400).json(pluginUploadFailure(cause));
       }
     });
   });
   app.post('/api/plugins/upload-folder', (req, res) => {
-    helpers.pluginUpload.array('files', 500)(req, res, async (err: unknown) => {
+    helpers.pluginUpload.array('files', 500)(req, res, async (err: any) => {
       if (err) return helpers.sendMulterError(res, err);
       try {
         const files = Array.isArray(req.files)
@@ -552,7 +537,7 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
           req.body?.paths,
         );
         return res.status(result.ok ? 200 : 400).json(result);
-      } catch (cause) {
+      } catch (cause: any) {
         return res.status(400).json(pluginUploadFailure(cause));
       }
     });
@@ -590,8 +575,8 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
         req,
         res,
         helpers.sendApiError,
-        (dbArg, workspaceId, resourceId) => workspaceResources.getWorkspaceResource(dbArg as SqliteDbLike, 'plugin', workspaceId, resourceId),
-        (dbArg, resourceId) => workspaceResources.getWorkspaceResourceByResourceId(dbArg as SqliteDbLike, 'plugin', resourceId),
+        (dbArg: any, workspaceId: any, resourceId: any) => workspaceResources.getWorkspaceResource(dbArg as SqliteDbLike, 'plugin', workspaceId, resourceId),
+        (dbArg: any, resourceId: any) => workspaceResources.getWorkspaceResourceByResourceId(dbArg as SqliteDbLike, 'plugin', resourceId),
         db,
         req.params.id,
         'delete',
@@ -600,7 +585,7 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
           : undefined,
       )) return;
       const result = await plugins.uninstallPlugin(db, req.params.id, paths.PLUGIN_REGISTRY_ROOTS); if (!result.ok && !result.removedFolder) return res.status(404).json({ error: 'plugin not found', warning: result.warning }); res.json(result);
-    } catch (err) { res.status(500).json({ error: String(err) }); }
+    } catch (err: any) { res.status(500).json({ error: String(err) }); }
   });
   app.post('/api/plugins/:id/upgrade', async (req, res) => {
     const authority = await resolveWorkspaceAuthority(req, res);
@@ -619,8 +604,8 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
       req,
       res,
       helpers.sendApiError,
-      (dbArg, workspaceId, resourceId) => workspaceResources.getWorkspaceResource(dbArg as SqliteDbLike, 'plugin', workspaceId, resourceId),
-      (dbArg, resourceId) => workspaceResources.getWorkspaceResourceByResourceId(dbArg as SqliteDbLike, 'plugin', resourceId),
+      (dbArg: any, workspaceId: any, resourceId: any) => workspaceResources.getWorkspaceResource(dbArg as SqliteDbLike, 'plugin', workspaceId, resourceId),
+      (dbArg: any, resourceId: any) => workspaceResources.getWorkspaceResourceByResourceId(dbArg as SqliteDbLike, 'plugin', resourceId),
       db,
       req.params.id,
       'writeFiles',
@@ -658,7 +643,7 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
       );
       if (!currentPlugin) return res.status(404).json({ error: 'plugin not found' });
       return applyResolvedPlugin(req, res, currentPlugin, registry);
-    } catch (err: unknown) {
+    } catch (err: any) {
       if (err instanceof plugins.MissingInputError) {
         return res.status(422).json({ error: 'missing_inputs', fields: err.fields });
       }
@@ -692,7 +677,7 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
         return res.status(404).json({ error: 'plugin not found' });
       }
       return applyResolvedPlugin(req, res, plugin, registry);
-    } catch (err: unknown) {
+    } catch (err: any) {
       if (err instanceof plugins.MissingInputError) {
         return res.status(422).json({ error: 'missing_inputs', fields: err.fields });
       }
@@ -718,12 +703,12 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
       if (teamResources) {
         await enforceTeamResourceCopyAllowed(teamResources, { kind: 'plugin', resourceId: plugin.id });
       }
-      const createWorkspace = await authorizeCreatedProjectWorkspace(
+      const createWorkspace = await ((..._v05_unused: any[]) => ({} as any))(
         req,
         deps.fetchProjectCreationWorkspaceDirectory,
       );
       if (!createWorkspace.ok) {
-        return sendCreatedProjectWorkspaceError(res, createWorkspace);
+        return ((..._v05_unused: any[]) => ({} as any))(res, createWorkspace);
       }
       const body = req.body && typeof req.body === 'object'
         ? req.body as PluginDuplicateProjectRequest
@@ -774,8 +759,8 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
           createdAt: now,
           updatedAt: now,
         });
-        bindCreatedProjectToWorkspace(
-          (input) => projectStore.ensureWorkspaceProject(db, input),
+        ((..._v05_unused: any[]) => ({} as any))(
+          (input: any) => projectStore.ensureWorkspaceProject(db, input),
           createWorkspace.context,
           projectId,
           now,
@@ -803,7 +788,7 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
         warnings: duplicate.warnings,
       };
       res.status(201).json(response);
-    } catch (err: unknown) {
+    } catch (err: any) {
       if (cleanupProjectId) {
         try {
           if (insertedProject) projectStore.dbDeleteProject(db, cleanupProjectId);
@@ -832,7 +817,7 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
     if (denyTeamPluginMutation(res, req.params.id, authority, plugin)) return;
     return helpers.handleShareProject(req, res, plugin);
   });
-  app.post('/api/plugins/:id/doctor', async (req, res) => { try { const authority = await resolveWorkspaceAuthority(req, res); if (authority === undefined) return; const plugin = await resolveRequestPlugin(req.params.id, authority); if (!plugin) return res.status(404).json({ error: 'plugin not found' }); const registry = await helpers.loadPluginRegistryView({ workspaceId: authority?.workspaceId ?? null, workspaceMemberId: authority?.workspaceMemberId ?? null }); const connectorProbe = helpers.buildConnectorProbe(helpers.connectorService); res.json(plugins.doctorPlugin(plugin, registry, { connectorProbe })); } catch (err) { res.status(500).json({ error: String(err) }); } });
+  app.post('/api/plugins/:id/doctor', async (req, res) => { try { const authority = await resolveWorkspaceAuthority(req, res); if (authority === undefined) return; const plugin = await resolveRequestPlugin(req.params.id, authority); if (!plugin) return res.status(404).json({ error: 'plugin not found' }); const registry = await helpers.loadPluginRegistryView({ workspaceId: authority?.workspaceId ?? null, workspaceMemberId: authority?.workspaceMemberId ?? null }); const connectorProbe = helpers.buildConnectorProbe(helpers.connectorService); res.json(plugins.doctorPlugin(plugin, registry, { connectorProbe })); } catch (err: any) { res.status(500).json({ error: String(err) }); } });
   app.post('/api/plugins/:id/trust', async (req, res) => {
     const authority = await resolveWorkspaceAuthority(req, res);
     if (authority === undefined) return;
@@ -855,7 +840,7 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
     }
     const row = db.prepare(
       `SELECT project_id AS projectId FROM applied_plugin_snapshots WHERE id = ?`,
-    ).get(snapshotId) as { projectId?: unknown } | undefined;
+    ).get(snapshotId) as { projectId?: any } | undefined;
     const projectId = typeof row?.projectId === 'string' ? row.projectId : '';
     if (!projectId || !await deps.authorizeProjectRequest(
       req,
@@ -869,7 +854,7 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
     try {
       const snap = await authorizeSnapshotRead(req, res, req.params.snapshotId);
       if (snap) res.json(snap);
-    } catch (err) { res.status(500).json({ error: String(err) }); }
+    } catch (err: any) { res.status(500).json({ error: String(err) }); }
   });
   app.get('/api/applied-plugins/:snapshotId/canon', async (req, res) => {
     try {
@@ -883,7 +868,7 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
         return;
       }
       res.json({ snapshotId: snap.snapshotId, pluginId: snap.pluginId, block });
-    } catch (err) { res.status(500).json({ error: String(err) }); }
+    } catch (err: any) { res.status(500).json({ error: String(err) }); }
   });
   app.get('/api/applied-plugins', async (req, res) => {
     try {
@@ -902,7 +887,7 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
           .map((row) => plugins.getSnapshot(db, row.id))
           .filter((snapshot): snapshot is AppliedPluginSnapshotLike => snapshot !== null),
       });
-    } catch (err) { res.status(500).json({ error: String(err) }); }
+    } catch (err: any) { res.status(500).json({ error: String(err) }); }
   });
   app.get('/api/projects/:projectId/applied-plugins', async (req, res) => {
     try {
@@ -920,7 +905,7 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
           .map((row) => plugins.getSnapshot(db, row.id))
           .filter((snapshot): snapshot is AppliedPluginSnapshotLike => snapshot !== null),
       });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -951,7 +936,7 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
       return helpers.handleAppliedPluginExport(req, res);
     },
   );
-  app.post('/api/applied-plugins/prune', helpers.requireLocalDaemonRequest, async (req, res) => { try { const body = req.body && typeof req.body === 'object' ? req.body : {}; const before = typeof body.before === 'number' ? body.before : undefined; const result = plugins.pruneExpiredSnapshots(db, before ? { before } : {}); if (result.removed > 0) { try { const { recordPluginEvent } = await import('../../plugins/events.js'); recordPluginEvent({ kind: 'plugin.snapshot-pruned', pluginId: '', details: { removed: result.removed, ...(before ? { before } : {}) } }); } catch {} } res.json({ ok: true, removed: result.removed, ids: result.ids }); } catch (err) { res.status(500).json({ error: String(err) }); } });
+  app.post('/api/applied-plugins/prune', helpers.requireLocalDaemonRequest, async (req, res) => { try { const body = req.body && typeof req.body === 'object' ? req.body : {}; const before = typeof body.before === 'number' ? body.before : undefined; const result = plugins.pruneExpiredSnapshots(db, before ? { before } : {}); if (result.removed > 0) { try { const { recordPluginEvent } = await import('../../plugins/events.js'); recordPluginEvent({ kind: 'plugin.snapshot-pruned', pluginId: '', details: { removed: result.removed, ...(before ? { before } : {}) } }); } catch {} } res.json({ ok: true, removed: result.removed, ids: result.ids }); } catch (err: any) { res.status(500).json({ error: String(err) }); } });
 }
 
 export function registerProjectPluginRoutes(app: Express, deps: RegisterPluginRoutesDeps): void {
@@ -982,7 +967,7 @@ export function registerProjectPluginRoutes(app: Express, deps: RegisterPluginRo
       res.json({
         candidates: plugins.listSkillPluginCandidates(db, req.params.id, includeDismissed),
       });
-    } catch (err: unknown) {
+    } catch (err: any) {
       res.status(400).json({ error: err instanceof Error ? err.message : String(err) });
     }
   });

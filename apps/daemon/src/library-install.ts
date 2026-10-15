@@ -37,7 +37,7 @@ export async function containsSymlink(dir) {
   let entries;
   try {
     entries = await fs.promises.readdir(dir, { withFileTypes: true });
-  } catch (err) {
+  } catch (err: any) {
     // A missing dir has nothing to scan. Any other readdir failure on a tree we
     // just cloned is unexpected; fail closed so a partially-readable clone can't
     // slip a symlink past the scan.
@@ -104,7 +104,7 @@ async function installFromGithub(url, userDir, manifest) {
         }
       });
     });
-  } catch (err) {
+  } catch (err: any) {
     return { ok: false, error: `git clone failed: ${String(err).split('\n')[0]}` };
   }
 
@@ -173,7 +173,7 @@ async function installFromLocal(localPath, userDir, manifest) {
   // Create symlink
   try {
     fs.symlinkSync(realPath, linkPath, 'junction');
-  } catch (err) {
+  } catch (err: any) {
     return { ok: false, error: `Failed to create symlink: ${err.message}` };
   }
 
@@ -212,7 +212,7 @@ export async function uninstallById(id, userDir, builtInDir, kind) {
     } else if (stat.isDirectory()) {
       fs.rmSync(target, { recursive: true, force: true });
     }
-  } catch (err) {
+  } catch (err: any) {
     return { ok: false, error: `Failed to remove: ${err.message}` };
   }
 

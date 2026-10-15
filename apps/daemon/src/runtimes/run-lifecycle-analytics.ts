@@ -18,7 +18,7 @@ import { runResultFromStatus } from '../run-result.js';
 
 export interface RunEventRecordLike {
   event: string;
-  data: unknown;
+  data: any;
 }
 
 export interface ProjectMetadataForAnalytics {
@@ -28,7 +28,7 @@ export interface ProjectMetadataForAnalytics {
   intent?: string | null;
   platform?: string | null;
   platformTargets?: readonly string[] | null;
-  importedFrom?: unknown;
+  importedFrom?: any;
 }
 
 export interface RunRetrySideEffects {
@@ -38,7 +38,7 @@ export interface RunRetrySideEffects {
   liveArtifactSeen: boolean;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
@@ -46,7 +46,7 @@ export function resolveRunProjectKindForAnalytics({
   hintProjectKind,
   projectMetadata,
 }: {
-  hintProjectKind?: unknown;
+  hintProjectKind?: any;
   projectMetadata?: ProjectMetadataForAnalytics | null;
 }): string | null {
   if (typeof hintProjectKind === 'string') return hintProjectKind;
@@ -70,7 +70,7 @@ export function resolveRunProjectKindForAnalytics({
 // status:initializing/model is emitted at the very start of the run.
 export function scanRunEventsForFinishedProps(
   events: RunEventRecordLike[],
-  reqBodyModel: unknown,
+  reqBodyModel: any,
 ): {
   inputTokens?: number;
   outputTokens?: number;
@@ -84,7 +84,7 @@ export function scanRunEventsForFinishedProps(
   };
 }
 
-export function scanRunEventsForRetrySideEffects(events: unknown): RunRetrySideEffects {
+export function scanRunEventsForRetrySideEffects(events: any): RunRetrySideEffects {
   const sideEffects: RunRetrySideEffects = {
     userVisibleOutputSeen: false,
     toolCallSeen: false,
@@ -197,7 +197,7 @@ export function createRunSideEffectLedger(): RunSideEffectLedger {
 
 function foldEventIntoRunAdmissionEvidence(
   ledger: RunSideEffectLedger,
-  record: { event?: unknown; data?: unknown },
+  record: { event?: any; data?: any },
 ): void {
   const event = record.event;
   const data = isRecord(record.data) ? record.data : null;
@@ -259,7 +259,7 @@ function foldEventIntoRunAdmissionEvidence(
 
 export function foldEventIntoRunSideEffectLedger(
   ledger: RunSideEffectLedger,
-  record: { event?: unknown; data?: unknown },
+  record: { event?: any; data?: any },
 ) {
   foldEventIntoRunAdmissionEvidence(ledger, record);
   const event = record?.event;
@@ -329,7 +329,7 @@ export function sideEffectsFromLedger(
 // call sites or tests that build a run object directly).
 export function runSideEffectsForRun(run: {
   sideEffectLedger?: RunSideEffectLedger;
-  events?: unknown;
+  events?: any;
 }): RunRetrySideEffects {
   if (run?.sideEffectLedger) return sideEffectsFromLedger(run.sideEffectLedger);
   return scanRunEventsForRetrySideEffects(run?.events);
@@ -337,7 +337,7 @@ export function runSideEffectsForRun(run: {
 
 export function runAdmissionEvidenceForRun(run: {
   sideEffectLedger?: RunSideEffectLedger;
-  events?: unknown;
+  events?: any;
 }): RunAdmissionEvidence | undefined {
   return run.sideEffectLedger?.admissionEvidence;
 }
@@ -346,7 +346,7 @@ export function runAdmissionEvidenceForRun(run: {
 // ledger-preferred / scan-fallback contract as runSideEffectsForRun.
 export function runArtifactCountForRun(run: {
   sideEffectLedger?: RunSideEffectLedger;
-  events?: unknown;
+  events?: any;
 }): number {
   if (run?.sideEffectLedger) return run.sideEffectLedger.artifactPaths.size;
   return countNewArtifacts(Array.isArray(run?.events) ? run.events : []);
@@ -357,7 +357,7 @@ export function runArtifactCountForRun(run: {
 // filesystem baseline diff is unavailable (no cwd, contended, snapshot error).
 export function runFilesWrittenForRun(run: {
   sideEffectLedger?: RunSideEffectLedger;
-  events?: unknown;
+  events?: any;
 }): number {
   if (run?.sideEffectLedger) return run.sideEffectLedger.writtenFilePaths.size;
   return countWrittenFiles(Array.isArray(run?.events) ? run.events : []);
@@ -366,7 +366,7 @@ export function runFilesWrittenForRun(run: {
 // Truncation-proof `design_system_created`, same ledger-preferred contract.
 export function runDesignSystemCreatedForRun(run: {
   sideEffectLedger?: RunSideEffectLedger;
-  events?: unknown;
+  events?: any;
 }): boolean {
   if (run?.sideEffectLedger) return run.sideEffectLedger.designSystemFileWritten;
   return didRunCreateDesignSystemFile(Array.isArray(run?.events) ? run.events : []);
@@ -375,7 +375,7 @@ export function runDesignSystemCreatedForRun(run: {
 // Truncation-proof `preview_module_count`, same ledger-preferred contract.
 export function runPreviewModuleCountForRun(run: {
   sideEffectLedger?: RunSideEffectLedger;
-  events?: unknown;
+  events?: any;
 }): number {
   if (run?.sideEffectLedger) return run.sideEffectLedger.previewModulePaths.size;
   return countDesignSystemPreviewModules(Array.isArray(run?.events) ? run.events : []);
@@ -391,7 +391,7 @@ export function retryFinalResultForRunStatus(status: string, retryAttemptCount?:
   return 'suppressed';
 }
 
-export function runRetryEventsForAnalytics(events: unknown): RunEventRecordLike[] {
+export function runRetryEventsForAnalytics(events: any): RunEventRecordLike[] {
   return (Array.isArray(events) ? events : []).filter((rec): rec is RunEventRecordLike => (
     isRecord(rec) &&
     typeof rec.event === 'string' &&

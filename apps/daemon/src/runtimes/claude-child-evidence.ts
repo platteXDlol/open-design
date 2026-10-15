@@ -109,7 +109,7 @@ export type ClaudeOpenChildTerminationReason =
   | 'stream_incomplete';
 
 export interface ClaudeChildEvidenceCollector {
-  observe(value: unknown): void;
+  observe(value: any): void;
   finishOpenChildren(reason: ClaudeOpenChildTerminationReason): void;
   coverage(): ChildEvidenceCoverageV1;
 }
@@ -160,21 +160,21 @@ interface ChildLifecycle {
   conflictEmitted: boolean;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-function nonEmptyString(value: unknown): string | undefined {
+function nonEmptyString(value: any): string | undefined {
   return typeof value === 'string' && value.trim() ? value : undefined;
 }
 
-function nonNegativeNumber(value: unknown): number | undefined {
+function nonNegativeNumber(value: any): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
     ? value
     : undefined;
 }
 
-function safeToolName(value: unknown): string | undefined {
+function safeToolName(value: any): string | undefined {
   return typeof value === 'string' && /^[A-Za-z][A-Za-z0-9_.:-]{0,127}$/.test(value)
     ? value
     : undefined;
@@ -184,7 +184,7 @@ function toolCallHash(toolCallId: string): string {
   return createHash('sha256').update(toolCallId, 'utf8').digest('hex');
 }
 
-function nativeChildToolUses(value: unknown): Array<{ id: string; name: string }> {
+function nativeChildToolUses(value: any): Array<{ id: string; name: string }> {
   if (!isRecord(value) || !Array.isArray(value.content)) return [];
   return value.content.flatMap((block) => {
     if (
@@ -201,7 +201,7 @@ function nativeChildToolUses(value: unknown): Array<{ id: string; name: string }
   });
 }
 
-function nativeTaskToolUses(value: unknown): Array<{
+function nativeTaskToolUses(value: any): Array<{
   id: string;
   prompt?: NativeTaskRegistration['prompt'];
   nativeAgentType?: string;
@@ -241,7 +241,7 @@ function nativeTaskToolUses(value: unknown): Array<{
   ));
 }
 
-function usageFromToolResult(value: unknown): ClaudeChildRuntimeFact['usage'] | undefined {
+function usageFromToolResult(value: any): ClaudeChildRuntimeFact['usage'] | undefined {
   if (!isRecord(value)) return undefined;
   const usage = isRecord(value.usage) ? value.usage : undefined;
   if (!usage) return undefined;
@@ -585,7 +585,7 @@ export function createClaudeChildEvidenceCollector(input: {
     state: Exclude<ClaudeChildRuntimeFactState, 'started' | 'conflicted'>;
     sourceEventType: ClaudeChildRuntimeFact['sourceEventType'];
     terminationReason?: ClaudeChildRuntimeFact['terminationReason'];
-    toolResult?: unknown;
+    toolResult?: any;
   }): void {
     const at = now();
     const lifecycle = started(inputFact.childId, at);
@@ -678,7 +678,7 @@ export function createClaudeChildEvidenceCollector(input: {
     });
   }
 
-  function observe(value: unknown): void {
+  function observe(value: any): void {
     if (!isRecord(value)) return;
     if (
       value.type === 'system' &&

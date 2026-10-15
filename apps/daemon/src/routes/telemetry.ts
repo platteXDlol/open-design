@@ -50,7 +50,7 @@ export interface RegisterTelemetryRoutesDeps {
 }
 
 export async function acceptClientExperienceDiagnostic(
-  deps: RegisterTelemetryRoutesDeps, value: unknown,
+  deps: RegisterTelemetryRoutesDeps, value: any,
 ): Promise<{ ok: false } | { ok: true; accepted: boolean; retryable?: true }> {
   const evidence = parseClientExperienceDiagnostic(value);
   if (!evidence) return { ok: false };
@@ -229,7 +229,7 @@ export function registerTelemetryRoutes(app: Express, deps: RegisterTelemetryRou
         body.event as McpAnalyticsEventRequest['event'],
         body.properties,
       );
-    } catch (error) {
+    } catch (error: any) {
       res.status(400).json({
         error: error instanceof Error
           ? error.message
@@ -508,7 +508,7 @@ function validateOptionalNonNegativeInteger(
 
 export function validateMcpAnalyticsEventProperties(
   event: McpAnalyticsEventRequest['event'],
-  raw: unknown,
+  raw: any,
 ): Record<string, string | number | boolean> {
   const properties = sanitizeMcpAnalyticsProperties(raw);
   requireMcpString(properties, 'mcp_session_id', CANONICAL_UUID_PATTERN);
@@ -619,7 +619,7 @@ export function validateMcpAnalyticsEventProperties(
 }
 
 export function sanitizeMcpAnalyticsProperties(
-  raw: unknown,
+  raw: any,
 ): Record<string, string | number | boolean> {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
   const out: Record<string, string | number | boolean> = {};
@@ -688,7 +688,7 @@ function installFatalTelemetryHandlers({
       error_stack: typeof error?.stack === 'string' ? error.stack.slice(0, 8192) : undefined,
     });
   };
-  const onUnhandledRejection = (reason: unknown) => {
+  const onUnhandledRejection = (reason: any) => {
     const asError = reason instanceof Error ? reason : null;
     triggerFatalShutdown('daemon_unhandled_rejection', {
       error_message: asError?.message ?? (typeof reason === 'string' ? reason : String(reason)),

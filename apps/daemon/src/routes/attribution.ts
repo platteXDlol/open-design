@@ -102,7 +102,7 @@ export function createAttributionService(deps: Omit<RegisterAttributionRoutesDep
           body: JSON.stringify({ installationId, url: target.toString() }),
         });
         if (!result.ok) return null;
-        const body = await result.json() as { url?: unknown };
+        const body = await result.json() as { url?: any };
         return typeof body.url === 'string' && trustedFirstPartyUrl(body.url) ? body.url : null;
       } catch {
         return null;
@@ -228,7 +228,7 @@ export function registerAttributionRoutes(app: Express, deps: RegisterAttributio
     }
     try {
       res.json(await service.claim(parsed));
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
     }
   });
@@ -245,7 +245,7 @@ export function registerAttributionRoutes(app: Express, deps: RegisterAttributio
   return service;
 }
 
-function parseClaimRequest(body: unknown): AttributionClaimInput | null {
+function parseClaimRequest(body: any): AttributionClaimInput | null {
   if (body == null || typeof body !== 'object' || Array.isArray(body)) return null;
   const obj = body as Record<string, unknown>;
   if (!isSource(obj.source)) return null;
@@ -258,7 +258,7 @@ function parseClaimRequest(body: unknown): AttributionClaimInput | null {
   };
 }
 
-function isSource(value: unknown): value is AttributionClaimSource {
+function isSource(value: any): value is AttributionClaimSource {
   return value === 'mac_where_froms'
     || value === 'windows_zone_identifier'
     || value === 'installer_observation_file'
@@ -293,7 +293,7 @@ async function consumeLedgerToken(input: {
   }
 }
 
-function parseLedgerConsumeResult(raw: unknown): LedgerConsumeResult | null {
+function parseLedgerConsumeResult(raw: any): LedgerConsumeResult | null {
   if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const obj = raw as Record<string, unknown>;
   if (obj.status === 'not_found' || obj.status === 'already_consumed_other') {
@@ -314,14 +314,14 @@ function parseLedgerConsumeResult(raw: unknown): LedgerConsumeResult | null {
   return null;
 }
 
-function normalizeToken(value: unknown): string | null {
+function normalizeToken(value: any): string | null {
   const cleaned = cleanString(value);
   if (!cleaned) return null;
   if (!/^[A-Za-z0-9_-]{8,160}$/.test(cleaned)) return null;
   return cleaned;
 }
 
-function cleanString(value: unknown): string | null {
+function cleanString(value: any): string | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;

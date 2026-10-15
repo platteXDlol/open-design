@@ -113,7 +113,7 @@ export function parseManagedMcpDiscovery(env: NodeJS.ProcessEnv): ManagedMcpDisc
   if (!isManagedMcpBootstrapEnv(env)) return null;
   try {
     const parsed = JSON.parse(env[MCP_BOOTSTRAP_CONTRACT.DISCOVERY_ENV] ?? "") as Partial<ManagedMcpDiscovery>;
-    const isEndpointList = (value: unknown): value is string[] =>
+    const isEndpointList = (value: any): value is string[] =>
       Array.isArray(value) && value.length > 0 && value.every((item) => typeof item === "string" && item.length > 0);
     if (!isEndpointList(parsed.daemon) || !isEndpointList(parsed.desktop)) return null;
     return { daemon: parsed.daemon, desktop: parsed.desktop };
@@ -223,7 +223,7 @@ async function ensureManagedMcpDaemonUrl(
   };
   const ownerRunning = async (timeoutMs: number): Promise<boolean> => {
     for (const endpoint of discovery.desktop) {
-      if (await deps.statusAtEndpoint<unknown>(endpoint, APP_KEYS.DESKTOP, timeoutMs) != null) return true;
+      if (await deps.statusAtEndpoint<any>(endpoint, APP_KEYS.DESKTOP, timeoutMs) != null) return true;
     }
     return false;
   };
@@ -283,7 +283,7 @@ async function discoverDaemonUrlFromInheritedClient(
 function parseBootstrapArgs(raw: string | undefined): string[] | null {
   if (raw == null || raw.length === 0) return null;
   try {
-    const parsed = JSON.parse(raw) as unknown;
+    const parsed = JSON.parse(raw) as any;
     if (
       !Array.isArray(parsed)
       || parsed.some((value) => typeof value !== "string")

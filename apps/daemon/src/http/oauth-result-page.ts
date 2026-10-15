@@ -70,13 +70,13 @@ export function renderOAuthResultPage(opts: OAuthResultPageOptions): string {
         bc.postMessage(payload);
         bc.close();
       }
-    } catch (e) { /* ignore postMessage failures */ }
+    } catch (e: any) { /* ignore postMessage failures */ }
   </script>
 </body>
 </html>`;
 }
 
-function escapeHtml(s: unknown): string {
+function escapeHtml(s: any): string {
   return String(s ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

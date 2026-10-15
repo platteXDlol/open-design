@@ -76,13 +76,13 @@ function codedError(message: string, code: string): Error & { code: string } {
   return err;
 }
 
-function errorCode(err: unknown): string | undefined {
+function errorCode(err: any): string | undefined {
   return typeof err === 'object' && err !== null && 'code' in err
-    ? String((err as { code?: unknown }).code)
+    ? String((err as { code?: any }).code)
     : undefined;
 }
 
-function isExistingTargetError(err: unknown): boolean {
+function isExistingTargetError(err: any): boolean {
   const code = errorCode(err);
   return code === 'EEXIST' || code === 'ENOTEMPTY';
 }
@@ -155,7 +155,7 @@ export async function withProjectFileVersionLock<T>(
   projectsRoot: string,
   projectId: string,
   fileName: string,
-  metadata: unknown,
+  metadata: any,
   fn: (context: ProjectFileVersionLockContext) => Promise<T>,
 ): Promise<T> {
   const safeName = validateUserFileName(fileName);
@@ -179,37 +179,37 @@ export async function withProjectFileVersionLock<T>(
   );
 }
 
-function normalizePrompt(value: unknown): string | null {
+function normalizePrompt(value: any): string | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
 }
 
-function normalizeContentPath(value: unknown, id: string): string {
+function normalizeContentPath(value: any, id: string): string {
   if (typeof value === 'string' && /^[A-Za-z0-9._-]+\.html$/u.test(value) && !value.includes('..')) {
     return value;
   }
   return `${id}.html`;
 }
 
-function normalizeVersionNumber(value: unknown, fallback: number): number {
+function normalizeVersionNumber(value: any, fallback: number): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function normalizeVersionId(value: unknown): string | undefined {
+function normalizeVersionId(value: any): string | undefined {
   return typeof value === 'string' && VERSION_ID_RE.test(value) ? value : undefined;
 }
 
-function normalizeContentDigest(value: unknown): string | undefined {
+function normalizeContentDigest(value: any): string | undefined {
   return typeof value === 'string' && CONTENT_DIGEST_RE.test(value) ? value : undefined;
 }
 
-function normalizeOriginId(value: unknown): string | undefined {
+function normalizeOriginId(value: any): string | undefined {
   return typeof value === 'string' && ORIGIN_ID_RE.test(value) ? value : undefined;
 }
 
-function normalizeArtifactOrigin(value: unknown): ArtifactOrigin | undefined {
+function normalizeArtifactOrigin(value: any): ArtifactOrigin | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
   const raw = value as Record<string, unknown>;
   const entrySurface = raw.entrySurface;
@@ -260,18 +260,18 @@ export function projectFileVersionContentDigest(content: string): string {
   return createHash('sha256').update(Buffer.from(String(content ?? ''), 'utf8')).digest('hex');
 }
 
-function normalizePromptSource(value: unknown): VersionPromptSource | undefined {
+function normalizePromptSource(value: any): VersionPromptSource | undefined {
   return value === 'message' || value === 'project' || value === 'manual' || value === 'restore'
     ? value
     : undefined;
 }
 
-function normalizeVersionSource(value: unknown): VersionSource | undefined {
+function normalizeVersionSource(value: any): VersionSource | undefined {
   return value === 'ai' || value === 'manual' || value === 'restore' ? value : undefined;
 }
 
 function inferVersionSource(
-  value: unknown,
+  value: any,
   promptSource?: VersionPromptSource,
   restoreFromVersionId?: string,
 ): VersionSource {
@@ -314,10 +314,10 @@ function normalizeManifestEntry(raw: Record<string, unknown>, fileName: string, 
   return entry;
 }
 
-function normalizeManifest(raw: unknown, fileName: string): VersionEntry[] {
+function normalizeManifest(raw: any, fileName: string): VersionEntry[] {
   if (!raw || typeof raw !== 'object') return [];
-  const entries = Array.isArray((raw as { entries?: unknown }).entries)
-    ? (raw as { entries: unknown[] }).entries
+  const entries = Array.isArray((raw as { entries?: any }).entries)
+    ? (raw as { entries: any[] }).entries
     : [];
   return entries.flatMap((entry, index) => {
     if (!entry || typeof entry !== 'object') return [];
@@ -326,13 +326,13 @@ function normalizeManifest(raw: unknown, fileName: string): VersionEntry[] {
   });
 }
 
-function normalizeManifestState(raw: unknown, fileName: string): VersionManifestState {
+function normalizeManifestState(raw: any, fileName: string): VersionManifestState {
   const entries = normalizeManifest(raw, fileName);
   const schemaVersion = raw && typeof raw === 'object'
-    ? Number((raw as { schemaVersion?: unknown }).schemaVersion)
+    ? Number((raw as { schemaVersion?: any }).schemaVersion)
     : NaN;
   const persistedCurrentVersionId = raw && typeof raw === 'object'
-    ? normalizeVersionId((raw as { currentVersionId?: unknown }).currentVersionId)
+    ? normalizeVersionId((raw as { currentVersionId?: any }).currentVersionId)
     : undefined;
   const currentVersionId = schemaVersion >= 2
     ? (persistedCurrentVersionId && entries.some((entry) => entry.id === persistedCurrentVersionId)
@@ -341,7 +341,7 @@ function normalizeManifestState(raw: unknown, fileName: string): VersionManifest
     : (entries.at(-1)?.id ?? null);
   const state: VersionManifestState = { entries, currentVersionId };
   const deletedAt = raw && typeof raw === 'object'
-    ? Number((raw as { deletedAt?: unknown }).deletedAt)
+    ? Number((raw as { deletedAt?: any }).deletedAt)
     : NaN;
   if (Number.isFinite(deletedAt) && deletedAt > 0) {
     state.deletedAt = deletedAt;
@@ -349,7 +349,7 @@ function normalizeManifestState(raw: unknown, fileName: string): VersionManifest
   return state;
 }
 
-function assertProjectAvailable(projectsRoot: string, projectId: string, metadata?: unknown): void {
+function assertProjectAvailable(projectsRoot: string, projectId: string, metadata?: any): void {
   resolveProjectDir(projectsRoot, projectId, metadata);
 }
 
@@ -360,8 +360,8 @@ async function readVersionManifestState(
 ): Promise<VersionManifestState> {
   try {
     const raw = await readFile(path.join(versionRootFor(projectsRoot, projectId, fileName), VERSION_MANIFEST), 'utf8');
-    return normalizeManifestState(JSON.parse(raw) as unknown, fileName);
-  } catch (err) {
+    return normalizeManifestState(JSON.parse(raw) as any, fileName);
+  } catch (err: any) {
     if (errorCode(err) === 'ENOENT') return { entries: [], currentVersionId: null };
     throw err;
   }
@@ -431,7 +431,7 @@ function validateUserFileName(fileName: string): string {
   return safeName;
 }
 
-export function isProjectFileVersionPath(raw: unknown): boolean {
+export function isProjectFileVersionPath(raw: any): boolean {
   const value = String(raw ?? '').replace(/\\/g, '/');
   return value.split('/').filter(Boolean).includes(VERSION_ROOT);
 }
@@ -440,7 +440,7 @@ export async function listProjectFileVersions(
   projectsRoot: string,
   projectId: string,
   fileName: string,
-  metadata?: unknown,
+  metadata?: any,
 ): Promise<ProjectFileVersion[]> {
   const safeName = validateUserFileName(fileName);
   assertProjectAvailable(projectsRoot, projectId, metadata);
@@ -453,7 +453,7 @@ export async function readProjectFileVersion(
   projectId: string,
   fileName: string,
   versionId: string,
-  metadata?: unknown,
+  metadata?: any,
 ): Promise<{ version: ProjectFileVersion; content: string }> {
   const safeName = validateUserFileName(fileName);
   const safeVersionId = String(versionId || '').trim();
@@ -479,7 +479,7 @@ export async function createProjectFileVersion(
   fileName: string,
   content: string,
   options: CreateProjectFileVersionOptions = {},
-  metadata?: unknown,
+  metadata?: any,
 ): Promise<ProjectFileVersion> {
   const safeName = validateUserFileName(fileName);
   assertProjectAvailable(projectsRoot, projectId, metadata);
@@ -564,7 +564,7 @@ export async function markProjectFileVersionStoreDeleted(
   projectsRoot: string,
   projectId: string,
   fileName: string,
-  metadata?: unknown,
+  metadata?: any,
 ): Promise<void> {
   const safeName = validateUserFileName(fileName);
   if (!/\.html?$/i.test(safeName)) return;
@@ -584,7 +584,7 @@ export async function renameProjectFileVersionStore(
   projectId: string,
   fromName: string,
   toName: string,
-  metadata?: unknown,
+  metadata?: any,
 ): Promise<void> {
   const safeFrom = validateUserFileName(fromName);
   const safeTo = validateUserFileName(toName);
@@ -597,7 +597,7 @@ export async function renameProjectFileVersionStore(
     const newRoot = versionRootFor(projectsRoot, projectId, safeTo);
     try {
       await stat(oldRoot);
-    } catch (err) {
+    } catch (err: any) {
       if (errorCode(err) === 'ENOENT') return;
       throw err;
     }
@@ -620,7 +620,7 @@ export async function renameProjectFileVersionStore(
         currentVersionId: fromState.currentVersionId,
       });
       return;
-    } catch (err) {
+    } catch (err: any) {
       if (!isExistingTargetError(err)) throw err;
     }
 
@@ -641,7 +641,7 @@ export async function renameProjectFileVersionStore(
       if (existingIds.has(entry.id)) continue;
       try {
         await rename(path.join(oldRoot, entry.contentPath), path.join(newRoot, entry.contentPath));
-      } catch (err) {
+      } catch (err: any) {
         if (errorCode(err) !== 'ENOENT' && errorCode(err) !== 'EEXIST') throw err;
       }
     }
@@ -667,7 +667,7 @@ export async function ensureCurrentProjectFileVersion(
   fileName: string,
   content: string,
   options: CreateProjectFileVersionOptions = {},
-  metadata?: unknown,
+  metadata?: any,
 ): Promise<ProjectFileVersion | null> {
   const safeName = validateUserFileName(fileName);
   if (!/\.html?$/i.test(safeName)) return null;
@@ -710,7 +710,7 @@ async function ensureCurrentProjectFileVersionUnlocked(
             return publicVersion(current, state.currentVersionId);
           }
         }
-      } catch (err) {
+      } catch (err: any) {
         if (errorCode(err) !== 'ENOENT') throw err;
       }
     }
@@ -724,7 +724,7 @@ export async function resolveProjectFileVersionContentMatch(
   fileName: string,
   content: string,
   versionId?: string,
-  metadata?: unknown,
+  metadata?: any,
 ): Promise<ProjectFileVersionContentMatch> {
   const safeName = validateUserFileName(fileName);
   if (!/\.html?$/i.test(safeName)) {
@@ -770,7 +770,7 @@ export async function getProjectFileVersionRootStats(
   projectsRoot: string,
   projectId: string,
   fileName: string,
-  metadata?: unknown,
+  metadata?: any,
 ): Promise<{ root: string; entries: string[]; mtime: number }> {
   const safeName = validateUserFileName(fileName);
   assertProjectAvailable(projectsRoot, projectId, metadata);

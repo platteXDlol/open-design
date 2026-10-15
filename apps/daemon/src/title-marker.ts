@@ -21,7 +21,7 @@ const TITLE_OPEN_TAG = '<od-title>';
 const TITLE_CLOSE_TAG = '</od-title>';
 const DEFAULT_TITLE_MARKER_SCAN_LIMIT = 512;
 
-export function sanitizeAgentGeneratedTitle(value: unknown): string {
+export function sanitizeAgentGeneratedTitle(value: any): string {
   if (typeof value !== 'string') return '';
   return value
     .replace(/<[^>]*>/g, ' ')

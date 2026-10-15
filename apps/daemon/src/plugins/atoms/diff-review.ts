@@ -82,14 +82,14 @@ export async function runDiffReview(opts: DiffReviewOptions): Promise<DiffReview
   let steps: PatchStepRecord[] = [];
   try {
     steps = JSON.parse(await fsp.readFile(path.join(planDir, 'steps.json'), 'utf8')) as PatchStepRecord[];
-  } catch (err) {
+  } catch (err: any) {
     if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
   }
 
   let receiptFiles: string[] = [];
   try {
     receiptFiles = await fsp.readdir(receiptDir);
-  } catch (err) {
+  } catch (err: any) {
     if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;
   }
   const receipts: PatchReceiptEntry[] = [];
@@ -228,6 +228,6 @@ function renderSummary(args: {
   return lines.join('\n');
 }
 
-function digestObject(obj: unknown): string {
+function digestObject(obj: any): string {
   return createHash('sha1').update(JSON.stringify(obj)).digest('hex');
 }

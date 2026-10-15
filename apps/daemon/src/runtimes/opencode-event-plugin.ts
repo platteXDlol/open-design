@@ -49,11 +49,11 @@ export async function applyOpenCodeEventPlugin(
   inheritedConfigContent?: string,
 ): Promise<boolean> {
   if (!supportsOpenCodeEventPlugin(version) || /^(1|true)$/iu.test(env.OPENCODE_PURE ?? '')) return false;
-  const config: unknown = env.OPENCODE_CONFIG_CONTENT ? JSON.parse(env.OPENCODE_CONFIG_CONTENT) : {};
+  const config: any = env.OPENCODE_CONFIG_CONTENT ? JSON.parse(env.OPENCODE_CONFIG_CONTENT) : {};
   if (!config || typeof config !== 'object' || Array.isArray(config)) return false;
   const overlay = config as Record<string, unknown>;
   if (overlay.plugin !== undefined && !Array.isArray(overlay.plugin)) return false;
-  const inherited: unknown = inheritedConfigContent ? JSON.parse(inheritedConfigContent) : {};
+  const inherited: any = inheritedConfigContent ? JSON.parse(inheritedConfigContent) : {};
   const inheritedPlugins = inherited && typeof inherited === 'object' && 'plugin' in inherited && Array.isArray(inherited.plugin)
     ? inherited.plugin : [];
   const plugins = Array.isArray(overlay.plugin) ? overlay.plugin : [];

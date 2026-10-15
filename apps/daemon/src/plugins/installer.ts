@@ -180,7 +180,7 @@ async function* withStableInstallErrorCodes(
         ? { ...event, code: classifyPluginInstallError(event.message) }
         : event;
     }
-  } catch (cause) {
+  } catch (cause: any) {
     const message = cause instanceof Error ? cause.message : String(cause);
     yield {
       kind: 'error',
@@ -383,7 +383,7 @@ async function* installFromGithubContents(
         stagingFolder,
         budget,
       );
-    } catch (err) {
+    } catch (err: any) {
       yield {
         kind: 'error',
         message: (err as Error).message,
@@ -448,7 +448,7 @@ async function fetchGithubJson(fetcher: ArchiveFetcher, url: string): Promise<Gi
   const text = await readStreamText(resp.body, 1024 * 1024);
   try {
     return JSON.parse(text) as GithubContentsEntry[] | GithubContentsEntry;
-  } catch (err) {
+  } catch (err: any) {
     throw new Error(`GitHub contents response was not valid JSON for ${url}: ${(err as Error).message}`);
   }
 }
@@ -542,7 +542,7 @@ async function* installFromArchiveUrl(
     let computedIntegrity: string;
     try {
       computedIntegrity = await writeArchiveAndDigest(resp.body, archivePath, maxBytes);
-    } catch (err) {
+    } catch (err: any) {
       yield {
         kind: 'error',
         message: `Archive download failed: ${(err as Error).message}`,
@@ -587,7 +587,7 @@ async function* installFromArchiveUrl(
           },
         }) as NodeJS.WritableStream,
       );
-    } catch (err) {
+    } catch (err: any) {
       yield {
         kind: 'error',
         message: `Archive extraction failed: ${(err as Error).message}`,
@@ -738,7 +738,7 @@ export async function* installFromLocalFolder(
   let stats: fs.Stats;
   try {
     stats = await fsp.stat(sourceFolder);
-  } catch (err) {
+  } catch (err: any) {
     yield { kind: 'error', message: `Source folder not found: ${sourceFolder} (${(err as Error).message})`, warnings };
     return;
   }
@@ -805,7 +805,7 @@ export async function* installFromLocalFolder(
   }
   try {
     await safeCopyTree(sourceFolder, destFolder, maxBytes);
-  } catch (err) {
+  } catch (err: any) {
     yield { kind: 'error', message: `Copy failed: ${(err as Error).message}`, warnings };
     await fsp.rm(destFolder, { recursive: true, force: true }).catch(() => undefined);
     return;
@@ -923,7 +923,7 @@ export async function uninstallPlugin(
       return { ok: removed, warning: `Folder ${folder} could not be removed` };
     }
     removedFolder = folder;
-  } catch (err) {
+  } catch (err: any) {
     return { ok: removed, warning: `Folder ${folder} removal failed: ${(err as Error).message}` };
   }
   // Plan §3.II1 — emit a 'plugin.uninstalled' event when the

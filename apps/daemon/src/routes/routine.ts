@@ -37,7 +37,7 @@ export type RoutineRoutesService = Pick<
   'nextRunAt' | 'rescheduleOne' | 'runNow' | 'unschedule'
 >;
 
-function cleanStringList(value: unknown, field: string): string[] {
+function cleanStringList(value: any, field: string): string[] {
   if (value === undefined || value === null) return [];
   if (!Array.isArray(value)) throw new Error(`${field} must be an array`);
   const out: string[] = [];
@@ -52,7 +52,7 @@ function cleanStringList(value: unknown, field: string): string[] {
   return out;
 }
 
-function normalizeRoutineContext(value: unknown) {
+function normalizeRoutineContext(value: any) {
   if (value === undefined || value === null) return {};
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error('context must be an object');

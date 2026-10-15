@@ -143,7 +143,7 @@ export function purgePluginEventBuffer(): PurgePluginEventBufferResult {
     purged:    events.length,
     firstId:   events.length > 0 ? events[0]!.id                    : null,
     lastId:    events.length > 0 ? events[events.length - 1]!.id    : null,
-    preNextId: (singleton as unknown as { nextId: number }).nextId,
+    preNextId: (singleton as any as { nextId: number }).nextId,
   };
   singleton.reset();
   return result;

@@ -247,7 +247,7 @@ export async function runAdapterConformance(
         }
       }
     }
-  } catch (err) {
+  } catch (err: any) {
     const reason
       = err instanceof MalformedBlockError ? 'malformed_block'
       : err instanceof OversizeBlockError ? 'oversize_block'

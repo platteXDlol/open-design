@@ -51,7 +51,7 @@ export interface MediaTaskRow {
   surface?: string;
   model?: string;
   progress: string[];
-  file: unknown | null;
+  file: any | null;
   error: MediaTaskError | null;
   startedAt: number;
   endedAt: number | null;
@@ -67,7 +67,7 @@ export interface MediaTaskInsert {
   surface?: string;
   model?: string;
   progress?: string[];
-  file?: unknown | null;
+  file?: any | null;
   error?: MediaTaskError | null;
   startedAt?: number;
   endedAt?: number | null;
@@ -81,7 +81,7 @@ export interface MediaTaskPatch {
   surface?: string | null;
   model?: string | null;
   progress?: string[];
-  file?: unknown | null;
+  file?: any | null;
   error?: MediaTaskError | null;
   startedAt?: number;
   endedAt?: number | null;
@@ -364,7 +364,7 @@ function parseArray(json: string | null): string[] {
  */
 const MEDIA_TASK_ERROR_SUBJECTS = ['prompt', 'input_image', 'output_image'] as const;
 
-function isMediaTaskErrorSubject(value: unknown): value is MediaTaskErrorSubject {
+function isMediaTaskErrorSubject(value: any): value is MediaTaskErrorSubject {
   return (
     typeof value === 'string'
     && (MEDIA_TASK_ERROR_SUBJECTS as readonly string[]).includes(value)
@@ -376,7 +376,7 @@ function isMediaTaskErrorSubject(value: unknown): value is MediaTaskErrorSubject
  * column, and a row written by a newer daemon must not smuggle a next step
  * this build has no copy for into an API response.
  */
-function isMediaFailureNextStep(value: unknown): value is MediaFailureNextStep {
+function isMediaFailureNextStep(value: any): value is MediaFailureNextStep {
   return (
     typeof value === 'string'
     && (MEDIA_FAILURE_NEXT_STEPS as readonly string[]).includes(value)
@@ -391,7 +391,7 @@ function isMediaFailureNextStep(value: unknown): value is MediaFailureNextStep {
  * survived until the process bounced, then reappeared as a bare failure with
  * no attribution and no retry verdict.
  */
-function normalizeError(value: unknown): MediaTaskError | null {
+function normalizeError(value: any): MediaTaskError | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const obj = value as Record<string, unknown>;
   const message = typeof obj.message === 'string' ? obj.message : '';
@@ -408,7 +408,7 @@ function normalizeError(value: unknown): MediaTaskError | null {
   return error;
 }
 
-function parseJson(json: string | null): unknown {
+function parseJson(json: string | null): any {
   if (!json) return null;
   try {
     return JSON.parse(json);
@@ -417,6 +417,6 @@ function parseJson(json: string | null): unknown {
   }
 }
 
-function jsonOrNull(value: unknown): string | null {
+function jsonOrNull(value: any): string | null {
   return value == null ? null : JSON.stringify(value);
 }

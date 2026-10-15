@@ -254,13 +254,13 @@ function ok<T>(value: T): LiveArtifactValidationResult<T> {
   return { ok: true, value };
 }
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
+function isPlainObject(value: any): value is Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const proto = Object.getPrototypeOf(value);
   return proto === Object.prototype || proto === null;
 }
 
-function asString(value: unknown, path: string, issues: LiveArtifactValidationIssue[], max = MAX_SHORT_TEXT_LENGTH): string | undefined {
+function asString(value: any, path: string, issues: LiveArtifactValidationIssue[], max = MAX_SHORT_TEXT_LENGTH): string | undefined {
   if (typeof value !== 'string') {
     issues.push({ path, message: `${path} must be a string` });
     return undefined;
@@ -274,12 +274,12 @@ function asString(value: unknown, path: string, issues: LiveArtifactValidationIs
   return value;
 }
 
-function asOptionalString(value: unknown, path: string, issues: LiveArtifactValidationIssue[], max = MAX_SHORT_TEXT_LENGTH): string | undefined {
+function asOptionalString(value: any, path: string, issues: LiveArtifactValidationIssue[], max = MAX_SHORT_TEXT_LENGTH): string | undefined {
   if (value === undefined) return undefined;
   return asString(value, path, issues, max);
 }
 
-function asBoolean(value: unknown, path: string, issues: LiveArtifactValidationIssue[]): boolean | undefined {
+function asBoolean(value: any, path: string, issues: LiveArtifactValidationIssue[]): boolean | undefined {
   if (typeof value !== 'boolean') {
     issues.push({ path, message: `${path} must be a boolean` });
     return undefined;
@@ -287,12 +287,12 @@ function asBoolean(value: unknown, path: string, issues: LiveArtifactValidationI
   return value;
 }
 
-function asOptionalBoolean(value: unknown, path: string, issues: LiveArtifactValidationIssue[]): boolean | undefined {
+function asOptionalBoolean(value: any, path: string, issues: LiveArtifactValidationIssue[]): boolean | undefined {
   if (value === undefined) return undefined;
   return asBoolean(value, path, issues);
 }
 
-function validateEnum<T extends string>(value: unknown, allowed: ReadonlySet<T>, path: string, issues: LiveArtifactValidationIssue[]): T | undefined {
+function validateEnum<T extends string>(value: any, allowed: ReadonlySet<T>, path: string, issues: LiveArtifactValidationIssue[]): T | undefined {
   if (typeof value !== 'string' || !allowed.has(value as T)) {
     issues.push({ path, message: `${path} is not allowed` });
     return undefined;
@@ -305,7 +305,7 @@ function isIsoDateString(value: string): boolean {
   return Number.isFinite(time) && new Date(time).toISOString() === value;
 }
 
-function validateIsoDate(value: unknown, path: string, issues: LiveArtifactValidationIssue[]): string | undefined {
+function validateIsoDate(value: any, path: string, issues: LiveArtifactValidationIssue[]): string | undefined {
   const text = asString(value, path, issues, MAX_SHORT_TEXT_LENGTH);
   if (text !== undefined && !isIsoDateString(text)) {
     issues.push({ path, message: `${path} must be an ISO-8601 timestamp` });
@@ -372,7 +372,7 @@ function validateOnlyAllowedKeys(raw: Record<string, unknown>, allowed: Readonly
   }
 }
 
-function validateBoundedJsonInternal(value: unknown, path: string, issues: LiveArtifactValidationIssue[], depth: number): value is BoundedJsonValue {
+function validateBoundedJsonInternal(value: any, path: string, issues: LiveArtifactValidationIssue[], depth: number): value is BoundedJsonValue {
   if (value === null || typeof value === 'boolean' || typeof value === 'number') {
     if (typeof value === 'number' && !Number.isFinite(value)) {
       issues.push({ path, message: `${path} must be a finite number` });
@@ -435,7 +435,7 @@ function validateBoundedJsonInternal(value: unknown, path: string, issues: LiveA
   return false;
 }
 
-export function validateBoundedJsonValue(value: unknown, path = 'value'): LiveArtifactValidationResult<BoundedJsonValue> {
+export function validateBoundedJsonValue(value: any, path = 'value'): LiveArtifactValidationResult<BoundedJsonValue> {
   const issues: LiveArtifactValidationIssue[] = [];
   if (validateBoundedJsonInternal(value, path, issues, 1)) {
     const serialized = JSON.stringify(value);
@@ -450,7 +450,7 @@ export function validateBoundedJsonValue(value: unknown, path = 'value'): LiveAr
   return fail(issues);
 }
 
-export function validateBoundedJsonObject(value: unknown, path = 'value'): LiveArtifactValidationResult<BoundedJsonObject> {
+export function validateBoundedJsonObject(value: any, path = 'value'): LiveArtifactValidationResult<BoundedJsonObject> {
   const result = validateBoundedJsonValue(value, path);
   if (!result.ok) return result;
   if (!isPlainObject(result.value)) {
@@ -528,7 +528,7 @@ function validateDaemonRefreshRequiredInput(
   validateReadJsonSelector(selector, `${path}.${selectorKey}`, issues);
 }
 
-function validatePreview(value: unknown, path: string, issues: LiveArtifactValidationIssue[]): LiveArtifactPreview | undefined {
+function validatePreview(value: any, path: string, issues: LiveArtifactValidationIssue[]): LiveArtifactPreview | undefined {
   if (!isPlainObject(value)) {
     issues.push({ path, message: `${path} must be an object` });
     return undefined;
@@ -557,7 +557,7 @@ function validateMappingPath(value: string, path: string, issues: LiveArtifactVa
   }
 }
 
-function validateSource(value: unknown, path: string, issues: LiveArtifactValidationIssue[]): LiveArtifactSource | undefined {
+function validateSource(value: any, path: string, issues: LiveArtifactValidationIssue[]): LiveArtifactSource | undefined {
   if (!isPlainObject(value)) {
     issues.push({ path, message: `${path} must be an object` });
     return undefined;
@@ -645,7 +645,7 @@ function validateSource(value: unknown, path: string, issues: LiveArtifactValida
   return source;
 }
 
-function validateRefreshSourceMetadata(value: unknown, path: string, issues: LiveArtifactValidationIssue[]): LiveArtifactRefreshSourceMetadata | undefined {
+function validateRefreshSourceMetadata(value: any, path: string, issues: LiveArtifactValidationIssue[]): LiveArtifactRefreshSourceMetadata | undefined {
   if (!isPlainObject(value)) {
     issues.push({ path, message: `${path} must be an object` });
     return undefined;
@@ -679,7 +679,7 @@ function validateRefreshSourceMetadata(value: unknown, path: string, issues: Liv
   return source;
 }
 
-function validateRefreshErrorRecord(value: unknown, path: string, issues: LiveArtifactValidationIssue[]): LiveArtifactRefreshErrorRecord | undefined {
+function validateRefreshErrorRecord(value: any, path: string, issues: LiveArtifactValidationIssue[]): LiveArtifactRefreshErrorRecord | undefined {
   if (!isPlainObject(value)) {
     issues.push({ path, message: `${path} must be an object` });
     return undefined;
@@ -694,7 +694,7 @@ function validateRefreshErrorRecord(value: unknown, path: string, issues: LiveAr
   return record;
 }
 
-function validateProvenance(value: unknown, path: string, issues: LiveArtifactValidationIssue[]): LiveArtifactProvenance | undefined {
+function validateProvenance(value: any, path: string, issues: LiveArtifactValidationIssue[]): LiveArtifactProvenance | undefined {
   if (!isPlainObject(value)) {
     issues.push({ path, message: `${path} must be an object` });
     return undefined;
@@ -730,7 +730,7 @@ function validateProvenance(value: unknown, path: string, issues: LiveArtifactVa
   return provenance;
 }
 
-function validateOptionalInteger(value: unknown, path: string, issues: LiveArtifactValidationIssue[], min: number, max: number): number | undefined {
+function validateOptionalInteger(value: any, path: string, issues: LiveArtifactValidationIssue[], min: number, max: number): number | undefined {
   if (value === undefined) return undefined;
   if (typeof value !== 'number' || !Number.isInteger(value) || value < min || value > max) {
     issues.push({ path, message: `${path} must be an integer between ${min} and ${max}` });
@@ -739,7 +739,7 @@ function validateOptionalInteger(value: unknown, path: string, issues: LiveArtif
   return value;
 }
 
-function validateDocument(value: unknown, path: string, issues: LiveArtifactValidationIssue[]): LiveArtifactDocument | undefined {
+function validateDocument(value: any, path: string, issues: LiveArtifactValidationIssue[]): LiveArtifactDocument | undefined {
   if (!isPlainObject(value)) {
     issues.push({ path, message: `${path} must be an object` });
     return undefined;
@@ -772,7 +772,7 @@ function validateDocument(value: unknown, path: string, issues: LiveArtifactVali
   return document;
 }
 
-export function validatePersistedLiveArtifact(value: unknown, path = 'liveArtifact'): LiveArtifactValidationResult<LiveArtifact> {
+export function validatePersistedLiveArtifact(value: any, path = 'liveArtifact'): LiveArtifactValidationResult<LiveArtifact> {
   const issues: LiveArtifactValidationIssue[] = [];
   if (!isPlainObject(value)) return fail([{ path, message: `${path} must be an object` }]);
 
@@ -815,7 +815,7 @@ export function validatePersistedLiveArtifact(value: unknown, path = 'liveArtifa
   return ok(liveArtifact);
 }
 
-export function validateLiveArtifactRefreshLogEntry(value: unknown, path = 'refreshLogEntry'): LiveArtifactValidationResult<LiveArtifactRefreshLogEntry> {
+export function validateLiveArtifactRefreshLogEntry(value: any, path = 'refreshLogEntry'): LiveArtifactValidationResult<LiveArtifactRefreshLogEntry> {
   const issues: LiveArtifactValidationIssue[] = [];
   if (!isPlainObject(value)) return fail([{ path, message: `${path} must be an object` }]);
 
@@ -862,7 +862,7 @@ export function validateLiveArtifactRefreshLogEntry(value: unknown, path = 'refr
   return ok(entry);
 }
 
-export function validateLiveArtifactCreateInput(value: unknown, path = 'input'): LiveArtifactValidationResult<LiveArtifactCreateInput> {
+export function validateLiveArtifactCreateInput(value: any, path = 'input'): LiveArtifactValidationResult<LiveArtifactCreateInput> {
   const issues: LiveArtifactValidationIssue[] = [];
   if (!isPlainObject(value)) return fail([{ path, message: `${path} must be an object` }]);
   validateNoDaemonOwnedFields(value, issues);
@@ -882,7 +882,7 @@ export function validateLiveArtifactCreateInput(value: unknown, path = 'input'):
   return ok(input);
 }
 
-export function validateLiveArtifactUpdateInput(value: unknown, path = 'input'): LiveArtifactValidationResult<LiveArtifactUpdateInput> {
+export function validateLiveArtifactUpdateInput(value: any, path = 'input'): LiveArtifactValidationResult<LiveArtifactUpdateInput> {
   const issues: LiveArtifactValidationIssue[] = [];
   if (!isPlainObject(value)) return fail([{ path, message: `${path} must be an object` }]);
   validateNoDaemonOwnedFields(value, issues);

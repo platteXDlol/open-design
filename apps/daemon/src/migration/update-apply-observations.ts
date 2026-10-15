@@ -77,7 +77,7 @@ export type ObservePendingInstallerApplyAttemptsOptions = {
   readConfig?: (dataRoot: string) => Promise<AppConfigPrefs>;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, unknown> {
   return typeof value === 'object' && value != null && !Array.isArray(value);
 }
 
@@ -91,7 +91,7 @@ function isSafeFlowId(flowId: string): boolean {
   );
 }
 
-function isInstallerObservationSummary(value: unknown): value is InstallerObservationSummary {
+function isInstallerObservationSummary(value: any): value is InstallerObservationSummary {
   if (!isRecord(value)) return false;
   const artifactType = value.artifactType;
   const channel = value.channel;
@@ -126,7 +126,7 @@ function summaryPath(root: string, flowId: string): string {
 
 async function readSummary(filePath: string): Promise<InstallerObservationSummary | null> {
   try {
-    const parsed = JSON.parse(await readFile(filePath, 'utf8')) as unknown;
+    const parsed = JSON.parse(await readFile(filePath, 'utf8')) as any;
     return isInstallerObservationSummary(parsed) ? parsed : null;
   } catch {
     return null;
@@ -207,7 +207,7 @@ function eventProperties(
     reason: classification.reason,
     elapsed_bucket: classification.elapsedBucket,
   } satisfies UpdateApplyObservedProps;
-  return props as unknown as Record<string, unknown>;
+  return props as any as Record<string, unknown>;
 }
 
 function deliveryForConfig(
@@ -296,7 +296,7 @@ export async function observePendingInstallerApplyAttempts(
           properties: eventProperties(summary, classification),
           insertId,
         });
-      } catch (error) {
+      } catch (error: any) {
         options.logger?.warn?.('[open-design updater] failed to submit update apply observation', error);
         next.delivery = { eventName: 'update_apply_observed', status: 'failed', updatedAt: observedAt };
       }

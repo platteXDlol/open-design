@@ -84,7 +84,7 @@ export async function loadBundledAtomBodiesStrict(
     let raw: string;
     try {
       raw = await fsp.readFile(path.join(plugin.fsPath, 'SKILL.md'), 'utf8');
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(
         `Bundled atom body is unavailable: ${id}`,
         { cause: error },

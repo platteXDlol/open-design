@@ -261,7 +261,7 @@ export async function associateLateRunProducedFile(
   const priorJson = current.producedFilesJson;
   let existing: RunProducedFile[] = [];
   if (priorJson !== null) {
-    let parsed: unknown;
+    let parsed: any;
     try {
       parsed = JSON.parse(priorJson);
     } catch {

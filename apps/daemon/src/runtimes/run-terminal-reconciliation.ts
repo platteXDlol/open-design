@@ -64,7 +64,7 @@ const PRESERVED_TERMINAL_INTEGRITY = new Set<TrackingRunTerminalIntegrity>([
   'post_terminal_activity',
 ]);
 
-function recoveredTerminalIntegrity(value: unknown): TrackingRunTerminalIntegrity {
+function recoveredTerminalIntegrity(value: any): TrackingRunTerminalIntegrity {
   return typeof value === 'string'
     && PRESERVED_TERMINAL_INTEGRITY.has(value as TrackingRunTerminalIntegrity)
     ? value as TrackingRunTerminalIntegrity
@@ -140,15 +140,15 @@ interface AnalyticsLike {
     appVersion: string;
     properties: Record<string, unknown>;
     insertId: string;
-  }): unknown | Promise<unknown>;
+  }): any | Promise<any>;
 }
 
 interface ReconciliationOptions {
   analytics: AnalyticsLike;
   appVersion?: string;
-  appVersionInfo?: unknown;
+  appVersionInfo?: any;
   db: Database.Database;
-  reportLangfuse(args: Record<string, unknown>): unknown | Promise<unknown>;
+  reportLangfuse(args: Record<string, unknown>): any | Promise<any>;
   taskObservationModeForRun?: (runId: string) => 'off' | 'observe' | 'send';
   taskObservationRepresentationForRun?: (runId: string) =>
     | 'single_run'
@@ -162,7 +162,7 @@ interface ReconciliationOptions {
   ) => void | Promise<void>;
   beginTaskObservationForRun?: (runId: string) => {
     suppressSingleRun: boolean;
-    completion: Promise<unknown>;
+    completion: Promise<any>;
   };
   runsLogDir: string;
   recoverBeforeInterrupt?: (
@@ -212,17 +212,17 @@ export interface RunTerminalReconciliationResult {
   langfuseReplayed: number;
 }
 
-function isObject(value: unknown): value is Record<string, unknown> {
+function isObject(value: any): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 function readState(filePath: string): DurableRunState | null {
   try {
-    const value = JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;
+    const value = JSON.parse(fs.readFileSync(filePath, 'utf8')) as any;
     if (!isObject(value) || value.schemaVersion !== 1) return null;
     if (typeof value.id !== 'string' || typeof value.status !== 'string') return null;
     if (typeof value.createdAt !== 'number' || typeof value.updatedAt !== 'number') return null;
-    return value as unknown as DurableRunState;
+    return value as any as DurableRunState;
   } catch {
     return null;
   }
@@ -243,15 +243,15 @@ function writeState(filePath: string, state: DurableRunState): boolean {
 function readEvents(runsLogDir: string, runId: string): Array<{
   id: number;
   event: string;
-  data: unknown;
+  data: any;
   timestamp?: number;
 }> {
   try {
     return fs.readFileSync(path.join(runsLogDir, runId, 'events.jsonl'), 'utf8')
       .split('\n')
       .filter(Boolean)
-      .map((line) => JSON.parse(line) as unknown)
-      .filter((value): value is { id: number; event: string; data: unknown; timestamp?: number } =>
+      .map((line) => JSON.parse(line) as any)
+      .filter((value): value is { id: number; event: string; data: any; timestamp?: number } =>
         isObject(value) && typeof value.id === 'number' && typeof value.event === 'string');
   } catch {
     return [];
@@ -354,7 +354,7 @@ function reconcileStrategyTaskRunTerminalIsolated(
 ): boolean {
   try {
     return reconcileStrategyTaskRunTerminal(db, input);
-  } catch (error) {
+  } catch (error: any) {
     console.warn('[runs] strategy task terminal reconciliation skipped', input.runId, error);
     return false;
   }
@@ -427,7 +427,7 @@ export async function reconcileDurableRunTerminals(
         }
         entry.state = next;
         return true;
-      } catch (error) {
+      } catch (error: any) {
         // An owner/SQL read failure cannot authorize a successful recovery.
         // Defer this run without preventing siblings from reconciling.
         deferredRunIds.add(entry.state.id);
@@ -454,7 +454,7 @@ export async function reconcileDurableRunTerminals(
         state.status,
         state.terminalAt ?? state.updatedAt,
       );
-    } catch (error) {
+    } catch (error: any) {
       console.warn(
         '[runs] terminal local finalizer failed during restart reconciliation',
         error,
@@ -715,7 +715,7 @@ export async function reconcileDurableRunTerminals(
           throw new Error('Task observation send mode requires a startup finalizer.');
         }
         const handle = options.beginTaskObservationForRun(state.id);
-        const completion = await handle.completion as { action?: unknown } | undefined;
+        const completion = await handle.completion as { action?: any } | undefined;
         suppressSingleRun = handle.suppressSingleRun;
         let completedRepresentation:
           | 'single_run'
@@ -783,7 +783,7 @@ export async function reconcileDurableRunTerminals(
       const delivery: RunTelemetryDeliveryResult = isObject(rawDelivery)
         && typeof rawDelivery.langfuse_expected === 'boolean'
         && typeof rawDelivery.langfuse_delivery_status === 'string'
-        ? rawDelivery as unknown as RunTelemetryDeliveryResult
+        ? rawDelivery as any as RunTelemetryDeliveryResult
         : {
             langfuse_expected: true,
             langfuse_delivery_status: 'failed',

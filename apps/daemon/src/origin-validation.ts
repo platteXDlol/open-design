@@ -6,9 +6,9 @@ export interface ParsedHostHeader {
 
 export interface RequestWithOriginHeaders {
   headers?: {
-    host?: unknown;
-    origin?: unknown;
-    'sec-fetch-site'?: unknown;
+    host?: any;
+    origin?: any;
+    'sec-fetch-site'?: any;
   };
 }
 
@@ -122,7 +122,7 @@ export function allowedBrowserPorts(
   return ports;
 }
 
-export function parseHostHeader(value: unknown): ParsedHostHeader | null {
+export function parseHostHeader(value: any): ParsedHostHeader | null {
   const raw = String(headerValue(value) || '').trim();
   if (!raw) return null;
   try {
@@ -133,7 +133,7 @@ export function parseHostHeader(value: unknown): ParsedHostHeader | null {
   }
 }
 
-export function isPrivateIpv4(hostname: unknown): boolean {
+export function isPrivateIpv4(hostname: any): boolean {
   const parts = String(hostname || '').split('.');
   if (parts.length !== 4) return false;
   if (!parts.every((part) => /^\d+$/.test(part))) return false;
@@ -148,7 +148,7 @@ export function isPrivateIpv4(hostname: unknown): boolean {
   );
 }
 
-export function isIpLiteralHostname(hostname: unknown): boolean {
+export function isIpLiteralHostname(hostname: any): boolean {
   const host = String(hostname || '').trim();
   if (!host) return false;
   if (host.startsWith('[') && host.endsWith(']')) return true;
@@ -158,7 +158,7 @@ export function isIpLiteralHostname(hostname: unknown): boolean {
   return parts.map(Number).every((n) => Number.isInteger(n) && n >= 0 && n <= 255);
 }
 
-export function isLoopbackOrPrivateLanHost(hostname: unknown): boolean {
+export function isLoopbackOrPrivateLanHost(hostname: any): boolean {
   const host = String(hostname || '').toLowerCase();
   return (
     host === 'localhost' ||
@@ -172,7 +172,7 @@ export function isLoopbackOrPrivateLanHost(hostname: unknown): boolean {
 }
 
 export function isAllowedBrowserHost(
-  hostHeader: unknown,
+  hostHeader: any,
   ports: number[],
   bindHost: string,
   extraAllowedOrigins: string[],
@@ -195,8 +195,8 @@ export function isAllowedBrowserHost(
 }
 
 export function isAllowedBrowserOrigin(
-  origin: unknown,
-  hostHeader: unknown,
+  origin: any,
+  hostHeader: any,
   ports: number[],
   bindHost: string,
   extraAllowedOrigins: string[],
@@ -275,7 +275,7 @@ export function isLocalSameOrigin(
   return isAllowedBrowserOrigin(origin, host, ports, bindHost, extraAllowedOrigins);
 }
 
-function headerValue(value: unknown): string | undefined {
+function headerValue(value: any): string | undefined {
   if (Array.isArray(value)) {
     const first = value[0];
     return first == null ? undefined : String(first);
@@ -301,7 +301,7 @@ function headerValue(value: unknown): string | undefined {
 export function isZeroConfigClipperLibraryRequest(
   method: string,
   apiRelativePath: string,
-  origin: unknown,
+  origin: any,
 ): boolean {
   const normalizedMethod = method.toUpperCase();
   const isAllowedClipperPath =

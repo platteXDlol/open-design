@@ -232,7 +232,7 @@ function delimiterAtError(source: string, offset: number): '(' | '[' | '{' | nul
       onToken: tokens,
     });
     return null;
-  } catch (error) {
+  } catch (error: any) {
     if (!(error instanceof SyntaxError) || (error as SyntaxError & { pos?: number }).pos !== offset) {
       return null;
     }

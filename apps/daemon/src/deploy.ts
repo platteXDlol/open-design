@@ -31,7 +31,7 @@ type CloudflarePagesConfigHints = {
 type DeployFile = { file: string; data: Buffer | Uint8Array | string; contentType?: string; sourcePath?: string };
 type DeployFilePlan = { entryPath: string; html: string; files: DeployFile[]; missing: string[]; invalid: string[] };
 type DeployOptions = {
-  metadata?: unknown;
+  metadata?: any;
   hookScriptUrl?: string;
   providerId?: DeployProviderId;
   includeProjectFiles?: boolean;
@@ -42,11 +42,11 @@ type DeployLinkStatus = 'ready' | 'protected' | 'failed' | 'link-delayed';
 type DeploymentUrlCheck = { reachable: boolean; status?: DeployLinkStatus; statusCode?: number; statusMessage?: string };
 type MaybeJsonObject = JsonObject | null | undefined;
 
-function isErrnoException(err: unknown): err is NodeJS.ErrnoException {
+function isErrnoException(err: any): err is NodeJS.ErrnoException {
   return err instanceof Error && 'code' in err;
 }
 
-function errorMessage(err: unknown, fallback: string): string {
+function errorMessage(err: any, fallback: string): string {
   return err instanceof Error && err.message ? err.message : fallback;
 }
 
@@ -88,7 +88,7 @@ export async function readVercelConfig(): Promise<DeployConfig> {
       teamId: typeof parsed.teamId === 'string' ? parsed.teamId : '',
       teamSlug: typeof parsed.teamSlug === 'string' ? parsed.teamSlug : '',
     };
-  } catch (err) {
+  } catch (err: any) {
     if (isErrnoException(err) && err.code === 'ENOENT') return { token: '', teamId: '', teamSlug: '' };
     throw err;
   }
@@ -104,7 +104,7 @@ export async function readCloudflarePagesConfig(): Promise<DeployConfig> {
       projectName: typeof parsed.projectName === 'string' ? parsed.projectName : '',
       cloudflarePages: normalizeCloudflarePagesConfigHints(parsed.cloudflarePages),
     };
-  } catch (err) {
+  } catch (err: any) {
     if (isErrnoException(err) && err.code === 'ENOENT') return { token: '', accountId: '', projectName: '', cloudflarePages: {} };
     throw err;
   }
@@ -201,11 +201,11 @@ export function publicDeployConfigForProvider(providerId: DeployProviderId = VER
   return publicDeployConfig(config);
 }
 
-export function isDeployProviderId(value: unknown): value is DeployProviderId {
+export function isDeployProviderId(value: any): value is DeployProviderId {
   return value === VERCEL_PROVIDER_ID || value === CLOUDFLARE_PAGES_PROVIDER_ID;
 }
 
-function normalizeCloudflarePagesConfigHints(input: unknown, fallback: CloudflarePagesConfigHints = {}): CloudflarePagesConfigHints {
+function normalizeCloudflarePagesConfigHints(input: any, fallback: CloudflarePagesConfigHints = {}): CloudflarePagesConfigHints {
   const hasSource = Boolean(input && typeof input === 'object');
   const source = (hasSource ? input : {}) as CloudflarePagesConfigHints;
   const prior = (!hasSource && fallback && typeof fallback === 'object' ? fallback : {}) as CloudflarePagesConfigHints;
@@ -300,7 +300,7 @@ export async function buildDeployFilePlan(projectsRoot: string, projectId: strin
     let projectFile;
     try {
       projectFile = await readProjectFile(projectsRoot, projectId, safePath, options.metadata);
-    } catch (err) {
+    } catch (err: any) {
       if (isErrnoException(err) && err.code === 'ENOENT') {
         missing.push(safePath);
         continue;
@@ -357,7 +357,7 @@ export async function buildDeployFileSet(projectsRoot: string, projectId: string
 
 async function addVisibleProjectFilesToDeployPlan(
   files: Map<string, DeployFile>,
-  input: { projectsRoot: string; projectId: string; metadata?: unknown },
+  input: { projectsRoot: string; projectId: string; metadata?: any },
 ) {
   if (isLinkedFolderProject(input.metadata)) return;
   const projectFiles = await listFiles(input.projectsRoot, input.projectId, { metadata: input.metadata });
@@ -378,11 +378,11 @@ async function addVisibleProjectFilesToDeployPlan(
   }
 }
 
-function isLinkedFolderProject(metadata: unknown) {
+function isLinkedFolderProject(metadata: any) {
   return Boolean(
     metadata
       && typeof metadata === 'object'
-      && typeof (metadata as { baseDir?: unknown }).baseDir === 'string',
+      && typeof (metadata as { baseDir?: any }).baseDir === 'string',
   );
 }
 
@@ -468,7 +468,7 @@ export async function listCloudflarePagesZones(config: DeployConfig) {
   };
 }
 
-export async function deployToCloudflarePages(input: { config: DeployConfig; files: DeployFile[]; projectId?: string; cloudflarePages?: unknown; priorMetadata?: JsonObject | undefined; target?: 'preview' | 'production' }) {
+export async function deployToCloudflarePages(input: { config: DeployConfig; files: DeployFile[]; projectId?: string; cloudflarePages?: any; priorMetadata?: JsonObject | undefined; target?: 'preview' | 'production' }) {
   const {
     config,
     files,
@@ -557,13 +557,13 @@ export async function deployToCloudflarePages(input: { config: DeployConfig; fil
   };
 }
 
-function normalizeDeploymentLinkStatus(status: unknown): DeployLinkStatus {
+function normalizeDeploymentLinkStatus(status: any): DeployLinkStatus {
   return status === 'ready' || status === 'protected' || status === 'failed'
     ? status
     : 'link-delayed';
 }
 
-function normalizeCloudflarePagesDeploySelection(input: unknown): CloudflarePagesDeploySelection | null {
+function normalizeCloudflarePagesDeploySelection(input: any): CloudflarePagesDeploySelection | null {
   if (!input || typeof input !== 'object') return null;
   const source = input as JsonObject;
   const rawZoneId = typeof source.zoneId === 'string' ? source.zoneId.trim() : '';
@@ -637,7 +637,7 @@ async function setupCloudflarePagesCustomDomain({ config, projectId, selection, 
       marker,
       priorMetadata,
     });
-  } catch (err) {
+  } catch (err: any) {
     const details = err instanceof DeployError && err.details && typeof err.details === 'object'
       ? err.details
       : {};
@@ -657,7 +657,7 @@ async function setupCloudflarePagesCustomDomain({ config, projectId, selection, 
   let domain;
   try {
     domain = await ensureCloudflarePagesDomain(config, selection.hostname);
-  } catch (err) {
+  } catch (err: any) {
     const details = err instanceof DeployError && err.details && typeof err.details === 'object'
       ? err.details
       : {};
@@ -745,7 +745,7 @@ async function ensureCloudflarePagesCnameRecord({ config, selection, target, mar
       dnsOwnership: 'marked',
       marker,
     };
-  } catch (err) {
+  } catch (err: any) {
     const racedRecord = await maybeReuseCloudflarePagesCnameAfterDuplicate({
       err,
       config,
@@ -769,7 +769,7 @@ async function ensureCloudflarePagesCnameRecord({ config, selection, target, mar
         dnsOwnership: 'unmarked',
         marker,
       };
-    } catch (retryErr) {
+    } catch (retryErr: any) {
       const racedRetryRecord = await maybeReuseCloudflarePagesCnameAfterDuplicate({
         err: retryErr,
         config,
@@ -818,7 +818,7 @@ function cloudflarePagesDnsConflictError(selection: CloudflarePagesDeploySelecti
   );
 }
 
-async function maybeReuseCloudflarePagesCnameAfterDuplicate({ err, config, selection, targetHost, marker }: { err: unknown; config: DeployConfig; selection: CloudflarePagesDeploySelection; targetHost: string; marker: string }) {
+async function maybeReuseCloudflarePagesCnameAfterDuplicate({ err, config, selection, targetHost, marker }: { err: any; config: DeployConfig; selection: CloudflarePagesDeploySelection; targetHost: string; marker: string }) {
   if (!(err instanceof DeployError) || !isCloudflareAlreadyExists(err.details || err.message)) return null;
   const racedRecords = await listCloudflareDnsRecords(config, selection.zoneId, selection.hostname);
   const exact = findExactCloudflarePagesCname(racedRecords, selection, targetHost);
@@ -934,7 +934,7 @@ export async function readCloudflarePagesDomain(config: DeployConfig, hostname: 
   return findCloudflarePagesDomain(config, hostname);
 }
 
-function normalizeCloudflarePagesDomainStatus(status: unknown) {
+function normalizeCloudflarePagesDomainStatus(status: any) {
   const value = String(status || '').toLowerCase();
   if (value === 'active') return 'active';
   if (value === 'error' || value === 'blocked' || value === 'deactivated') return 'failed';
@@ -1026,7 +1026,7 @@ async function ensureCloudflarePagesProject(config: DeployConfig) {
   return created?.result ?? created;
 }
 
-function isCloudflarePagesProjectAlreadyExists(body: unknown) {
+function isCloudflarePagesProjectAlreadyExists(body: any) {
   const text = JSON.stringify(body || {}).toLowerCase();
   return (
     text.includes('already exists') ||
@@ -1257,7 +1257,7 @@ export function rewriteCssReferences(css: string, baseDir: string) {
     });
 }
 
-export function resolveReferencedPath(raw: unknown, baseDir: string) {
+export function resolveReferencedPath(raw: any, baseDir: string) {
   if (typeof raw !== 'string') return null;
   const trimmed = raw.trim();
   if (!trimmed || trimmed.startsWith('#')) return null;
@@ -1307,7 +1307,7 @@ export const DEPLOY_PREFLIGHT_LARGE_ASSET_BYTES = 4 * 1024 * 1024;
 export const DEPLOY_PREFLIGHT_LARGE_BUNDLE_BYTES = 75 * 1024 * 1024;
 export const DEPLOY_PREFLIGHT_LARGE_HTML_BYTES = 1 * 1024 * 1024;
 
-function isExternalUrl(value: unknown) {
+function isExternalUrl(value: any) {
   if (typeof value !== 'string') return false;
   const trimmed = value.trim();
   if (!trimmed) return false;
@@ -1491,7 +1491,7 @@ export async function prepareDeployPreflight(projectsRoot: string, projectId: st
   };
 }
 
-export function injectDeployHookScript(html: string, scriptUrl: unknown) {
+export function injectDeployHookScript(html: string, scriptUrl: any) {
   const normalized = normalizeDeployHookScriptUrl(scriptUrl);
   if (!normalized) return html;
 
@@ -1506,7 +1506,7 @@ export function injectDeployHookScript(html: string, scriptUrl: unknown) {
   return `${html}${tag}`;
 }
 
-export function normalizeDeployHookScriptUrl(raw: unknown) {
+export function normalizeDeployHookScriptUrl(raw: any) {
   if (typeof raw !== 'string') return '';
   const trimmed = raw.trim();
   if (!trimmed) return '';
@@ -1519,7 +1519,7 @@ export function normalizeDeployHookScriptUrl(raw: unknown) {
   }
 }
 
-function escapeHtmlAttribute(value: unknown) {
+function escapeHtmlAttribute(value: any) {
   return String(value)
     .replace(/&/g, '&amp;')
     .replace(/"/g, '&quot;')
@@ -1673,7 +1673,7 @@ async function pollVercelDeployment(config: DeployConfig, id: string) {
 }
 
 export async function waitForReachableDeploymentUrl(
-  urls: unknown[],
+  urls: any[],
   { timeoutMs = 60_000, intervalMs = 2_000, providerLabel = 'Deployment provider' } = {},
 ) {
   const candidates = [...new Set((urls || []).map(normalizeDeploymentUrl).filter(Boolean))];
@@ -1720,7 +1720,7 @@ export async function waitForReachableDeploymentUrl(
   };
 }
 
-export async function checkDeploymentUrl(url: unknown, { timeoutMs = 8_000 }: { timeoutMs?: number } = {}): Promise<DeploymentUrlCheck> {
+export async function checkDeploymentUrl(url: any, { timeoutMs = 8_000 }: { timeoutMs?: number } = {}): Promise<DeploymentUrlCheck> {
   const normalized = normalizeDeploymentUrl(url);
   if (!normalized) {
     return { reachable: false, statusMessage: 'Deployment URL is empty.' };
@@ -1766,7 +1766,7 @@ async function requestDeploymentUrl(url: string, method: 'HEAD' | 'GET', timeout
       statusCode: resp.status,
       statusMessage: `Public link returned HTTP ${resp.status}.`,
     };
-  } catch (err) {
+  } catch (err: any) {
     return {
       reachable: false,
       statusMessage: `Public link is not reachable yet: ${errorMessage(err, String(err))}`,
@@ -1804,7 +1804,7 @@ export function deploymentUrlCandidates(...responses: MaybeJsonObject[]) {
   return [...new Set(urls.map(normalizeDeploymentUrl).filter(Boolean))];
 }
 
-export function normalizeDeploymentUrl(url: unknown) {
+export function normalizeDeploymentUrl(url: any) {
   if (typeof url !== 'string') return '';
   const trimmed = url.trim();
   if (!trimmed) return '';
@@ -1932,7 +1932,7 @@ function cloudflareError(json: JsonObject, status: number, fallback: string) {
   return new DeployError(message, status, json);
 }
 
-function isCloudflareAlreadyExists(body: unknown) {
+function isCloudflareAlreadyExists(body: any) {
   const text = JSON.stringify(body || {}).toLowerCase();
   return (
     text.includes('already exists') ||
@@ -1944,7 +1944,7 @@ function isCloudflareAlreadyExists(body: unknown) {
   );
 }
 
-function isCloudflareCommentError(value: unknown) {
+function isCloudflareCommentError(value: any) {
   return /comment/i.test(typeof value === 'string' ? value : JSON.stringify(value || {}));
 }
 
@@ -1965,7 +1965,7 @@ function deploymentUrl(json: JsonObject | null | undefined) {
   return /^https?:\/\//i.test(url) ? url : `https://${url}`;
 }
 
-function hostnameFromUrl(raw: unknown) {
+function hostnameFromUrl(raw: any) {
   const normalized = normalizeDeploymentUrl(raw);
   if (!normalized) return '';
   try {
@@ -1975,7 +1975,7 @@ function hostnameFromUrl(raw: unknown) {
   }
 }
 
-function normalizeHostname(raw: unknown) {
+function normalizeHostname(raw: any) {
   return String(raw || '')
     .trim()
     .toLowerCase()
@@ -1984,17 +1984,17 @@ function normalizeHostname(raw: unknown) {
     .replace(/\.$/, '');
 }
 
-function normalizeCloudflareZoneName(raw: unknown) {
+function normalizeCloudflareZoneName(raw: any) {
   return normalizeHostname(raw);
 }
 
-function isValidCloudflareZoneName(raw: unknown) {
+function isValidCloudflareZoneName(raw: any) {
   const name = normalizeCloudflareZoneName(raw);
   if (!name || name.length > 253 || name.includes('..')) return false;
   return name.split('.').every((label) => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label));
 }
 
-function normalizeCloudflareDomainPrefix(raw: unknown) {
+function normalizeCloudflareDomainPrefix(raw: any) {
   const prefix = String(raw || '').trim().toLowerCase();
   if (!prefix || prefix === '@' || prefix.includes('.') || prefix.includes('*')) return '';
   return /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(prefix) ? prefix : '';
@@ -2004,19 +2004,19 @@ function cloudflarePagesDnsMarker(projectId: string, projectName: string, pagesT
   return `od:cfp:${shortCloudflareHash(projectId || projectName)}:${shortCloudflareHash(pagesTarget || projectName)}`;
 }
 
-function shortCloudflareHash(value: unknown) {
+function shortCloudflareHash(value: any) {
   return blake3Hash(String(value || '')).toString('hex').slice(0, 12);
 }
 
-function safeVercelProjectName(raw: unknown) {
+function safeVercelProjectName(raw: any) {
   return safeProjectLabel(raw, 80) || `od-${randomUUID().slice(0, 8)}`;
 }
 
-function safeDnsLabel(raw: unknown) {
+function safeDnsLabel(raw: any) {
   return safeProjectLabel(raw, 63);
 }
 
-function safeProjectLabel(raw: unknown, maxLength: number) {
+function safeProjectLabel(raw: any, maxLength: number) {
   return String(raw)
     .normalize('NFKD')
     .toLowerCase()

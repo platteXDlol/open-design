@@ -237,7 +237,7 @@ export function attachPiRpcSession({
   });
 
   // ---- Outbound: send new_session (if parentSession provided) then prompt via RPC ----
-  stdin.on('error', (err: unknown) => {
+  stdin.on('error', (err: any) => {
     if (errorCode(err) !== 'EPIPE') {
       fail(`stdin: ${errorMessage(err)}`);
     }
@@ -297,7 +297,7 @@ export function attachPiRpcSession({
           mimeType,
         });
         totalBytes += stat.size;
-      } catch (_err: unknown) {
+      } catch (_err: any) {
         // Skip unreadable images rather than failing the entire run.
       }
     }
@@ -323,7 +323,7 @@ export function attachPiRpcSession({
   }
 
   // ---- Inbound: parse stdout events ----
-  const parser = createJsonLineStream((raw: unknown) => {
+  const parser = createJsonLineStream((raw: any) => {
     if (!isRecord(raw)) return;
     // Once finished (agent_end or abort), stop processing — the run is
     // over, so no more agent events should be emitted. We still drain
@@ -372,7 +372,7 @@ export function attachPiRpcSession({
       // after a grace period.
       try {
         stdin.end();
-      } catch (err: unknown) {
+      } catch (err: any) {
         fail(`stdin close: ${errorMessage(err)}`);
       }
       // Grace period before SIGTERM. Configurable via PI_GRACEFUL_SHUTDOWN_MS
@@ -387,12 +387,12 @@ export function attachPiRpcSession({
   stdout.on('data', (chunk: Buffer | string) => {
     try {
       parser.feed(typeof chunk === 'string' ? chunk : chunk.toString('utf8'));
-    } catch (err) {
+    } catch (err: any) {
       fail(`parser: ${errorMessage(err)}`);
     }
   });
   stdout.on('close', () => parser.flush());
-  child.on('error', (err: unknown) => fail(errorMessage(err)));
+  child.on('error', (err: any) => fail(errorMessage(err)));
 
   return {
     hasFatalError() {

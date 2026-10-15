@@ -81,7 +81,7 @@ export function registerDesignSystemToolRoutes(
       }
 
       res.json({ file });
-    } catch (error) {
+    } catch (error: any) {
       sendApiError(res, 500, 'INTERNAL_ERROR', error instanceof Error ? error.message : String(error));
     }
   });

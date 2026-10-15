@@ -18,7 +18,7 @@ interface LocalDaemonValidationError {
   details: Record<string, string>;
 }
 
-export function normalizeLocalAuthority(value: unknown): LocalAuthority | null {
+export function normalizeLocalAuthority(value: any): LocalAuthority | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   if (!trimmed || /[\s/@]/.test(trimmed) || trimmed.includes(',')) return null;
@@ -33,7 +33,7 @@ export function normalizeLocalAuthority(value: unknown): LocalAuthority | null {
   }
 }
 
-export function isLoopbackHostname(hostname: unknown): boolean {
+export function isLoopbackHostname(hostname: any): boolean {
   const normalized = String(hostname || '').toLowerCase().replace(/^\[|\]$/g, '').replace(/\.$/, '');
   if (normalized === 'localhost') return true;
   if (normalized === '::1' || normalized === '0:0:0:0:0:0:0:1') return true;
@@ -41,7 +41,7 @@ export function isLoopbackHostname(hostname: unknown): boolean {
   return false;
 }
 
-export function isLoopbackPeerAddress(address: unknown): boolean {
+export function isLoopbackPeerAddress(address: any): boolean {
   if (typeof address !== 'string') return false;
   const normalized = address.trim().toLowerCase().replace(/^\[|\]$/g, '');
   if (!normalized) return false;
@@ -51,7 +51,7 @@ export function isLoopbackPeerAddress(address: unknown): boolean {
   return false;
 }
 
-export function localOriginFromHeader(value: unknown): string | null {
+export function localOriginFromHeader(value: any): string | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   if (!trimmed || trimmed === 'null' || trimmed.includes(',')) return null;

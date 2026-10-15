@@ -247,13 +247,13 @@ async function finalizeCandidate(input: {
 
 /** Only the delivery owner may recover from an internal finalizer failure. */
 export class DeliverableSyntaxInternalError extends Error {
-  constructor(readonly outcome: Extract<DeliverableSyntaxFinalizationOutcome, { action: 'warn' }>, cause: unknown) {
+  constructor(readonly outcome: Extract<DeliverableSyntaxFinalizationOutcome, { action: 'warn' }>, cause: any) {
     super('Syntax finalizer internal error', { cause });
     this.name = 'DeliverableSyntaxInternalError';
   }
 }
 
-function isExpectedOperationalError(error: unknown): boolean {
+function isExpectedOperationalError(error: any): boolean {
   return error instanceof Error && !(error instanceof TypeError)
     && !(error instanceof RangeError) && !(error instanceof ReferenceError)
     && 'code' in error && ['EIO', 'ENOENT', 'EACCES', 'EPERM', 'ENOSPC', 'EROFS', 'EBUSY', 'EMFILE', 'ENFILE']
@@ -271,7 +271,7 @@ export async function finalizeDeliverableSyntax(
   let result: DeliverableSyntaxFinalizationOutcome;
   try {
     result = await finalizeCandidate(input, summary, progress);
-  } catch (error) {
+  } catch (error: any) {
     const operational = isExpectedOperationalError(error);
     result = {
       action: 'warn', reason: operational ? 'check_incomplete' : 'internal_error', location: input.entryFile ?? '',

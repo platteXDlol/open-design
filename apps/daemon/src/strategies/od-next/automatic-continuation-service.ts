@@ -24,7 +24,7 @@ export type OdNextComplexProductionResolver = (input: {
   runId: string;
   agentId: string;
   plan: OpenDesignPlanContractV2;
-  runtimeCapabilitySnapshot?: unknown;
+  runtimeCapabilitySnapshot?: any;
 }) => OdNextComplexRuntimeEvidence | undefined | Promise<OdNextComplexRuntimeEvidence | undefined>;
 
 interface AutomaticContinuationTask {
@@ -42,7 +42,7 @@ interface AutomaticContinuationRun {
   id: string;
   status: string;
   createdAt: number;
-  events: Array<{ event: string; data: unknown; timestamp?: number }>;
+  events: Array<{ event: string; data: any; timestamp?: number }>;
   preflightAgentCliVersion?: string | null;
 }
 
@@ -59,7 +59,7 @@ export async function resolveAutomaticContinuationEvidence(input: {
   localSyntheticCanary: boolean;
   executionPreflightResolver?: OdNextExecutionPreflightResolver | null;
   complexProductionResolver?: OdNextComplexProductionResolver | null;
-  runtimeCapabilitySnapshot?: unknown;
+  runtimeCapabilitySnapshot?: any;
 }): Promise<{
   executionPreflight?: OdNextExecutionPreflightInput;
   complexRuntimeEvidence?: OdNextComplexRuntimeEvidence;

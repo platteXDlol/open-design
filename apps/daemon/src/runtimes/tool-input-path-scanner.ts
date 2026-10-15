@@ -116,7 +116,7 @@ const MAX_KEY_CHARS = 64;
 /** Give up rather than scan an unbounded argument blob. */
 const SCAN_BUDGET_BYTES = 1 << 18;
 
-export function isFileWriteToolName(name: unknown): name is string {
+export function isFileWriteToolName(name: any): name is string {
   return typeof name === 'string' && FILE_WRITE_TOOLS.has(name);
 }
 
@@ -151,7 +151,7 @@ export interface ToolInputPathScanner {
  * A `null` return is the caller's signal to not scan at all, so non-file tools
  * cost nothing beyond one set lookup for the whole call.
  */
-export function createToolInputPathScanner(toolName: unknown): ToolInputPathScanner | null {
+export function createToolInputPathScanner(toolName: any): ToolInputPathScanner | null {
   if (!isFileWriteToolName(toolName)) return null;
   return new JsonPathScanner(WHOLE_FILE_WRITE_TOOLS.has(toolName.toLowerCase()));
 }

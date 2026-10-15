@@ -64,10 +64,10 @@ export interface CodexPetListResult {
 }
 
 interface PetManifest {
-  id?: unknown;
-  displayName?: unknown;
-  description?: unknown;
-  spritesheetPath?: unknown;
+  id?: any;
+  displayName?: any;
+  description?: any;
+  spritesheetPath?: any;
 }
 
 interface SpritesheetPick {
@@ -126,7 +126,7 @@ async function scanRoot(
     let manifest: PetManifest = {};
     try {
       const raw = await readFile(manifestPath, 'utf8');
-      const parsed: unknown = JSON.parse(raw);
+      const parsed: any = JSON.parse(raw);
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
         manifest = parsed as PetManifest;
       }
@@ -211,7 +211,7 @@ export async function readCodexPetSpritesheet(
     let manifest: PetManifest = {};
     try {
       const raw = await readFile(path.join(dir, 'pet.json'), 'utf8');
-      const parsed: unknown = JSON.parse(raw);
+      const parsed: any = JSON.parse(raw);
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
         manifest = parsed as PetManifest;
       }
@@ -257,7 +257,7 @@ async function pickSpritesheet(dir: string, manifest: PetManifest): Promise<Spri
 // Mirrors the pet folder names produced by the upstream skill
 // (lowercase + hyphens), but also accepts alphanumerics + a small set
 // of safe punctuation to handle pets that users authored manually.
-function sanitizeId(value: unknown): string {
+function sanitizeId(value: any): string {
   const collapsed = String(value ?? '')
     .replace(/[^a-zA-Z0-9._-]/g, '')
     .replace(/\.+/g, '.')
@@ -267,7 +267,7 @@ function sanitizeId(value: unknown): string {
   return collapsed;
 }
 
-function pickString(value: unknown): string | undefined {
+function pickString(value: any): string | undefined {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   return trimmed ? trimmed : undefined;

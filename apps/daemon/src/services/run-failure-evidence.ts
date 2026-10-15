@@ -15,7 +15,7 @@ const POLICY_REASONS = new Set<TrackingRunPolicyReason>([
   'amr_tier_upgrade_required', 'entitlement_required',
 ]);
 
-function record(value: unknown): Record<string, unknown> {
+function record(value: any): Record<string, unknown> {
   return value && typeof value === 'object' ? value as Record<string, unknown> : {};
 }
 

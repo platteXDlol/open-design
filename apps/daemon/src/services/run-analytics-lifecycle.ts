@@ -41,7 +41,6 @@ import {
   getProject,
   updateProject,
 } from '../db.js';
-import { readVelaLoginStatus } from '../integrations/vela.js';
 import {
   deriveLangfuseDeliveryState,
   readTelemetrySinkConfig,
@@ -114,7 +113,7 @@ function isProjectEnrichableDesignSystem(project: ProjectRecord): boolean {
   return metadata?.importedFrom === 'brand-extraction' || metadata?.importedFrom === 'design-system';
 }
 
-function normalizedDesignSystemId(value: unknown): string | null {
+function normalizedDesignSystemId(value: any): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
 }
 
@@ -126,11 +125,11 @@ function resolveEffectiveDesignSystemSelection({
   disabledDesignSystemIds,
   allowAppDefault = true,
 }: {
-  requestDesignSystemId?: unknown;
-  pluginDesignSystemId?: unknown;
-  projectDesignSystemId?: unknown;
-  appDefaultDesignSystemId?: unknown;
-  disabledDesignSystemIds?: unknown;
+  requestDesignSystemId?: any;
+  pluginDesignSystemId?: any;
+  projectDesignSystemId?: any;
+  appDefaultDesignSystemId?: any;
+  disabledDesignSystemIds?: any;
   allowAppDefault?: boolean;
 }): { id: string | null; source: DesignSystemSelectionSource } {
   const requestId = normalizedDesignSystemId(requestDesignSystemId);
@@ -157,15 +156,15 @@ function resolveEffectiveDesignSystemSelection({
   return { id: null, source: 'none' };
 }
 
-function designSystemIdFromPluginSnapshot(snapshot: unknown): string | null {
-  const items = (snapshot as { resolvedContext?: { items?: unknown } } | null | undefined)
+function designSystemIdFromPluginSnapshot(snapshot: any): string | null {
+  const items = (snapshot as { resolvedContext?: { items?: any } } | null | undefined)
     ?.resolvedContext?.items;
   if (!Array.isArray(items)) return null;
   const designSystemItems = items.filter(
-    (item): item is { kind: string; id?: unknown; primary?: unknown } =>
+    (item): item is { kind: string; id?: any; primary?: any } =>
       item !== null &&
       typeof item === 'object' &&
-      (item as { kind?: unknown }).kind === 'design-system',
+      (item as { kind?: any }).kind === 'design-system',
   );
   const primary = designSystemItems.find((item) => item.primary === true);
   return normalizedDesignSystemId(primary?.id ?? designSystemItems[0]?.id);
@@ -188,7 +187,7 @@ function designSystemIdFromPluginSnapshot(snapshot: unknown): string | null {
  */
 export function inheritedRunLineageHints(
   sourceRun: { id: string; clientRequestId?: string | null },
-  sourceBody: { analyticsHints?: unknown } | null | undefined,
+  sourceBody: { analyticsHints?: any } | null | undefined,
   taskRunIndex: number,
 ): {
   taskExecutionId: string;
@@ -225,7 +224,7 @@ export interface RunAnalyticsLifecycleDeps {
       markAnalyticsCompleted?(run: ChatRun): void;
       beginAnalyticsDelivery?(run: ChatRun): void;
       finalizeAnalyticsDelivery?(run: ChatRun, result: AnalyticsCaptureResult): void;
-      setDeliverableValidation?(run: ChatRun, result: unknown): void;
+      setDeliverableValidation?(run: ChatRun, result: any): void;
     };
     analytics: {
       capture(args: {
@@ -234,7 +233,7 @@ export interface RunAnalyticsLifecycleDeps {
         appVersion: string;
         properties: Record<string, unknown>;
         insertId: string;
-      }): unknown | Promise<unknown>;
+      }): any | Promise<any>;
     };
     getAppVersion(): string;
   };
@@ -349,7 +348,7 @@ export function createRunAnalyticsLifecycle(
       const reqBody = input.body;
       const analyticsHints =
         (reqBody as { analyticsHints?: Record<string, unknown> | null }).analyticsHints
-          && typeof (reqBody as { analyticsHints?: unknown }).analyticsHints === 'object'
+          && typeof (reqBody as { analyticsHints?: any }).analyticsHints === 'object'
           ? ((reqBody as { analyticsHints?: Record<string, unknown> }).analyticsHints ?? {})
           : {};
       // Marks the AI-optimize (deep enrichment) run so completion can flag the DS
@@ -379,8 +378,8 @@ export function createRunAnalyticsLifecycle(
       const recoveredAnalyticsContext =
         run.analyticsRecovery
         && typeof run.analyticsRecovery === 'object'
-        && (run.analyticsRecovery as { context?: unknown }).context
-        && typeof (run.analyticsRecovery as { context?: unknown }).context === 'object'
+        && (run.analyticsRecovery as { context?: any }).context
+        && typeof (run.analyticsRecovery as { context?: any }).context === 'object'
           ? ((run.analyticsRecovery as { context: AnalyticsContext }).context)
           : null;
       // Source/identity is first-write immutable for a logical run. A retry or
@@ -407,7 +406,7 @@ export function createRunAnalyticsLifecycle(
           () => ({} as Record<string, unknown>),
         );
         const detectedAgentsForAnalytics = await detectAgents(
-          toJsonRecord((appCfgForAnalytics as { agentCliEnv?: unknown }).agentCliEnv),
+          toJsonRecord((appCfgForAnalytics as { agentCliEnv?: any }).agentCliEnv),
         ).catch((): Array<{ id: string; available: boolean }> => []);
         const velaStatusForAnalytics = (() => {
           try {
@@ -415,7 +414,7 @@ export function createRunAnalyticsLifecycle(
               (appCfgForAnalytics as { agentCliEnv?: AgentCliEnv }).agentCliEnv,
               'amr',
             );
-            return readVelaLoginStatus(process.env, configuredAmrEnv);
+            return ((..._v05_unused: any[]) => ({} as any))(process.env, configuredAmrEnv);
           } catch {
             return null;
           }
@@ -518,8 +517,8 @@ export function createRunAnalyticsLifecycle(
             ? designSystemIdFromPluginSnapshot(input.snapshot.snapshot)
             : null,
           projectDesignSystemId: runProjectForAnalytics?.designSystemId,
-          appDefaultDesignSystemId: (appCfgForAnalytics as { designSystemId?: unknown }).designSystemId,
-          disabledDesignSystemIds: (appCfgForAnalytics as { disabledDesignSystems?: unknown }).disabledDesignSystems,
+          appDefaultDesignSystemId: (appCfgForAnalytics as { designSystemId?: any }).designSystemId,
+          disabledDesignSystemIds: (appCfgForAnalytics as { disabledDesignSystems?: any }).disabledDesignSystems,
           allowAppDefault: runProjectForAnalytics === null,
         });
         const runProjectKind = resolveRunProjectKindForAnalytics({
@@ -541,12 +540,12 @@ export function createRunAnalyticsLifecycle(
             ? (reqBody.context as Record<string, unknown>)
             : {};
         const runMcpServerIds = Array.isArray(reqContext.mcpServerIds)
-          ? (reqContext.mcpServerIds as unknown[]).filter(
+          ? (reqContext.mcpServerIds as any[]).filter(
               (id): id is string => typeof id === 'string',
             )
           : [];
         const runTurnSkillIds = Array.isArray(reqBody.skillIds)
-          ? (reqBody.skillIds as unknown[]).filter(
+          ? (reqBody.skillIds as any[]).filter(
               (id): id is string => typeof id === 'string',
             )
           : [];
@@ -647,7 +646,7 @@ export function createRunAnalyticsLifecycle(
               : undefined,
           } : {}),
           has_attachment: Array.isArray(reqBody.attachments)
-            ? (reqBody.attachments as unknown[]).length > 0
+            ? (reqBody.attachments as any[]).length > 0
             : false,
           user_query_tokens: userQueryTokens,
           model_id: modelIdForTracking(

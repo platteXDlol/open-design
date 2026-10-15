@@ -5,7 +5,7 @@ export type OutboxKind = 'object' | 'feedback';
 export interface OutboxJob {
   key: string; kind: OutboxKind; payload: string; attempts: number; createdAt: number;
 }
-export type DeliveryAttempt = { status: 'materialized' | 'uploaded' | 'accepted' | 'retry' | 'terminal'; reason?: string; receipt?: unknown };
+export type DeliveryAttempt = { status: 'materialized' | 'uploaded' | 'accepted' | 'retry' | 'terminal'; reason?: string; receipt?: any };
 
 /** Additive, bounded evidence storage. Product tables and live files are never mutated. */
 export class TelemetryOutbox {
@@ -28,7 +28,7 @@ export class TelemetryOutbox {
     `);
   }
   private table(kind: OutboxKind) { return kind === 'object' ? 'telemetry_object_outbox_v1' : 'telemetry_feedback_outbox_v1'; }
-  enqueue(kind: OutboxKind, key: string, payload: unknown, snapshots: Buffer[] = [], now = Date.now()): 'queued' | 'existing' | 'capacity_exceeded' {
+  enqueue(kind: OutboxKind, key: string, payload: any, snapshots: Buffer[] = [], now = Date.now()): 'queued' | 'existing' | 'capacity_exceeded' {
     return this.db.transaction(() => {
       const table = this.table(kind);
       if (this.db.prepare(`SELECT key FROM ${table} WHERE key = ?`).get(key)) return 'existing' as const;
@@ -65,11 +65,11 @@ export class TelemetryOutbox {
   inspect(kind: OutboxKind, key: string): { status: string; attempts: number; last_reason: string | null } | undefined {
     return this.db.prepare(`SELECT status, attempts, last_reason FROM ${this.table(kind)} WHERE key = ?`).get(key) as ReturnType<TelemetryOutbox['inspect']>;
   }
-  read<T>(kind: OutboxKind, key: string): { payload: T; receipt: unknown } | undefined {
+  read<T>(kind: OutboxKind, key: string): { payload: T; receipt: any } | undefined {
     const row = this.db.prepare(`SELECT payload, receipt FROM ${this.table(kind)} WHERE key = ?`).get(key) as { payload: string; receipt: string | null } | undefined;
     return row ? { payload: JSON.parse(row.payload) as T, receipt: row.receipt ? JSON.parse(row.receipt) : undefined } : undefined;
   }
-  checkpointReceipt(kind: OutboxKind, key: string, receipt: unknown): void {
+  checkpointReceipt(kind: OutboxKind, key: string, receipt: any): void {
     this.db.prepare(`UPDATE ${this.table(kind)} SET receipt = ? WHERE key = ?`).run(JSON.stringify(receipt), key);
   }
   objectJobsForTask(taskTraceId: string): Array<{ key: string; payload: string; receipt: string | null }> {

@@ -74,7 +74,7 @@ function getRow(db: SqliteDb, sql: string, param: string): Record<string, unknow
 function assignCount<K extends keyof RunStorageAnalytics>(
   out: RunStorageAnalytics,
   key: K,
-  value: unknown,
+  value: any,
 ): void {
   if (typeof value === 'number' && Number.isSafeInteger(value) && value >= 0) {
     (out as Record<string, unknown>)[key] = value;

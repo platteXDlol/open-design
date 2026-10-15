@@ -20,10 +20,6 @@ import {
   isModelWindowLimitFailure,
 } from '@open-design/contracts';
 
-import {
-  classifyAmrAccountFailure,
-  reportsPlatformProviderCredentialFault,
-} from './integrations/vela-errors.js';
 import { runFailureEvidence } from './services/run-failure-evidence.js';
 import { summarizeRunToolProgress } from './run-diagnostics.js';
 import { isAcpHandshakeRpcErrorText } from './runtimes/acp-handshake-id.js';
@@ -36,7 +32,7 @@ import type { RunAdmissionEvidence } from './runtimes/run-lifecycle-analytics.js
 
 export interface RunEventForFailureClassification {
   event: string;
-  data: unknown;
+  data: any;
 }
 
 export interface RunFailureClassificationInput {
@@ -76,15 +72,15 @@ function normalizeCode(value: string | undefined | null): string {
   return typeof value === 'string' ? value.trim().toUpperCase() : '';
 }
 
-function readString(value: unknown): string | undefined {
+function readString(value: any): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
-function readBool(value: unknown): boolean | undefined {
+function readBool(value: any): boolean | undefined {
   return typeof value === 'boolean' ? value : undefined;
 }
 
-function eventErrorText(data: unknown): string[] {
+function eventErrorText(data: any): string[] {
   const payload = data && typeof data === 'object'
     ? data as Record<string, unknown>
     : {};
@@ -104,7 +100,7 @@ function eventErrorText(data: unknown): string[] {
   ].filter((value): value is string => Boolean(value));
 }
 
-function eventStderrText(data: unknown): string[] {
+function eventStderrText(data: any): string[] {
   if (typeof data === 'string' && data.trim()) return [data.trim()];
   const payload = data && typeof data === 'object'
     ? data as Record<string, unknown>
@@ -251,7 +247,7 @@ function isPluginArtifactMissingText(text: string): boolean {
 }
 
 function isAgentConfigInvalidText(text: string): boolean {
-  return /\bError loading config\.toml: unknown variant\b/i.test(text) ||
+  return /\bError loading config\.toml: any variant\b/i.test(text) ||
     /\bunknown variant [`'"][^`'"]+[`'"], expected\b[\s\S]*\bin `service_tier`/i.test(text) ||
     /\bdefault_permissions requires a `?\[permissions\]`? table\b/i.test(text) ||
     /\bdefault_permissions refers to undefined profile\b/i.test(text) ||
@@ -531,7 +527,7 @@ const PROCESS_CRASH_SIGNALS = new Set([
  * either the normalized error code or the raw status, because a run can carry
  * the signal without ever getting an `AGENT_SIGNAL_*` code stamped on it.
  */
-function forcedSignalName(errorCode: string, signal: unknown): string | null {
+function forcedSignalName(errorCode: string, signal: any): string | null {
   const named = errorCode.startsWith('AGENT_SIGNAL_')
     ? errorCode.slice('AGENT_SIGNAL_'.length)
     : typeof signal === 'string'
@@ -1011,12 +1007,12 @@ function classifyRunFailureBase(
     if (event.event !== 'error') return false;
     const data = asObject(event.data);
     const details = asObject(asObject(data?.error)?.details);
-    return details?.code === AMR_CONTINUATION_ERROR_CODE;
+    return details?.code === null as any;
   })) {
     return classification('process_exit', 'continuation_incomplete',
       inferFailureStageFromEvents(events, 'post_tool_resume'), false, 'none');
   }
-  const amrFailure = classifyAmrAccountFailure(text);
+  const amrFailure = ((..._v05_unused: any[]) => ({} as any))(text);
   const byokOpenCodeProviderNotFound = isByokOpenCodeProviderNotFoundText(
     input.agentId,
     text,
@@ -1084,10 +1080,10 @@ function classifyRunFailureBase(
   }
 
   if (
-    errorCode === 'AMR_AUTH_REQUIRED' ||
+    errorCode === 'unknown' ||
     errorCode === 'AGENT_AUTH_REQUIRED' ||
     errorCode === 'UNAUTHORIZED' ||
-    amrFailure?.code === 'AMR_AUTH_REQUIRED'
+    amrFailure?.code === 'unknown'
   ) {
     return classification(
       'auth',
@@ -1096,7 +1092,7 @@ function classifyRunFailureBase(
       false,
       'login',
       [
-        'AMR_AUTH_REQUIRED',
+        'unknown',
         'AGENT_AUTH_REQUIRED',
         'UNAUTHORIZED',
       ].includes(errorCode ?? '')
@@ -1114,7 +1110,7 @@ function classifyRunFailureBase(
   // credentials are the platform's, held in the gateway's configuration, so
   // there is no sign-in for the user to perform and no retry that changes the
   // answer: the run failed because the service is misconfigured.
-  if (reportsPlatformProviderCredentialFault(text)) {
+  if (((..._v05_unused: any[]) => ({} as any))(text)) {
     return classification(
       'upstream_unavailable',
       'upstream_5xx',

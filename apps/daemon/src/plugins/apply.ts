@@ -279,7 +279,7 @@ function validateInputs(manifest: PluginManifest, raw: Record<string, unknown>):
     if (provided === undefined || provided === null || provided === '') {
       const fallback = field.default;
       if (fallback !== undefined && fallback !== null && fallback !== '') {
-        coerced[name] = coerceScalar(fallback as unknown);
+        coerced[name] = coerceScalar(fallback as any);
       } else if (field.required === true) {
         missing.push(name);
       }
@@ -300,7 +300,7 @@ function validateInputs(manifest: PluginManifest, raw: Record<string, unknown>):
   return { coerced, missing };
 }
 
-function coerceScalar(value: unknown): string | number | boolean {
+function coerceScalar(value: any): string | number | boolean {
   if (typeof value === 'string') return value;
   if (typeof value === 'number') return value;
   if (typeof value === 'boolean') return value;

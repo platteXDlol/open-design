@@ -21,12 +21,12 @@ export interface PersistedPlainStreamArtifact {
   artifactType: string;
   title: string;
   name: string;
-  file: unknown;
+  file: any;
 }
 
 interface RunEventLike {
   event?: string;
-  data?: unknown;
+  data?: any;
 }
 
 type SupportedArtifactExtension = '.html' | '.css' | '.svg' | '.md';
@@ -36,7 +36,7 @@ type WriteProjectFile = Parameters<typeof createProjectArtifactFile>[0]['writePr
 type ListFiles = (
   projectsRoot: string,
   projectId: string,
-  opts?: { metadata?: unknown },
+  opts?: { metadata?: any },
 ) => Promise<ProjectFile[]>;
 
 const OPEN_TAG = '<artifact';
@@ -67,7 +67,7 @@ export function plainStdoutFromRunEvents(events: readonly RunEventLike[]): strin
   let stdout = '';
   for (const rec of events) {
     if (rec?.event !== 'stdout') continue;
-    const data = rec.data as { chunk?: unknown } | null | undefined;
+    const data = rec.data as { chunk?: any } | null | undefined;
     if (typeof data?.chunk === 'string') stdout += data.chunk;
   }
   return stdout;
@@ -129,7 +129,7 @@ export async function persistPlainStreamArtifacts(options: {
   projectsRoot: string;
   projectId: string;
   stdout: string;
-  metadata?: unknown;
+  metadata?: any;
   writeProjectFile?: WriteProjectFile;
   listFiles?: ListFiles;
 }): Promise<PersistedPlainStreamArtifact[]> {
@@ -146,7 +146,7 @@ export async function persistPlainStreamArtifactList(options: {
   projectsRoot: string;
   projectId: string;
   artifacts: PlainStreamArtifact[];
-  metadata?: unknown;
+  metadata?: any;
   writeProjectFile?: WriteProjectFile;
   listFiles?: ListFiles;
 }): Promise<PersistedPlainStreamArtifact[]> {

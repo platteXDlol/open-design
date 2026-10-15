@@ -6,9 +6,9 @@ import type { PromptStackTelemetry } from '../prompt-telemetry.js';
 export type EvidenceMode = 'off' | 'observe' | 'send';
 export const evidenceMode = (value: string | undefined): EvidenceMode => value === 'observe' || value === 'send' ? value : 'off';
 type Row = Record<string, unknown>;
-const row = (value: unknown): Row => value && typeof value === 'object' && !Array.isArray(value) ? value as Row : {};
+const row = (value: any): Row => value && typeof value === 'object' && !Array.isArray(value) ? value as Row : {};
 const hash = (value: string): string => createHash('sha256').update(value).digest('hex');
-const digest = (value: unknown): string => typeof value === 'string' ? value.replace(/^sha256:/, '').toLowerCase() : '';
+const digest = (value: any): string => typeof value === 'string' ? value.replace(/^sha256:/, '').toLowerCase() : '';
 
 export interface AttachmentContextEntry {
   identity: string;
@@ -52,7 +52,7 @@ export function attachmentContext(messages: Row[], assistantIndex: number, proje
 
 export interface EvalContextInput {
   runStatus: string;
-  resultDeliveryState?: unknown;
+  resultDeliveryState?: any;
   endedWithUnfinishedWork?: boolean;
   toolErrorCount: number;
   attachments?: ReturnType<typeof attachmentContext>;

@@ -59,7 +59,7 @@ export async function scaffoldPlugin(input: ScaffoldInput): Promise<ScaffoldResu
     if (conflicts.length > 0) {
       throw new ScaffoldError(`destination ${folder} already contains ${conflicts.join(', ')}; refusing to overwrite`);
     }
-  } catch (err) {
+  } catch (err: any) {
     if (err instanceof ScaffoldError) throw err;
     // ENOENT is expected on first run; surface anything else.
     if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err;

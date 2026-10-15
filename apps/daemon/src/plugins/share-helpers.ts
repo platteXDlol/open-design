@@ -61,7 +61,7 @@ export interface SkillPluginCandidateLike {
 export interface SkillPluginCandidateInput {
   message?: string | null;
   currentPrompt?: string | null;
-  attachments?: unknown;
+  attachments?: any;
 }
 
 export interface PluginSnapshotReader {
@@ -148,7 +148,7 @@ const PLUGIN_CONTEXT_SKIP_FILES = new Set([
   'Thumbs.db',
 ]);
 
-export function normalizePluginShareAction(input: unknown): PluginShareAction | null {
+export function normalizePluginShareAction(input: any): PluginShareAction | null {
   const value = typeof input === 'string' ? input.trim() : '';
   return Object.hasOwn(PLUGIN_SHARE_ACTION_PLUGIN_IDS, value)
     ? value as PluginShareAction
@@ -449,7 +449,7 @@ export function upsertSkillPluginCandidateAssistantMessage(
 }
 
 function parseJsonObject(raw: string): JsonRecord {
-  const parsed = JSON.parse(raw) as unknown;
+  const parsed = JSON.parse(raw) as any;
   if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
     return parsed as JsonRecord;
   }

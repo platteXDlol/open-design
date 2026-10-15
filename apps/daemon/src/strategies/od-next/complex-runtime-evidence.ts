@@ -19,13 +19,13 @@ interface ComplexRunEvidenceInput {
   taskRunIndex: number;
   stage: StrategyInputStageV2;
   agentId: string;
-  capabilitySnapshot: unknown;
+  capabilitySnapshot: any;
   plan: OpenDesignPlanContractV2;
   run: {
     status: string;
     createdAt: number;
     updatedAt: number;
-    events: Array<{ event: string; data: unknown; timestamp?: number }>;
+    events: Array<{ event: string; data: any; timestamp?: number }>;
   };
 }
 

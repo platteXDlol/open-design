@@ -56,7 +56,7 @@ export interface Routine {
   context: RoutineContextSelection;
   enabled: boolean;
   nextRunAt: number | null;
-  lastRun: unknown;
+  lastRun: any;
   createdAt: number;
   updatedAt: number;
 }
@@ -136,14 +136,14 @@ class ScheduledRunPersistenceError extends Error {
   constructor(
     readonly routineId: string,
     readonly slotAt: number,
-    readonly originalError: unknown,
+    readonly originalError: any,
   ) {
     super(`Routine ${routineId} scheduled slot ${slotAt} could not be persisted`);
     this.name = 'ScheduledRunPersistenceError';
   }
 }
 
-function isScheduledRunPersistenceError(error: unknown): error is ScheduledRunPersistenceError {
+function isScheduledRunPersistenceError(error: any): error is ScheduledRunPersistenceError {
   return error instanceof ScheduledRunPersistenceError;
 }
 
@@ -603,10 +603,10 @@ export class RoutineService {
       let inserted = true;
       try {
         inserted = this.persistence.insertRun(run, options) !== false;
-      } catch (error) {
+      } catch (error: any) {
         try {
           discardUnstarted?.();
-        } catch (discardError) {
+        } catch (discardError: any) {
           if (wasScheduled) {
             throw new ScheduledRunPersistenceError(routine.id, scheduledSlotAt, discardError);
           }
@@ -620,7 +620,7 @@ export class RoutineService {
       if (!inserted) {
         try {
           discardUnstarted?.();
-        } catch (discardError) {
+        } catch (discardError: any) {
           if (wasScheduled) {
             throw new ScheduledRunPersistenceError(routine.id, scheduledSlotAt, discardError);
           }
@@ -644,15 +644,15 @@ export class RoutineService {
             agentRunId: run.agentRunId,
           });
         }
-      } catch (error) {
+      } catch (error: any) {
         // Terminate the in-memory chat run created by `handler(...)` so its
         // `completion` promise resolves instead of waiting forever on a
         // run that will never start. Surface any cleanup failure rather
         // than swallow it, but still finalize the persisted row.
-        let discardError: unknown = null;
+        let discardError: any = null;
         try {
           handlerStart.discard?.();
-        } catch (err) {
+        } catch (err: any) {
           discardError = err;
         }
         if (discardError != null) {
@@ -702,7 +702,7 @@ export class RoutineService {
         });
       try {
         handlerStart.start?.();
-      } catch (error) {
+      } catch (error: any) {
         this.persistence.updateRun(runId, {
           status: 'failed',
           completedAt: Date.now(),

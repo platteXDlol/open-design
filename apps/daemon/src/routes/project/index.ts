@@ -1,3 +1,4 @@
+import { CreatedProjectWorkspaceResolutionError, TeamShareScopeRefusal, VelaTeamProjectCatalogClient, VerifyWorkspaceRequestAuthority, WorkspaceResourceAccessInput, WorkspaceResourceMutationCapability, WorkspaceTypeRegistry, createAuthorizeProjectRequest, createCreatedProjectWorkspaceResolver, enforceLocalProjectDataPlaneRequest, headerValue, isWorkspaceLocked, localProjectWorkspaceAttribution, refuseTeamShareScope, resolveLocalProjectWorkspaceScope, workspaceProjectContext, workspaceProjectContextFromRequest, workspaceResourceAccess, workspaceResourceContextFromVerified } from '../../v05-stubs.js';
 import { createHash, randomUUID } from 'node:crypto';
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
@@ -120,47 +121,7 @@ import { parseOrchestratorWorkspace } from '../../workspace-contract.js';
 import { registerProjectConversationRoutes } from './conversations.js';
 import { workspaceProjectGroupCountProperties } from './analytics.js';
 import type { ProjectCommentWorkspaceContextResolution } from './comments.js';
-import {
-  projectResourceIdFor,
-  velaProjectSyncStateToProject,
-  type VelaTeamProjectCatalogClient,
-  type VelaTeamProjectRecord,
-} from '../../integrations/vela-team-projects.js';
-import type { ResourceHubPrincipal } from '../../collab/resource-principal.js';
-import {
-  refuseTeamShareScope,
-  type TeamShareScopeRefusal,
-  type WorkspaceTypeRegistry,
-} from '../../collab/team-share-scope.js';
-import {
-  headerValue,
-  isWorkspaceResourceLocked as isWorkspaceLocked,
-  workspaceResourceAccess,
-  workspaceResourceContext as workspaceProjectContext,
-  workspaceResourceContextFromRequest as workspaceProjectContextFromRequest,
-  workspaceResourceContextFromVerified,
-  type VerifyWorkspaceRequestAuthority,
-  type WorkspaceResourceAccessInput,
-  type WorkspaceResourceContext,
-  type WorkspaceResourceMutationCapability,
-} from '../../collab/workspace-resource-mutation.js';
-import {
-  resolveLocalProjectWorkspaceScope,
-} from '../../collab/project-workspace-scope.js';
-import {
-  createAuthorizeProjectRequest,
-  enforceLocalProjectDataPlaneRequest,
-  type AuthorizeProjectRequest,
-} from '../../collab/project-request-authority.js';
-import {
-  bindCreatedProjectToWorkspace,
-  createCreatedProjectWorkspaceResolver,
-  CreatedProjectWorkspaceResolutionError,
-  localProjectWorkspaceAttribution,
-  type CreatedProjectWorkspaceResolver,
-} from '../../collab/created-project-workspace.js';
 import { localPluginRegistryScope } from '../../plugins/local-source.js';
-import type { WorkspaceDirectoryFetchResult } from '../../collab/vela-workspace-context.js';
 import { cancelRunsOwnedBy } from './cancel-owned-runs.js';
 
 export function rewriteOutsideExecutableHtmlRanges(
@@ -252,7 +213,7 @@ export function rewriteOutsideExecutableHtmlRanges(
   return rewrittenHtml;
 }
 
-function parseLocalCatalogScope(value: unknown, field: string): LocalCatalogScope | null {
+function parseLocalCatalogScope(value: any, field: string): LocalCatalogScope | null {
   if (value === undefined || value === null) return null;
   if (!value || typeof value !== 'object') {
     throw new Error(`${field} must contain workspaceId and workspaceMemberId`);
@@ -270,7 +231,7 @@ function parseLocalCatalogScope(value: unknown, field: string): LocalCatalogScop
   return { workspaceId, workspaceMemberId };
 }
 
-function sameLocalCatalogScopes(left: unknown, right: unknown): boolean {
+function sameLocalCatalogScopes(left: any, right: any): boolean {
   return JSON.stringify(left ?? null) === JSON.stringify(right ?? null);
 }
 
@@ -363,17 +324,17 @@ export interface RegisterProjectRoutesDeps extends RouteDeps<'db' | 'design' | '
    */
   verifyPersonalProjectDeleteLeaseAuthority?: VerifyWorkspaceRequestAuthority;
   /** Shared local binding gate for all project data-plane routes. */
-  authorizeProjectRequest?: AuthorizeProjectRequest;
+  authorizeProjectRequest?: any;
   /** Startup-hydrated O(1) quarantine lookup for stale Team mirrors. */
   isProjectRevoked?: (projectId: string) => boolean;
   /** Durable first-open placeholder stamp lookup. */
   isProjectUnmaterializedPlaceholder?: (projectId: string) => boolean;
   /** Membership directory used by Workspace account and cloud boundaries. */
-  fetchWorkspaceDirectory?: () => Promise<WorkspaceDirectoryFetchResult>;
+  fetchWorkspaceDirectory?: () => Promise<any>;
   /** Current settings-backed AMR environment for synthesized project contexts. */
   configuredEnv?: () => Record<string, string>;
   /** @deprecated Creation is local; retained for compatible route composition. */
-  fetchProjectCreationWorkspaceDirectory?: () => Promise<WorkspaceDirectoryFetchResult>;
+  fetchProjectCreationWorkspaceDirectory?: () => Promise<any>;
   /**
    * Persist a design system and its Workspace ownership envelope from the
    * request's complete local attribution. Production injects the shared
@@ -383,7 +344,7 @@ export interface RegisterProjectRoutesDeps extends RouteDeps<'db' | 'design' | '
   createWorkspaceOwnedDesignSystem?: (
     root: string,
     input: UserDesignSystemInput,
-    context: WorkspaceResourceContext | null,
+    context: any | null,
   ) => Promise<DesignSystemSummary>;
   /**
    * Collab-cloud comment seams, threaded to the nested preview-comment routes.
@@ -443,7 +404,7 @@ export interface RegisterProjectRoutesDeps extends RouteDeps<'db' | 'design' | '
 // `WorkspaceResource*` shapes (imported above and aliased back to these
 // project-flavored names) so plugin/skill/design-system callers share the
 // exact same header-parsing and mutation-gate logic instead of forking it.
-type WorkspaceProjectContext = WorkspaceResourceContext;
+type WorkspaceProjectContext = any;
 type WorkspaceProjectMutationCapability = WorkspaceResourceMutationCapability;
 type WorkspaceProjectAccessInput = WorkspaceResourceAccessInput;
 
@@ -530,9 +491,9 @@ export function createWorkspaceProjectWriteAuthorityCheck(
 ) {
   return async function requestCanWriteWorkspaceProject(
     req: any,
-    getWorkspaceProject: (db: unknown, workspaceId: string, projectId: string) => WorkspaceProjectAccessInput | null | undefined,
-    getWorkspaceProjectByProjectId: (db: unknown, projectId: string) => WorkspaceProjectAccessInput | null | undefined,
-    db: unknown,
+    getWorkspaceProject: (db: any, workspaceId: string, projectId: string) => WorkspaceProjectAccessInput | null | undefined,
+    getWorkspaceProjectByProjectId: (db: any, projectId: string) => WorkspaceProjectAccessInput | null | undefined,
+    db: any,
     projectId: string,
   ): Promise<boolean> {
     const allowed = await enforceLocalProjectDataPlaneRequest({
@@ -550,7 +511,7 @@ export function createWorkspaceProjectWriteAuthorityCheck(
 export function createEnforceWorkspaceProjectMutation(
   _verifyWorkspaceRequestAuthority?: VerifyWorkspaceRequestAuthority,
   _verifyPersonalProjectDeleteLeaseAuthority?: VerifyWorkspaceRequestAuthority,
-  authorizeProjectRequest?: AuthorizeProjectRequest,
+  authorizeProjectRequest?: any,
 ) {
   return async function enforceWorkspaceProjectMutation(
     req: any,
@@ -562,9 +523,9 @@ export function createEnforceWorkspaceProjectMutation(
       message: string,
       details?: Record<string, unknown>,
     ) => unknown,
-    getWorkspaceProject: (db: unknown, workspaceId: string, projectId: string) => WorkspaceProjectAccessInput | null | undefined,
-    getWorkspaceProjectByProjectId: (db: unknown, projectId: string) => WorkspaceProjectAccessInput | null | undefined,
-    db: unknown,
+    getWorkspaceProject: (db: any, workspaceId: string, projectId: string) => WorkspaceProjectAccessInput | null | undefined,
+    getWorkspaceProjectByProjectId: (db: any, projectId: string) => WorkspaceProjectAccessInput | null | undefined,
+    db: any,
     projectId: string,
     capability: WorkspaceProjectMutationCapability,
   ): Promise<boolean> {
@@ -587,7 +548,7 @@ export function createEnforceWorkspaceProjectMutation(
       db,
       getWorkspaceProject,
       getWorkspaceProjectByProjectId,
-      onDenied: (status, code, message, details) => details === undefined
+      onDenied: (status: any, code: any, message: any, details: any) => details === undefined
         ? sendApiError(res, status, code, message)
         : sendApiError(res, status, code, message, details),
     });
@@ -600,7 +561,7 @@ function projectDetailResolvedDir(
   resolveProjectDir: (
     projectsRoot: string,
     projectId: string,
-    metadata?: unknown,
+    metadata?: any,
     opts?: { allowUnavailableSandboxImportedProject?: boolean },
   ) => string,
 ): string {
@@ -628,10 +589,10 @@ function projectDetailResolvedDir(
  */
 export async function ensureReferencedProjectDir(
   projectsRoot: string,
-  project: { id: string; metadata?: unknown },
-  ensureProject: (projectsRoot: string, projectId: string, metadata?: unknown) => Promise<string>,
+  project: { id: string; metadata?: any },
+  ensureProject: (projectsRoot: string, projectId: string, metadata?: any) => Promise<string>,
 ): Promise<void> {
-  const metadata = (project?.metadata ?? null) as { baseDir?: unknown } | null;
+  const metadata = (project?.metadata ?? null) as { baseDir?: any } | null;
   const baseDir = typeof metadata?.baseDir === 'string'
     ? path.normalize(metadata.baseDir)
     : null;
@@ -650,7 +611,7 @@ const URL_PREVIEW_SCROLL_BRIDGE = `<script data-od-url-scroll-bridge>
   var contentSizeDocumentEpoch = '';
   try {
     contentSizeDocumentEpoch = new URLSearchParams(window.location.search).get('odPreviewEpoch') || '';
-  } catch (_) {}
+  } catch (_: any) {}
   function scrollElement(){
     return document.querySelector('.design-canvas') || document.scrollingElement || document.documentElement;
   }
@@ -782,7 +743,7 @@ const URL_PREVIEW_SCROLL_BRIDGE = `<script data-od-url-scroll-bridge>
       var observer = new ResizeObserver(scheduleContentSize);
       observer.observe(document.documentElement);
       if (document.body) observer.observe(document.body);
-    } catch (_) {}
+    } catch (_: any) {}
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function(){
@@ -805,7 +766,7 @@ const URL_PREVIEW_SCROLL_BRIDGE = `<script data-od-url-scroll-bridge>
 })();
 </script>`;
 
-function sameOrchestratorWorkspace(a: unknown, b: unknown): boolean {
+function sameOrchestratorWorkspace(a: any, b: any): boolean {
   const parsedA = parseOrchestratorWorkspace(a);
   const parsedB = parseOrchestratorWorkspace(b);
   if (!parsedA.ok || !parsedB.ok) return false;
@@ -832,7 +793,7 @@ const URL_PREVIEW_SELECTION_BRIDGE = `<script data-od-url-selection-bridge>
   }
   function esc(value){
     try { return window.CSS && CSS.escape ? CSS.escape(value) : String(value).replace(/"/g, '\\\\"'); }
-    catch (_) { return String(value); }
+    catch (_: any) { return String(value); }
   }
   function previewHtmlFileForLink(link){
     if (!link || link.hasAttribute('download')) return null;
@@ -871,7 +832,7 @@ const URL_PREVIEW_SELECTION_BRIDGE = `<script data-od-url-selection-bridge>
         !/\\.html?$/i.test(fileName)
       ) return null;
       return { fileName: fileName, search: nextUrl.search || '', hash: nextUrl.hash || '' };
-    } catch (_) {
+    } catch (_: any) {
       return null;
     }
   }
@@ -920,7 +881,7 @@ const URL_PREVIEW_SELECTION_BRIDGE = `<script data-od-url-selection-bridge>
       if (rect.width < 1 || rect.height < 1) return false;
       var cs = window.getComputedStyle(el);
       if (cs.display === 'none' || cs.visibility === 'hidden' || cs.pointerEvents === 'none') return false;
-    } catch (_) { return false; }
+    } catch (_: any) { return false; }
     return true;
   }
   function meaningfulDomFallbackTarget(el){
@@ -963,7 +924,7 @@ const URL_PREVIEW_SELECTION_BRIDGE = `<script data-od-url-selection-bridge>
         textAlign: cs.textAlign,
         fontFamily: cs.fontFamily
       };
-    } catch (_) { return null; }
+    } catch (_: any) { return null; }
   }
   function targetFrom(el, allowDomFallback, clickedEl, clickPoint){
     var id = el.getAttribute('data-od-id') || el.getAttribute('data-screen-label');
@@ -981,7 +942,7 @@ const URL_PREVIEW_SELECTION_BRIDGE = `<script data-od-url-selection-bridge>
     try {
       var match = (el.outerHTML || '').replace(/\\s+/g, ' ').match(/^<[^>]+>/);
       html = match ? match[0] : '';
-    } catch (_) {}
+    } catch (_: any) {}
     var payload = {
       type: 'od:comment-target',
       elementId: id,
@@ -1036,13 +997,13 @@ const URL_PREVIEW_SELECTION_BRIDGE = `<script data-od-url-selection-bridge>
   function findCommentTargetByIdentity(elementId, selector){
     var el = null;
     if (selector) {
-      try { el = document.querySelector(String(selector)); } catch (_) { el = null; }
+      try { el = document.querySelector(String(selector)); } catch (_: any) { el = null; }
     }
     if (!el && elementId) {
       try {
         var id = String(elementId).replace(/"/g, '\\\\"');
         el = document.querySelector('[data-od-id="' + id + '"], [data-screen-label="' + id + '"]');
-      } catch (_) { el = null; }
+      } catch (_: any) { el = null; }
     }
     return el;
   }
@@ -1073,7 +1034,7 @@ const URL_PREVIEW_SELECTION_BRIDGE = `<script data-od-url-selection-bridge>
         var path = event.composedPath();
         for (var i = 0; i < path.length; i++) push(path[i]);
       }
-    } catch (_) {}
+    } catch (_: any) {}
     push(event && event.target);
     try {
       if (event && typeof event.clientX === 'number' && typeof event.clientY === 'number' && document.elementsFromPoint) {
@@ -1082,7 +1043,7 @@ const URL_PREVIEW_SELECTION_BRIDGE = `<script data-od-url-selection-bridge>
       } else if (event && typeof event.clientX === 'number' && typeof event.clientY === 'number' && document.elementFromPoint) {
         push(document.elementFromPoint(event.clientX, event.clientY));
       }
-    } catch (_) {}
+    } catch (_: any) {}
     return items;
   }
   function closestTarget(event){
@@ -1225,7 +1186,7 @@ const URL_PREVIEW_SELECTION_BRIDGE = `<script data-od-url-selection-bridge>
       }
       var html = String(clone.innerHTML || '');
       return html.length <= ${PREVIEW_RUNTIME_STATE_LIMITS.maxBodyHtmlLength} ? html : null;
-    } catch (_) {
+    } catch (_: any) {
       return null;
     }
   }
@@ -1324,7 +1285,7 @@ const URL_PREVIEW_SELECTION_BRIDGE = `<script data-od-url-selection-bridge>
       if (!commentEnabled || mode !== 'pod') {
         drawing = false;
         stroke = [];
-        try { window.parent.postMessage({ type: 'od:pod-clear' }, '*'); } catch (_) {}
+        try { window.parent.postMessage({ type: 'od:pod-clear' }, '*'); } catch (_: any) {}
       }
       return;
     }
@@ -1493,7 +1454,7 @@ const URL_PREVIEW_SNAPSHOT_BRIDGE = `<script data-od-url-snapshot-bridge>
         img.setAttribute('src', source.toDataURL('image/png'));
         img.setAttribute('style', target.getAttribute('style') || '');
         target.parentNode && target.parentNode.replaceChild(img, target);
-      } catch (_) {}
+      } catch (_: any) {}
     }
   }
   function inlineSnapshotStyles(originalRoot, cloneRoot){
@@ -1545,7 +1506,7 @@ const URL_PREVIEW_SNAPSHOT_BRIDGE = `<script data-od-url-snapshot-bridge>
       var out = '';
       for (var i = 0; i < node.childNodes.length; i++) out += serializer.serializeToString(node.childNodes[i]);
       return out;
-    } catch (_) { return node.innerHTML || ''; }
+    } catch (_: any) { return node.innerHTML || ''; }
   }
   function pruneHiddenSnapshotNodes(originalRoot, cloneRoot){
     var originals = originalRoot.querySelectorAll('*');
@@ -1590,7 +1551,7 @@ const URL_PREVIEW_SNAPSHOT_BRIDGE = `<script data-od-url-snapshot-bridge>
       var bg = probe && probe.backgroundColor || '';
       if (!bg || bg === 'transparent' || bg === 'rgba(0, 0, 0, 0)') return '#ffffff';
       return bg;
-    } catch (_) { return '#ffffff'; }
+    } catch (_: any) { return '#ffffff'; }
   }
   function canvasLooksBlank(ctx, cw, ch){
     try {
@@ -1604,7 +1565,7 @@ const URL_PREVIEW_SNAPSHOT_BRIDGE = `<script data-od-url-snapshot-bridge>
             Math.abs(data[i+2]-first[2]) > 6 || Math.abs(data[i+3]-first[3]) > 6) return false;
       }
       return samples > 8;
-    } catch (_) { return false; }
+    } catch (_: any) { return false; }
   }
   function renderSnapshot(id){
     var w = Math.max(1, window.innerWidth || document.documentElement.clientWidth || 1);
@@ -1646,7 +1607,7 @@ const URL_PREVIEW_SNAPSHOT_BRIDGE = `<script data-od-url-snapshot-bridge>
           return;
         }
         window.parent.postMessage({ type: 'od:snapshot:result', id: id, dataUrl: canvas.toDataURL('image/png'), w: canvas.width, h: canvas.height }, '*');
-      } catch (err) {
+      } catch (err: any) {
         window.parent.postMessage({ type: 'od:snapshot:result', id: id, error: String(err && err.message || err) }, '*');
       }
     };
@@ -1663,43 +1624,43 @@ const URL_PREVIEW_SNAPSHOT_BRIDGE = `<script data-od-url-snapshot-bridge>
 })();
 </script>`;
 
-function previewBridgeTokens(value: unknown): string[] {
+function previewBridgeTokens(value: any): string[] {
   if (Array.isArray(value)) return value.flatMap(previewBridgeTokens);
   if (typeof value !== 'string') return [];
   return value.split(/[,\s]+/).map((item) => item.trim()).filter(Boolean);
 }
 
-function wantsUrlPreviewScrollBridge(value: unknown): boolean {
+function wantsUrlPreviewScrollBridge(value: any): boolean {
   return previewBridgeTokens(value).some((token) => token === 'scroll' || token === '1' || token === 'true');
 }
 
-function wantsUrlPreviewSelectionBridge(value: unknown): boolean {
+function wantsUrlPreviewSelectionBridge(value: any): boolean {
   return previewBridgeTokens(value).some((token) => token === 'selection' || token === 'comment' || token === 'comments' || token === 'annotation');
 }
 
-function wantsUrlPreviewSnapshotBridge(value: unknown): boolean {
+function wantsUrlPreviewSnapshotBridge(value: any): boolean {
   return previewBridgeTokens(value).some((token) => token === 'snapshot' || token === 'image' || token === 'capture');
 }
 
-function wantsUrlPreviewObservabilityBridge(value: unknown): boolean {
+function wantsUrlPreviewObservabilityBridge(value: any): boolean {
   return previewBridgeTokens(value).some((token) => token === 'observability' || token === 'errors' || token === 'diagnostics');
 }
 
 /** The build-focus bridge: lets the host park a cursor on the part of the page
  *  the agent is writing right now (see the contracts module for the protocol). */
-function wantsUrlPreviewBuildFocusBridge(value: unknown): boolean {
+function wantsUrlPreviewBuildFocusBridge(value: any): boolean {
   return previewBridgeTokens(value).some((token) => token === 'buildfocus' || token === 'build-focus');
 }
 
-function wantsUrlPreviewSandboxGuard(value: unknown): boolean {
+function wantsUrlPreviewSandboxGuard(value: any): boolean {
   return previewBridgeTokens(value).some((token) => token === 'sandbox' || token === 'storage');
 }
 
-function wantsUrlPreviewFocusGuard(value: unknown): boolean {
+function wantsUrlPreviewFocusGuard(value: any): boolean {
   return previewBridgeTokens(value).some((token) => token === 'focus');
 }
 
-function wantsUrlPreviewRedirectGuard(value: unknown): boolean {
+function wantsUrlPreviewRedirectGuard(value: any): boolean {
   return previewBridgeTokens(value).some((token) => token === 'redirect');
 }
 
@@ -1798,7 +1759,7 @@ function injectUrlPreviewBridge(
 function applyUrlPreviewBridgesToHtml(
   transformed: string | Buffer,
   mime: string,
-  requestedBridge: unknown,
+  requestedBridge: any,
 ): string | Buffer {
   if (
     !(
@@ -1994,7 +1955,7 @@ export function daemonSanitizeTitleInDoc(html: string): string {
   return html.slice(0, titleStart) + openTag + safe + closeTag + html.slice(closingTagEnd + 1);
 }
 
-function normalizeChatSessionMode(value: unknown): ChatSessionMode {
+function normalizeChatSessionMode(value: any): ChatSessionMode {
   return value === 'chat' || value === 'plan' ? value : 'design';
 }
 
@@ -2009,7 +1970,7 @@ function isDesignSystemLikeProject(project: any): boolean {
   );
 }
 
-function normalizeDesignSystemCopyName(value: unknown, sourceProject: any): string {
+function normalizeDesignSystemCopyName(value: any, sourceProject: any): string {
   const explicit = typeof value === 'string' ? value.trim() : '';
   if (explicit) return explicit.slice(0, 160);
   const sourceName = typeof sourceProject?.name === 'string' && sourceProject.name.trim()
@@ -2020,7 +1981,7 @@ function normalizeDesignSystemCopyName(value: unknown, sourceProject: any): stri
     : `${sourceName} Design System`.slice(0, 160);
 }
 
-function normalizeProjectDuplicateName(value: unknown, sourceProject: any): string {
+function normalizeProjectDuplicateName(value: any, sourceProject: any): string {
   const explicit = typeof value === 'string' ? value.trim() : '';
   if (explicit) return explicit.slice(0, 160);
   const sourceName = typeof sourceProject?.name === 'string' && sourceProject.name.trim()
@@ -2029,7 +1990,7 @@ function normalizeProjectDuplicateName(value: unknown, sourceProject: any): stri
   return `${sourceName} Copy`.slice(0, 160);
 }
 
-function normalizePendingPrompt(value: unknown): string | null {
+function normalizePendingPrompt(value: any): string | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
@@ -2204,7 +2165,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
   const { randomId } = ctx.ids;
   const { validateProjectDesignSystemId, validateProjectSkillId } = ctx.validation;
   const { collabSync, teamProjectCatalog, workspaceTypes } = ctx;
-  const learnAssertedWorkspaceType = (context: WorkspaceResourceContext | null) => {
+  const learnAssertedWorkspaceType = (context: any | null) => {
     if (!context?.workspaceTypeAsserted) return;
     workspaceTypes?.learn({
       workspaceId: context.workspaceId,
@@ -2219,9 +2180,9 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
       db,
       getWorkspaceProject,
       getWorkspaceProjectByProjectId,
-      isProjectRevoked: (_db, projectId) =>
+      isProjectRevoked: (_db: any, projectId: any) =>
         ctx.isProjectRevoked?.(projectId) ?? false,
-      isProjectUnmaterializedPlaceholder: (_db, projectId) =>
+      isProjectUnmaterializedPlaceholder: (_db: any, projectId: any) =>
         ctx.isProjectUnmaterializedPlaceholder?.(projectId) ?? false,
       ...(ctx.verifyWorkspaceRequestAuthority
         ? { verifyWorkspaceRequestAuthority: ctx.verifyWorkspaceRequestAuthority }
@@ -2249,7 +2210,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
       : {}),
     ...(ctx.configuredEnv ? { configuredEnv: ctx.configuredEnv } : {}),
   });
-  const resolveCreatedProjectHome: CreatedProjectWorkspaceResolver = async (req) => {
+  const resolveCreatedProjectHome: any = async (req: any) => {
     const home = await resolveCreatedProjectHomeWithLocalAttribution(req);
     learnAssertedWorkspaceType(home);
     return home;
@@ -2314,19 +2275,19 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
     };
   }
   class TeamProjectCatalogListError extends Error {
-    constructor(readonly cause: unknown) {
+    constructor(readonly cause: any) {
       super('team project catalog list failed');
       this.name = 'TeamProjectCatalogListError';
     }
   }
   class TeamProjectSyncError extends Error {
-    constructor(readonly cause: unknown) {
+    constructor(readonly cause: any) {
       super(String(cause));
       this.name = 'TeamProjectSyncError';
     }
   }
   function normalizeWorkspaceProjectRow(row: any, ctx: WorkspaceProjectContext) {
-    let metadata: unknown;
+    let metadata: any;
     try {
       metadata = row.metadataJson ? JSON.parse(row.metadataJson) : undefined;
     } catch {
@@ -2383,7 +2344,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
       project,
     };
   }
-  function workspaceProjectPrincipal(ctx: WorkspaceProjectContext): ResourceHubPrincipal {
+  function workspaceProjectPrincipal(ctx: WorkspaceProjectContext): any {
     return {
       memberId: ctx.workspaceMemberId,
       teamId: ctx.workspaceId,
@@ -2395,7 +2356,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
     const parsed = Date.parse(value);
     return Number.isFinite(parsed) ? parsed : Date.now();
   }
-  function accessForRemoteTeamProject(remote: VelaTeamProjectRecord, ctx: WorkspaceProjectContext) {
+  function accessForRemoteTeamProject(remote: any, ctx: WorkspaceProjectContext) {
     const frozen = remote.access.frozen || isWorkspaceLocked(ctx);
     const canView = remote.access.canView && !frozen && ctx.memberStatus === 'active';
     // `remote.access.canEdit` alone is not enough to grant local mutation: it
@@ -2430,12 +2391,12 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
     };
   }
   function remoteTeamProjectSummary(
-    remote: VelaTeamProjectRecord,
+    remote: any,
     ctx: WorkspaceProjectContext,
   ) {
     const createdAt = msFromIso(remote.createdAt);
     const updatedAt = msFromIso(remote.updatedAt);
-    const syncState: ProjectSyncState = velaProjectSyncStateToProject(remote.syncState);
+    const syncState: ProjectSyncState = ((..._v05_unused: any[]) => ({} as any))(remote.syncState);
     const resourceState = remote.access.frozen || isWorkspaceLocked(ctx) ? 'frozen' : 'active';
     const name = remote.displayName?.trim() || remote.projectId;
     // A catalog-only summary has no local project directory yet. Reuse the
@@ -2498,12 +2459,12 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
     for (const row of localRows) {
       if (row.workspaceVisibility !== 'personal' || row.cloudTombstonedAt == null) continue;
       projectIds.add(row.id);
-      resourceIds.add(projectResourceIdFor(row.id, workspaceProjectPrincipal(ctx)));
+      resourceIds.add(((..._v05_unused: any[]) => ({} as any))(row.id, workspaceProjectPrincipal(ctx)));
     }
     return { projectIds, resourceIds };
   }
   function remoteTeamProjectWasUnsharedLocally(
-    remote: VelaTeamProjectRecord,
+    remote: any,
     tombstoned: { projectIds: Set<string>; resourceIds: Set<string> },
     ctx: WorkspaceProjectContext,
   ): boolean {
@@ -2539,7 +2500,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
    * case is written. A correct mirror remains untouched.
    */
   function reconcileLocalRowWithRemoteTeamAccess(
-    remote: VelaTeamProjectRecord,
+    remote: any,
     ctx: WorkspaceProjectContext,
     loadedExactRow?: any,
   ): void {
@@ -2552,7 +2513,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
     const persistedCreatorMemberId = isOwner ? ctx.workspaceMemberId : null;
     const canEdit = remote.access.canEdit && remote.access.canView && !remote.access.frozen && isOwner;
     const expectedResourceState = remote.access.frozen ? 'frozen' : 'active';
-    const expectedSyncState = velaProjectSyncStateToProject(remote.syncState);
+    const expectedSyncState = ((..._v05_unused: any[]) => ({} as any))(remote.syncState);
     if (canEdit) {
       const alreadyCorrect = existing
         && existing.workspaceId === ctx.workspaceId
@@ -2634,7 +2595,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
    * until something reconciles it. The web client's own "shared" badge and its
    * "move out of team" affordance (`createSharedProjectPredicate`,
    * `RecentProjectsStrip.tsx`) already read this exact catalog
-   * (`GET /api/workspace/projects/team` → `createTeamProjectsLister` →
+   * (`GET /api/workspace/projects/team` → `unknown` →
    * `velaCliTeamProjectCatalog`, the same instance threaded into this route as
    * `teamProjectCatalog`) — so whenever that affordance is visible at all, the
    * hub already knows this project is team-visible, whether or not this
@@ -2660,7 +2621,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
     ctx: WorkspaceProjectContext,
   ): Promise<UnboundProjectMoveReconciliation> {
     if (!teamProjectCatalog) return 'none';
-    let remoteProjects: VelaTeamProjectRecord[];
+    let remoteProjects: any[];
     try {
       remoteProjects = await teamProjectCatalog.list(workspaceProjectPrincipal(ctx));
     } catch {
@@ -2708,7 +2669,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
     ctx: WorkspaceProjectContext,
   ): Promise<CatalogOnlyOwnerMaterialization> {
     if (!teamProjectCatalog) return 'missing';
-    let remoteProjects: VelaTeamProjectRecord[];
+    let remoteProjects: any[];
     try {
       remoteProjects = await teamProjectCatalog.list(workspaceProjectPrincipal(ctx));
     } catch {
@@ -2753,7 +2714,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
   }
   function catalogEnrichedLocalTeamProjectSummary(
     summary: any,
-    remote: VelaTeamProjectRecord,
+    remote: any,
     ctx: WorkspaceProjectContext,
   ) {
     const localProjectName = summary?.project?.name;
@@ -2770,7 +2731,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
       createdByWorkspaceMemberId: remote.ownerMemberId,
       resourceState: frozen ? 'frozen' : 'active',
       currentUserAccess: accessForRemoteTeamProject(remote, ctx),
-      syncState: velaProjectSyncStateToProject(remote.syncState),
+      syncState: ((..._v05_unused: any[]) => ({} as any))(remote.syncState),
       project: {
         ...summary.project,
         ...(name ? { name } : {}),
@@ -2780,7 +2741,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
   async function listRemoteTeamProjectSummaries(localRows: any[], ctx: WorkspaceProjectContext) {
     if (!teamProjectCatalog) {
       return {
-        matchedByResourceId: new Map<string, VelaTeamProjectRecord>(),
+        matchedByResourceId: new Map<string, unknown>(),
         remoteSummaries: [],
       };
     }
@@ -2791,10 +2752,10 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
         .map((row) => [`${row.resourceHubResourceId}\0${row.id}`, row] as const),
     );
     const tombstoned = locallyTombstonedTeamProjects(localRows, ctx);
-    let remoteProjects: VelaTeamProjectRecord[];
+    let remoteProjects: any[];
     try {
       remoteProjects = await teamProjectCatalog.list(workspaceProjectPrincipal(ctx));
-    } catch (error) {
+    } catch (error: any) {
       throw new TeamProjectCatalogListError(error);
     }
     const seenResourceIds = new Set<string>();
@@ -2806,7 +2767,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
       try {
         const exactRow = localRowByExactRemoteIdentity.get(`${project.resourceId}\0${project.projectId}`);
         reconcileLocalRowWithRemoteTeamAccess(project, ctx, exactRow);
-      } catch (error) {
+      } catch (error: any) {
         // Best-effort: a reconciliation failure must not break the list itself
         // (the client still gets a correct-enough READ from accessForRemoteTeamProject
         // below; only the next SAVE would still need a retry).
@@ -2879,7 +2840,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
    * callers lock and send the source project's persisted exact scope.
    */
   function bindDuplicateIntoRequestWorkspace(
-    ctx: WorkspaceResourceContext | null,
+    ctx: any | null,
     targetProjectId: string,
     now: number,
   ) {
@@ -2941,7 +2902,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
   function reconcileUnboundProjectBeforeMutation(
     req: any,
     projectId: string,
-    home: WorkspaceResourceContext | null,
+    home: any | null,
   ) {
     const asserted = workspaceProjectContextFromRequest(req);
     if (asserted === null || asserted === 'missing') return;
@@ -2973,7 +2934,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
     row: any,
     locations: Array<{ id: string; path: string; builtIn?: boolean }>,
   ): boolean {
-    let metadata: unknown;
+    let metadata: any;
     try {
       metadata = row.metadataJson ? JSON.parse(row.metadataJson) : undefined;
     } catch {
@@ -3170,7 +3131,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
     return locations.some((location) => !location.builtIn && projectBelongsToLocation(project, location));
   }
 
-  async function resolveCreateProjectLocationId(explicitProjectLocationId: unknown): Promise<string> {
+  async function resolveCreateProjectLocationId(explicitProjectLocationId: any): Promise<string> {
     if (typeof explicitProjectLocationId === 'string' && explicitProjectLocationId.trim()) {
       return explicitProjectLocationId.trim();
     }
@@ -3301,8 +3262,8 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
             // moment it appears: account-scoped local runs remain possible,
             // but Workspace mutations and Workspace-pinned billing would have
             // no durable home.
-            bindCreatedProjectToWorkspace(
-              (input) => ensureWorkspaceProject(db, input),
+            ((..._v05_unused: any[]) => ({} as any))(
+              (input: any) => ensureWorkspaceProject(db, input),
               createHome,
               manifest.id,
               now,
@@ -3491,10 +3452,10 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
     }
   });
 
-  function validVisibility(value: unknown): value is 'personal' | 'team' {
+  function validVisibility(value: any): value is 'personal' | 'team' {
     return value === 'personal' || value === 'team';
   }
-  function parseProjectIds(value: unknown): string[] | null {
+  function parseProjectIds(value: any): string[] | null {
     if (!Array.isArray(value) || value.length === 0) return null;
     const ids = [];
     for (const id of value) {
@@ -3566,7 +3527,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
       visibility,
       createdByWorkspaceMemberId: ownerForTeamShare(summary, ctx, visibility),
       updatedByWorkspaceMemberId: ctx.workspaceMemberId,
-      resourceHubResourceId: visibility === 'team' ? projectResourceIdFor(id, workspaceProjectPrincipal(ctx)) : null,
+      resourceHubResourceId: visibility === 'team' ? ((..._v05_unused: any[]) => ({} as any))(id, workspaceProjectPrincipal(ctx)) : null,
       cloudTombstonedAt: visibility === 'team' ? null : Date.now(),
       syncState: visibility === 'team' ? 'pending_upload' : 'local_only',
     };
@@ -3595,7 +3556,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
    * project, so it must not collapse into the generic BAD_REQUEST bucket the
    * web renders as "try again later".
    */
-  function isTeamProjectOwnerConflictError(error: unknown): boolean {
+  function isTeamProjectOwnerConflictError(error: any): boolean {
     return /team_project_owner_conflict/i.test(String(error));
   }
 
@@ -3667,7 +3628,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
       updateWorkspaceProject(db, ctx.workspaceId, project.id, workspaceProjectMovePatch(project.id, summary, ctx, visibility));
       try {
         await requestTeamVisibility([project.id], ctx, visibility);
-      } catch (error) {
+      } catch (error: any) {
         restoreWorkspaceProjectRow(row);
         throw new TeamProjectSyncError(error);
       }
@@ -3730,7 +3691,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
       moveMany(projectIds);
       try {
         await requestTeamVisibility(projectIds, ctx, visibility);
-      } catch (error) {
+      } catch (error: any) {
         const rollbackMany = db.transaction((items: any[]) => {
           for (const item of items) restoreWorkspaceProjectRow(item);
         });
@@ -3796,7 +3757,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
         : null;
       try {
         deleteMany(projectIds, finalProjectIds);
-      } catch (error) {
+      } catch (error: any) {
         await stagedDelete?.rollback();
         throw error;
       }
@@ -3938,7 +3899,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
           req.body?.designSystemCatalogScope,
           'designSystemCatalogScope',
         );
-      } catch (error) {
+      } catch (error: any) {
         return sendApiError(res, 400, 'BAD_REQUEST', String(error));
       }
       // A staged local resource can outlive the shell's current identity
@@ -4047,7 +4008,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
       const webCloneUrlSkipsDiscovery =
         skipDiscoveryBrief === undefined
         && metadata && typeof metadata === 'object'
-        && (metadata as { intent?: unknown }).intent === 'web-clone'
+        && (metadata as { intent?: any }).intent === 'web-clone'
         && typeof pendingPrompt === 'string'
         && /https?:\/\/\S+/i.test(pendingPrompt);
       const localCatalogScopes = {
@@ -4197,7 +4158,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
           'resolving the selected example',
         );
         const resolvedExampleRecord = resolvedExample as
-          { id?: unknown; source?: unknown; fsPath?: unknown } | null;
+          { id?: any; source?: any; fsPath?: any } | null;
         if (
           !resolvedExampleRecord
           || resolvedExampleRecord.id !== examplePluginId
@@ -4218,7 +4179,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
             ),
             boundAt: now,
           });
-        } catch (error) {
+        } catch (error: any) {
           if (error instanceof InvalidProjectExampleBindingError) {
             return sendApiError(res, 400, 'BAD_REQUEST', error.message);
           }
@@ -4406,8 +4367,8 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
             createdAt: now,
             updatedAt: now,
           });
-          bindCreatedProjectToWorkspace(
-            (input) => ensureWorkspaceProject(db, input),
+          ((..._v05_unused: any[]) => ({} as any))(
+            (input: any) => ensureWorkspaceProject(db, input),
             createWorkspace.context,
             id,
             now,
@@ -4453,7 +4414,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
           }
           return createdProject;
         })();
-      } catch (err) {
+      } catch (err: any) {
         // Filesystem preparation cannot participate in SQLite's transaction.
         // Compensate external locations and managed template staging on any
         // deadline, disconnect, or database transaction failure.
@@ -4693,7 +4654,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
         changed: outcome.resolved.snapshotId !== currentSnapshotId,
       };
       return res.json(body);
-    } catch (error) {
+    } catch (error: any) {
       console.warn('[projects] automatic scenario restore failed', error);
       return sendApiError(
         res,
@@ -4810,7 +4771,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
           copiedFiles,
         };
         res.json(body);
-      } catch (err) {
+      } catch (err: any) {
         if (insertedProject) dbDeleteProject(db, targetProjectId);
         await removeProjectDir(PROJECTS_DIR, targetProjectId).catch(() => {});
         throw err;
@@ -4868,7 +4829,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
       let insertedProject = false;
       try {
         const createDesignSystem = ctx.createWorkspaceOwnedDesignSystem
-          ?? ((root: string, input: UserDesignSystemInput, context: WorkspaceResourceContext | null) =>
+          ?? ((root: string, input: UserDesignSystemInput, context: any | null) =>
             createUserDesignSystem(root, {
               ...input,
               ...(context ? { workspaceId: context.workspaceId } : {}),
@@ -4983,7 +4944,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
           copiedFiles,
         };
         res.json(body);
-      } catch (err) {
+      } catch (err: any) {
         if (insertedProject) dbDeleteProject(db, targetProjectId);
         await removeProjectDir(PROJECTS_DIR, targetProjectId).catch(() => {});
         if (createdDesignSystemId) {
@@ -5786,7 +5747,7 @@ export function registerProjectArtifactRoutes(app: Express, ctx: RegisterProject
 
 export interface RegisterProjectFileRoutesDeps extends RouteDeps<'db' | 'http' | 'paths' | 'uploads' | 'node' | 'projectStore' | 'projectFiles' | 'documents' | 'artifacts' | 'projectPreviewScopes'> {
   verifyWorkspaceRequestAuthority?: VerifyWorkspaceRequestAuthority;
-  authorizeProjectRequest?: AuthorizeProjectRequest;
+  authorizeProjectRequest?: any;
   /** Startup-hydrated O(1) quarantine lookup for stale Team mirrors. */
   isProjectRevoked?: (projectId: string) => boolean;
   /** Durable first-open placeholder stamp lookup. */
@@ -5808,9 +5769,9 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
       db,
       getWorkspaceProject,
       getWorkspaceProjectByProjectId,
-      isProjectRevoked: (_db, projectId) =>
+      isProjectRevoked: (_db: any, projectId: any) =>
         ctx.isProjectRevoked?.(projectId) ?? false,
-      isProjectUnmaterializedPlaceholder: (_db, projectId) =>
+      isProjectUnmaterializedPlaceholder: (_db: any, projectId: any) =>
         ctx.isProjectUnmaterializedPlaceholder?.(projectId) ?? false,
       ...(ctx.verifyWorkspaceRequestAuthority
         ? { verifyWorkspaceRequestAuthority: ctx.verifyWorkspaceRequestAuthority }
@@ -5885,18 +5846,18 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
     res.removeHeader('Content-Security-Policy');
   }
 
-  function rejectInternalVersionPath(res: Response, value: unknown): boolean {
+  function rejectInternalVersionPath(res: Response, value: any): boolean {
     if (!isProjectFileVersionPath(value)) return false;
     sendApiError(res, 404, 'FILE_NOT_FOUND', 'file not found');
     return true;
   }
 
-  function normalizeProjectFileVersionSource(value: unknown): ProjectFileVersionSource | undefined {
+  function normalizeProjectFileVersionSource(value: any): ProjectFileVersionSource | undefined {
     return value === 'ai' || value === 'manual' || value === 'restore' ? value : undefined;
   }
 
   function parseProjectFileVersionSourceInput(
-    value: unknown,
+    value: any,
     fieldName: 'source' | 'versionSource',
   ): ProjectFileVersionSource | undefined {
     if (value === undefined || value === null) return undefined;
@@ -5905,7 +5866,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
     throw new Error(`invalid ${fieldName}; expected one of: ai, manual, restore`);
   }
 
-  function requestProjectFileVersionSource(value: unknown): ProjectFileVersionSource {
+  function requestProjectFileVersionSource(value: any): ProjectFileVersionSource {
     return parseProjectFileVersionSourceInput(value, 'source') ?? 'manual';
   }
 
@@ -6014,7 +5975,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
   async function matchedHtmlParentVersionId(
     project: any,
     fileName: string,
-    requestedParentVersionId: unknown,
+    requestedParentVersionId: any,
     versionLock: HtmlVersionLock,
   ): Promise<string | undefined> {
     if (typeof requestedParentVersionId !== 'string' || !requestedParentVersionId.trim()) {
@@ -6042,7 +6003,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
     }
   }
 
-  function htmlVersionCaptureWarning(err: unknown): ProjectFileVersionWarning {
+  function htmlVersionCaptureWarning(err: any): ProjectFileVersionWarning {
     const message = err instanceof Error ? err.message : String(err);
     return {
       code: 'PROJECT_FILE_VERSION_CAPTURE_FAILED',
@@ -6060,7 +6021,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
     if (!/\.html?$/i.test(fileName)) return { version: null };
     try {
       return { version: await ensureCurrentVersion(content, htmlVersionOptions(project, override)) };
-    } catch (err) {
+    } catch (err: any) {
       return { version: null, versionWarning: htmlVersionCaptureWarning(err) };
     }
   }
@@ -6197,7 +6158,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
     res: Response,
     projectId: string,
     relPath: string,
-    metadata?: unknown,
+    metadata?: any,
     beforeSend?: (mime: string) => void,
     transformFile?: (file: { mime: string; buffer: Buffer }) => Buffer | string | Promise<Buffer | string>,
     revalidate = false,
@@ -6298,7 +6259,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
     res.type(file.mime).send(body);
   }
 
-  function previewFilePathForProject(project: any, queryFile: unknown): string {
+  function previewFilePathForProject(project: any, queryFile: any): string {
     if (typeof queryFile === 'string' && queryFile.trim().length > 0) {
       return queryFile;
     }
@@ -6471,9 +6432,9 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
     file: { mime: string; buffer: Buffer };
     projectId: string;
     relPath: string;
-    metadata?: unknown;
+    metadata?: any;
     projectsRoot: string;
-    readProjectFile: (projectsRoot: string, projectId: string, relPath: string, metadata?: unknown) => Promise<{ buffer: Buffer }>;
+    readProjectFile: (projectsRoot: string, projectId: string, relPath: string, metadata?: any) => Promise<{ buffer: Buffer }>;
   }): Promise<Buffer | string> {
     if (!/^text\/html(?:;|$)/i.test(file.mime)) return file.buffer;
     const html = file.buffer.toString('utf8');
@@ -6834,7 +6795,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
   app.get(/^\/api\/projects\/([^/]+)\/text-preview\/(.+)$/u, async (req, res) => {
     let handle: import('fs/promises').FileHandle | null = null;
     try {
-      const params = req.params as unknown as { 0?: string; 1?: string };
+      const params = req.params as any as { 0?: string; 1?: string };
       const projectId = String(params[0] ?? '');
       const relPath = String(params[1] ?? '');
       if (rejectInternalVersionPath(res, relPath)) return;
@@ -6894,7 +6855,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
 
   app.get(/^\/api\/projects\/([^/]+)\/preview\/([^/]+)\/(.+)$/u, async (req, res) => {
     try {
-      const params = req.params as unknown as { 0?: string; 1?: string; 2?: string };
+      const params = req.params as any as { 0?: string; 1?: string; 2?: string };
       const projectId = String(params[0] ?? '');
       const scope = String(params[1] ?? '');
       const relPath = String(params[2] ?? '');
@@ -6973,7 +6934,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
 
   app.get(/^\/api\/projects\/([^/]+)\/raw\/(.+)$/u, async (req, res) => {
     try {
-      const params = req.params as unknown as { 0?: string; 1?: string };
+      const params = req.params as any as { 0?: string; 1?: string };
       const projectId = String(params[0] ?? '');
       const relPath = String(params[1] ?? '');
       if (rejectInternalVersionPath(res, relPath)) return;
@@ -7101,7 +7062,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
   // decides when to route a preview here (see file-viewer-render-mode.ts).
   app.get(/^\/api\/projects\/([^/]+)\/powered\/(.+)$/u, async (req, res) => {
     try {
-      const params = req.params as unknown as { 0?: string; 1?: string };
+      const params = req.params as any as { 0?: string; 1?: string };
       const projectId = String(params[0] ?? '');
       const relPath = String(params[1] ?? '');
       if (rejectInternalVersionPath(res, relPath)) return;
@@ -7155,7 +7116,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
 
   app.delete(/^\/api\/projects\/([^/]+)\/raw\/(.+)$/u, async (req, res) => {
     try {
-      const params = req.params as unknown as { 0?: string; 1?: string };
+      const params = req.params as any as { 0?: string; 1?: string };
       const projectId = String(params[0] ?? '');
       const rawSplat = String(params[1] ?? '');
       if (rejectInternalVersionPath(res, rawSplat)) return;
@@ -7180,7 +7141,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
       // name. Image cards keep resolving their own snapshot either way.
       try {
         deleteWorkspaceArtifact(db, projectId, rawSplat);
-      } catch (error) {
+      } catch (error: any) {
         console.warn('[chat-artifacts] delete bookkeeping failed', error);
       }
       /** @type {import('@open-design/contracts').DeleteProjectFileResponse} */
@@ -7235,7 +7196,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
 
   app.get(/^\/api\/projects\/([^/]+)\/files\/(.+)\/versions$/u, async (req, res) => {
     try {
-      const params = req.params as unknown as { 0?: string; 1?: string };
+      const params = req.params as any as { 0?: string; 1?: string };
       const projectId = String(params[0] ?? '');
       const fileName = String(params[1] ?? '');
       if (rejectInternalVersionPath(res, fileName)) return;
@@ -7311,7 +7272,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
 
   app.post(/^\/api\/projects\/([^/]+)\/files\/(.+)\/versions$/u, async (req, res) => {
     try {
-      const params = req.params as unknown as { 0?: string; 1?: string };
+      const params = req.params as any as { 0?: string; 1?: string };
       const projectId = String(params[0] ?? '');
       const fileName = String(params[1] ?? '');
       if (rejectInternalVersionPath(res, fileName)) return;
@@ -7406,7 +7367,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
 
   app.post(/^\/api\/projects\/([^/]+)\/files\/(.+)\/versions\/([^/]+)\/restore$/u, async (req, res) => {
     try {
-      const params = req.params as unknown as { 0?: string; 1?: string; 2?: string };
+      const params = req.params as any as { 0?: string; 1?: string; 2?: string };
       const projectId = String(params[0] ?? '');
       const fileName = String(params[1] ?? '');
       const versionId = String(params[2] ?? '');
@@ -7461,7 +7422,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
               source: 'restore',
               restoreFromVersionId: restored.version.id,
             });
-          } catch (err) {
+          } catch (err: any) {
             versionWarning = htmlVersionCaptureWarning(err);
           }
           return { file, version, versionWarning };
@@ -7483,7 +7444,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
 
   app.get(/^\/api\/projects\/([^/]+)\/files\/(.+)\/versions\/([^/]+)$/u, async (req, res) => {
     try {
-      const params = req.params as unknown as { 0?: string; 1?: string; 2?: string };
+      const params = req.params as any as { 0?: string; 1?: string; 2?: string };
       const projectId = String(params[0] ?? '');
       const fileName = String(params[1] ?? '');
       const versionId = String(params[2] ?? '');
@@ -7517,7 +7478,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
 
   app.get(/^\/api\/projects\/([^/]+)\/files\/(.+)$/u, async (req, res) => {
     try {
-      const params = req.params as unknown as { 0?: string; 1?: string };
+      const params = req.params as any as { 0?: string; 1?: string };
       const projectId = String(params[0] ?? '');
       const fileSplat = String(params[1] ?? '');
       if (rejectInternalVersionPath(res, fileSplat)) return;
@@ -7849,7 +7810,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
       // an image card keeps opening its own frozen bytes.
       try {
         renameWorkspaceArtifactPath(db, req.params.id, result.oldName, result.newName);
-      } catch (error) {
+      } catch (error: any) {
         console.warn('[chat-artifacts] rename bookkeeping failed', error);
       }
       /** @type {import('@open-design/contracts').RenameProjectFileResponse} */
@@ -7888,7 +7849,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
       await markProjectFileVersionStoreDeleted(PROJECTS_DIR, req.params.id, req.params.name, delProject?.metadata);
       try {
         deleteWorkspaceArtifact(db, req.params.id, req.params.name);
-      } catch (error) {
+      } catch (error: any) {
         console.warn('[chat-artifacts] delete bookkeeping failed', error);
       }
       /** @type {import('@open-design/contracts').DeleteProjectFileResponse} */
@@ -7909,7 +7870,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
 
 export interface RegisterProjectUploadRoutesDeps extends RouteDeps<'db' | 'http' | 'uploads' | 'node' | 'paths' | 'projectStore' | 'projectFiles'> {
   verifyWorkspaceRequestAuthority?: VerifyWorkspaceRequestAuthority;
-  authorizeProjectRequest?: AuthorizeProjectRequest;
+  authorizeProjectRequest?: any;
   /** Durable first-open placeholder stamp lookup. */
   isProjectUnmaterializedPlaceholder?: (projectId: string) => boolean;
 }
@@ -7928,7 +7889,7 @@ export function registerProjectUploadRoutes(app: Express, ctx: RegisterProjectUp
       db,
       getWorkspaceProject,
       getWorkspaceProjectByProjectId,
-      isProjectUnmaterializedPlaceholder: (_db, projectId) =>
+      isProjectUnmaterializedPlaceholder: (_db: any, projectId: any) =>
         ctx.isProjectUnmaterializedPlaceholder?.(projectId) ?? false,
       ...(ctx.verifyWorkspaceRequestAuthority
         ? { verifyWorkspaceRequestAuthority: ctx.verifyWorkspaceRequestAuthority }

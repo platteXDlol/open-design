@@ -40,7 +40,7 @@ function resolveArgvPromptBudget(
 
 export function checkPromptArgvBudget(
   def: RuntimeAgentDef | null | undefined,
-  composed: unknown,
+  composed: any,
   platform: NodeJS.Platform = process.platform,
 ): RuntimePromptBudgetError | null {
   if (!def || typeof def.maxPromptArgBytes !== 'number') return null;
@@ -68,7 +68,7 @@ export function checkPromptArgvBudget(
 // (DeepSeek TUI today): `%name%` pairs would otherwise be expanded from
 // the daemon environment before the child reads them, leaking secrets
 // like `%DEEPSEEK_API_KEY%` whenever the prompt mentions an env-var name.
-function quoteForWindowsCmdShim(value: unknown): string {
+function quoteForWindowsCmdShim(value: any): string {
   const str = String(value ?? '');
   if (!/[\s"&<>|^%]/.test(str)) return str;
   const escaped = str.replace(/"/g, '""').replace(/%/g, '"^%"');
@@ -83,7 +83,7 @@ function quoteForWindowsCmdShim(value: unknown): string {
 // closing wrap quote) gets doubled, and an arg with whitespace or a
 // quote is wrapped in outer `"..."`. Kept local so the budget check
 // works on macOS/Linux test hosts against a fake `C:\…\foo.exe` path.
-function quoteForWindowsDirectExe(value: unknown): string {
+function quoteForWindowsDirectExe(value: any): string {
   const str = String(value ?? '');
   // libuv emits a literal `""` for an empty argv entry so it survives
   // CommandLineToArgvW round-tripping; mirror that.
@@ -149,8 +149,8 @@ const WINDOWS_CREATE_PROCESS_HEADROOM = 256;
 // would run on Windows.
 export function checkWindowsCmdShimCommandLineBudget(
   def: RuntimeAgentDef | null | undefined,
-  resolvedBin: unknown,
-  args: unknown,
+  resolvedBin: any,
+  args: any,
 ): RuntimePromptBudgetError | null {
   if (!def || typeof def.maxPromptArgBytes !== 'number') return null;
   if (typeof resolvedBin !== 'string' || !/\.(bat|cmd)$/i.test(resolvedBin))
@@ -180,7 +180,7 @@ export function checkWindowsCmdShimCommandLineBudget(
 // `C:\…\foo.exe` path through the same math the daemon would run on
 // Windows, while still skipping POSIX-shaped paths (which never go
 // through CreateProcess).
-function looksLikeWindowsPath(p: unknown): boolean {
+function looksLikeWindowsPath(p: any): boolean {
   if (typeof p !== 'string' || p.length === 0) return false;
   // Drive-letter (`C:\…`, `C:/…`) or UNC (`\\server\share\…`).
   return /^[a-zA-Z]:[\\/]/.test(p) || p.startsWith('\\\\');
@@ -216,8 +216,8 @@ function looksLikeWindowsPath(p: unknown): boolean {
 // `quoteForWindowsDirectExe` above.
 export function checkWindowsDirectExeCommandLineBudget(
   def: RuntimeAgentDef | null | undefined,
-  resolvedBin: unknown,
-  args: unknown,
+  resolvedBin: any,
+  args: any,
 ): RuntimePromptBudgetError | null {
   if (!def || typeof def.maxPromptArgBytes !== 'number') return null;
   if (typeof resolvedBin !== 'string' || resolvedBin.length === 0) return null;

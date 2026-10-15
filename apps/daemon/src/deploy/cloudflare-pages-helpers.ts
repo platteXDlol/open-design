@@ -16,7 +16,7 @@ export interface DeploymentLike {
   url?: string | null;
   providerMetadata?: JsonObject | null;
   cloudflarePages?: JsonObject | null;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 const CLOUDFLARE_PAGES_PROJECT_METADATA_KEY = 'cloudflarePagesProjectName';
@@ -34,7 +34,7 @@ export function cloudflarePagesProjectNameFromDeployment(deployment: DeploymentL
   return cloudflarePagesProjectNameFromUrl(deployment?.url);
 }
 
-function cloudflarePagesProjectNameFromUrl(rawUrl: unknown): string {
+function cloudflarePagesProjectNameFromUrl(rawUrl: any): string {
   if (typeof rawUrl !== 'string' || !rawUrl.trim()) return '';
   try {
     const host = new URL(rawUrl).hostname.toLowerCase();
@@ -66,7 +66,7 @@ export function cloudflarePagesProjectNameForDeploy(
 
 export function publicDeployment<T extends DeploymentLike>(deployment: T): Omit<T, 'providerMetadata'>;
 export function publicDeployment<T>(deployment: T): T;
-export function publicDeployment(deployment: unknown): unknown {
+export function publicDeployment(deployment: any): any {
   if (!deployment || typeof deployment !== 'object') return deployment;
   const { providerMetadata: _providerMetadata, ...publicShape } = deployment as DeploymentLike;
   return publicShape;
@@ -149,14 +149,14 @@ export async function checkCloudflarePagesDeploymentLinks(existing: DeploymentLi
   };
 }
 
-function isRecord(value: unknown): value is JsonObject {
+function isRecord(value: any): value is JsonObject {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function asRecord(value: unknown): JsonObject | null {
+function asRecord(value: any): JsonObject | null {
   return isRecord(value) ? value : null;
 }
 
-function stringValue(value: unknown): string {
+function stringValue(value: any): string {
   return typeof value === 'string' ? value : '';
 }

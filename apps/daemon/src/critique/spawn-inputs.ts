@@ -32,10 +32,10 @@
  * feature.
  */
 export function narrowProjectCritiqueOverride(
-  metadata: unknown,
+  metadata: any,
 ): boolean | null {
   if (!metadata || typeof metadata !== 'object') return null;
-  const raw = (metadata as { critiqueTheaterEnabled?: unknown })
+  const raw = (metadata as { critiqueTheaterEnabled?: any })
     .critiqueTheaterEnabled;
   return typeof raw === 'boolean' ? raw : null;
 }

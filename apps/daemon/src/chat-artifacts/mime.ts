@@ -9,11 +9,11 @@
 import { kindFor, mimeFor } from '../projects.js';
 
 export function kindForArtifactPath(projectRelativePath: string): string {
-  const kind: unknown = kindFor(projectRelativePath);
+  const kind: any = kindFor(projectRelativePath);
   return typeof kind === 'string' && kind ? kind : 'binary';
 }
 
 export function mimeForArtifactPath(projectRelativePath: string): string | undefined {
-  const mime: unknown = mimeFor(projectRelativePath);
+  const mime: any = mimeFor(projectRelativePath);
   return typeof mime === 'string' && mime ? mime : undefined;
 }

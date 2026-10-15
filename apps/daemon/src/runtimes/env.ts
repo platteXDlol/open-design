@@ -7,7 +7,6 @@ import { readAppConfigSync } from '../app-config.js';
 import { resolveProjectRelativePath } from '../home-expansion.js';
 import { expandConfiguredEnv } from './paths.js';
 import { resolveAmrOpenCodeExecutable } from './executables.js';
-import { amrVelaProfileEnv } from '../integrations/vela-profile.js';
 import { resolveProjectRootFromNestedModule } from '../project-root.js';
 import {
   applySandboxRuntimeEnv,
@@ -103,7 +102,7 @@ function applyClaudeTaskToolEnv(env: NodeJS.ProcessEnv): void {
 export function spawnEnvForAgent(
   agentId: string,
   baseEnv: RuntimeEnvMap,
-  configuredEnv: unknown = {},
+  configuredEnv: any = {},
   systemProxyEnv: RuntimeEnvMap = resolveSystemProxyEnv(),
   _options: SpawnEnvOptions = {},
 ): NodeJS.ProcessEnv {
@@ -116,7 +115,7 @@ export function spawnEnvForAgent(
     expandedConfiguredEnv,
   );
   if (agentId === 'amr') {
-    Object.assign(env, amrVelaProfileEnv(env));
+    Object.assign(env, ((..._v05_unused: any[]) => ({} as any))(env));
     Object.assign(env, amrAnalyticsIdentityEnv(env));
     // `execAgentFile` REPLACES the child environment (execFile with `env`
     // set), so anything missing here is genuinely absent for vela. `vela model

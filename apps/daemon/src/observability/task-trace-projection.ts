@@ -4,11 +4,11 @@ import { codexTurnUsageFromEvents } from './codex-turn-usage.js';
 /** Legacy-compatible summaries of physical Runs without duplicating Run traces. */
 export interface TaskRunTraceProjection {
   runId: string;
-  input?: unknown;
-  output?: unknown;
+  input?: any;
+  output?: any;
   metadata: Record<string, unknown>;
 }
-const record = (value: unknown): Record<string, unknown> =>
+const record = (value: any): Record<string, unknown> =>
   value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 export function projectTaskTrace(runs: TaskRunTraceProjection[], durationMs: number) {
   const first = runs[0];
@@ -32,7 +32,7 @@ export function projectTaskTrace(runs: TaskRunTraceProjection[], durationMs: num
     input_truncated: first.metadata.input_truncated, output_truncated: last.metadata.output_truncated,
   };
   for (const key of ['attachment_manifest', 'artifact_manifest', 'input_text_snapshot_manifest', 'artifacts']) {
-    metadata[key] = runs.flatMap(run => Array.isArray(run.metadata[key]) ? run.metadata[key] as unknown[] : []);
+    metadata[key] = runs.flatMap(run => Array.isArray(run.metadata[key]) ? run.metadata[key] as any[] : []);
   }
   Object.assign(metadata, taskObjectMetadata(runs.map(run => run.metadata)));
   // Physical Run facts remain in run_metadata; they are not Task totals.
@@ -41,7 +41,7 @@ export function projectTaskTrace(runs: TaskRunTraceProjection[], durationMs: num
 }
 
 /** Codex stream totals span a resumed session; stage counters must use the current Turn. */
-export function taskRunUsage(agentId: string | null | undefined, events: Array<{ event: string; data: unknown }>, provider: RunUsageAnalytics): RunUsageAnalytics {
+export function taskRunUsage(agentId: string | null | undefined, events: Array<{ event: string; data: any }>, provider: RunUsageAnalytics): RunUsageAnalytics {
   if (agentId !== 'codex') return provider;
   const turn = codexTurnUsageFromEvents(events);
   return {

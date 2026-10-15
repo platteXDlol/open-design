@@ -57,7 +57,7 @@ function localAgentProfilesFile(): string | null {
   return path.join(homedir(), '.open-design', 'agents.local.json');
 }
 
-function normalizeStringList(value: unknown): string[] {
+function normalizeStringList(value: any): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter(
     (item): item is string =>
@@ -67,7 +67,7 @@ function normalizeStringList(value: unknown): string[] {
   );
 }
 
-function normalizeEnvMap(value: unknown): Record<string, string> {
+function normalizeEnvMap(value: any): Record<string, string> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   const out: Record<string, string> = {};
   for (const [key, raw] of Object.entries(value)) {
@@ -83,7 +83,7 @@ function normalizeEnvMap(value: unknown): Record<string, string> {
   return out;
 }
 
-function normalizeModelOptions(value: unknown): RuntimeModelOption[] | null {
+function normalizeModelOptions(value: any): RuntimeModelOption[] | null {
   if (!Array.isArray(value)) return null;
   const out = [DEFAULT_MODEL_OPTION];
   const seen = new Set(['default']);
@@ -105,7 +105,7 @@ function normalizeModelOptions(value: unknown): RuntimeModelOption[] | null {
   return out.length > 1 ? out : null;
 }
 
-function normalizeDefaultModel(value: unknown): string | null {
+function normalizeDefaultModel(value: any): string | null {
   return typeof value === 'string' ? sanitizeCustomModel(value) : null;
 }
 
@@ -123,7 +123,7 @@ function optionsWithDefaultModel(
 }
 
 function createLocalAgentDef(
-  raw: unknown,
+  raw: any,
   baseDefs: RuntimeAgentDef[],
 ): RuntimeAgentDef | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
@@ -142,7 +142,7 @@ function createLocalAgentDef(
   if (!base) {
     if (hasExplicitBaseAgent) {
       console.warn(
-        `[agents] skipping local profile "${id}": unknown baseAgent "${baseId}"`,
+        `[agents] skipping local profile "${id}": any baseAgent "${baseId}"`,
       );
     }
     return null;
@@ -200,7 +200,7 @@ export function readLocalAgentProfileDefs(
 ): RuntimeAgentDef[] {
   const profilesFile = localAgentProfilesFile();
   if (profilesFile == null) return [];
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(readFileSync(profilesFile, 'utf8'));
   } catch {
@@ -210,8 +210,8 @@ export function readLocalAgentProfileDefs(
     ? parsed
     : parsed &&
         typeof parsed === 'object' &&
-        Array.isArray((parsed as { agents?: unknown }).agents)
-      ? (parsed as { agents: unknown[] }).agents
+        Array.isArray((parsed as { agents?: any }).agents)
+      ? (parsed as { agents: any[] }).agents
       : [];
   const defs: RuntimeAgentDef[] = [];
   const seen = new Set(baseDefs.map((def) => def.id));

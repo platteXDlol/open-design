@@ -60,11 +60,11 @@ type OAuthCredential = { apiKey: string; source: string };
 //   OD_MEDIA_MODEL_ALIASES='{"doubao-seedream-3-0-t2i-250415":"doubao-seedream-5-0"}'
 const ENV_MODEL_ALIASES = 'OD_MEDIA_MODEL_ALIASES';
 
-function isRecord(value: unknown): value is JsonRecord {
+function isRecord(value: any): value is JsonRecord {
   return value !== null && typeof value === 'object';
 }
 
-function errorCode(err: unknown): string | undefined {
+function errorCode(err: any): string | undefined {
   return isRecord(err) && typeof err.code === 'string' ? err.code : undefined;
 }
 
@@ -161,7 +161,7 @@ function configFile(projectRoot: string): string {
  * parser and the on-disk reader so both layers reject malformed
  * entries the same way.
  */
-function coerceAliasMap(raw: unknown): ModelAliasMap {
+function coerceAliasMap(raw: any): ModelAliasMap {
   if (!isRecord(raw)) return {};
   const out: ModelAliasMap = {};
   for (const [k, v] of Object.entries(raw)) {
@@ -177,7 +177,7 @@ async function readStoredFile(projectRoot: string): Promise<JsonRecord> {
     const raw = await readFile(configFile(projectRoot), 'utf8');
     const parsed = JSON.parse(raw);
     return isRecord(parsed) ? parsed : {};
-  } catch (err) {
+  } catch (err: any) {
     if (errorCode(err) === 'ENOENT') return {};
     throw err;
   }
@@ -267,8 +267,8 @@ function readEnvKey(providerId: string): string | null {
   return null;
 }
 
-function readNestedString(obj: unknown, keys: string[]): string {
-  let cur: unknown = obj;
+function readNestedString(obj: any, keys: string[]): string {
+  let cur: any = obj;
   for (const key of keys) {
     if (!isRecord(cur)) return '';
     cur = cur[key];
@@ -281,7 +281,7 @@ async function readJsonIfPresent(file: string): Promise<JsonRecord | null> {
     const raw = await readFile(file, 'utf8');
     const parsed = JSON.parse(raw);
     return isRecord(parsed) ? parsed : null;
-  } catch (err) {
+  } catch (err: any) {
     if (errorCode(err) === 'ENOENT') return null;
     // Auth files are best-effort fallbacks. A malformed local auth cache
     // should not break the Settings page or hide stored provider config.
@@ -289,7 +289,7 @@ async function readJsonIfPresent(file: string): Promise<JsonRecord | null> {
   }
 }
 
-function apiKeyFromCodexAuth(data: unknown): string {
+function apiKeyFromCodexAuth(data: any): string {
   return readNestedString(data, ['OPENAI_API_KEY']);
 }
 
@@ -434,7 +434,7 @@ export async function readMaskedConfig(projectRoot: string): Promise<MaskedConfi
  * pushing `{providers: {}}` onto a daemon that had keys from a
  * previous session) without silently destroying the user's data.
  */
-export async function writeConfig(projectRoot: string, body: unknown) {
+export async function writeConfig(projectRoot: string, body: any) {
   const incoming = isRecord(body) && isRecord(body.providers) ? body.providers : {};
   const force = Boolean(isRecord(body) && body.force === true);
   const prior = await readStored(projectRoot);

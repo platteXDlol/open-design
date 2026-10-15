@@ -18,7 +18,7 @@ export type GenUIEventSink = (event: GenUISurfaceEvent | PluginPipelineStageEven
 export function buildSurfaceRequestEvent(args: {
   surfaceRow: SurfaceRow;
   runId:      string;
-  payload?:   unknown;
+  payload?: any;
 }): GenUISurfaceEvent {
   return {
     kind:        'genui_surface_request',

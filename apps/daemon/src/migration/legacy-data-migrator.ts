@@ -250,14 +250,14 @@ export function promoteStaged(
             errorOnExist: false,
           });
           fs.rmSync(src, { recursive: true, force: true });
-        } catch (cpErr) {
+        } catch (cpErr: any) {
           fs.rmSync(dst, { recursive: true, force: true });
           throw cpErr;
         }
       }
       promoted.push(entry);
     }
-  } catch (err) {
+  } catch (err: any) {
     rollbackPromoted(dataDir, promoted);
     throw err;
   }
@@ -287,7 +287,7 @@ function writeMarker(dataDir: string, legacyDir: string): void {
   try {
     fs.writeFileSync(temp, payload + '\n', 'utf8');
     fs.renameSync(temp, marker);
-  } catch (err) {
+  } catch (err: any) {
     fs.rmSync(temp, { force: true });
     throw err;
   }
@@ -375,7 +375,7 @@ export function migrateLegacyDataDirSync(
     // making the migration un-retryable. Rolling back the promoted
     // entries here keeps the failure as a unit with promotion.
     (options.writeMarker ?? writeMarker)(dataDir, legacyDir);
-  } catch (err) {
+  } catch (err: any) {
     rollbackPromoted(dataDir, promoted);
     // Defensive marker cleanup: even though the production writeMarker
     // is atomic (temp + rename), a partial file at markerPath could

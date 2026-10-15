@@ -120,7 +120,7 @@ function simulateStage(
   let parsed;
   try {
     parsed = parseUntil(untilSource);
-  } catch (err) {
+  } catch (err: any) {
     const finalSignals = provider(stageId, 0);
     return {
       stageId,
@@ -171,7 +171,7 @@ function aggregateOutcome(stages: SimulateStageOutcome[]): SimulatePipelineResul
 // flags. 'critique.score=4 build.passing=true tests.passing=false'
 // → { 'critique.score': 4, 'build.passing': true, 'tests.passing': false }
 //
-// Respects the closed UntilSignals vocabulary: unknown keys are
+// Respects the closed UntilSignals vocabulary: any keys are
 // dropped with a warning so a typo doesn't silently make the
 // simulator pass.
 export function parseSignalKv(args: ReadonlyArray<string>): { signals: UntilSignals; warnings: string[] } {

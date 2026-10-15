@@ -83,32 +83,32 @@ export interface ToolExecutionLifecycleDiagnostic {
   toolTerminal?: RecordValue;
 }
 
-function record(value: unknown): RecordValue | null {
+function record(value: any): RecordValue | null {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value as RecordValue
     : null;
 }
 
-function enumValue(value: unknown, allowed: Set<string>): string | undefined {
+function enumValue(value: any, allowed: Set<string>): string | undefined {
   return typeof value === 'string' && allowed.has(value) ? value : undefined;
 }
 
-function integer(value: unknown, min: number, max: number): number | undefined {
+function integer(value: any, min: number, max: number): number | undefined {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= min && value <= max
     ? value
     : undefined;
 }
 
-function nullableInteger(value: unknown, min: number, max: number): number | null | undefined {
+function nullableInteger(value: any, min: number, max: number): number | null | undefined {
   if (value === null) return null;
   return integer(value, min, max);
 }
 
-function boolean(value: unknown): boolean | undefined {
+function boolean(value: any): boolean | undefined {
   return typeof value === 'boolean' ? value : undefined;
 }
 
-function errorChain(value: unknown): RecordValue[] | undefined {
+function errorChain(value: any): RecordValue[] | undefined {
   if (!Array.isArray(value)) return undefined;
   const errors: RecordValue[] = [];
   for (const raw of value.slice(0, MAX_ERROR_CHAIN)) {
@@ -127,7 +127,7 @@ function errorChain(value: unknown): RecordValue[] | undefined {
   return errors.length > 0 ? errors : undefined;
 }
 
-function lifecycleEvent(value: unknown): RecordValue | null {
+function lifecycleEvent(value: any): RecordValue | null {
   const item = record(value);
   if (!item) return null;
   const phase = enumValue(item.phase, PHASES);
@@ -159,7 +159,7 @@ function lifecycleEvent(value: unknown): RecordValue | null {
   };
 }
 
-function terminalProvenance(value: unknown): RecordValue | undefined {
+function terminalProvenance(value: any): RecordValue | undefined {
   const item = record(value);
   if (!item) return undefined;
   const source = enumValue(item.source, TERMINAL_SOURCES);
@@ -249,7 +249,7 @@ export function createToolExecutionLifecycleDeduper(): {
   };
 }
 
-function projectedLifecycleEvent(value: unknown): RecordValue | null {
+function projectedLifecycleEvent(value: any): RecordValue | null {
   const item = record(value);
   if (!item) return null;
   const phase = enumValue(item.phase, PHASES);
@@ -282,7 +282,7 @@ function projectedLifecycleEvent(value: unknown): RecordValue | null {
 }
 
 /** Re-validates persisted diagnostics before they leave the daemon for Langfuse. */
-export function projectToolExecutionLifecycleDiagnostic(value: unknown): RecordValue | null {
+export function projectToolExecutionLifecycleDiagnostic(value: any): RecordValue | null {
   const diagnostic = record(value);
   if (
     diagnostic?.type !== 'diagnostic' ||

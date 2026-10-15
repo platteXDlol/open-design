@@ -176,7 +176,7 @@ async function runStageWithDevloop(
 function parseUntilOrThrow(source: string, stageId: string): ReturnType<typeof parseUntil> {
   try {
     return parseUntil(source);
-  } catch (err) {
+  } catch (err: any) {
     throw new PipelineConfigError(
       `stage "${stageId}" until expression rejected: ${err instanceof Error ? err.message : String(err)}`,
     );

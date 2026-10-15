@@ -145,7 +145,7 @@ function abortPromise(signal: AbortSignal): Promise<never> {
   });
 }
 
-function toRefreshAbortError(reason: unknown, fallback: LiveArtifactRefreshRunScope): LiveArtifactRefreshAbortError {
+function toRefreshAbortError(reason: any, fallback: LiveArtifactRefreshRunScope): LiveArtifactRefreshAbortError {
   if (reason instanceof LiveArtifactRefreshAbortError) return reason;
   if (reason instanceof Error) {
     return new LiveArtifactRefreshAbortError(reason.message, { ...fallback, kind: 'cancelled' });
@@ -215,7 +215,7 @@ export async function withLiveArtifactRefreshRun<T>(
   const run = registry.startRun(options);
   try {
     return await Promise.race([callback(run), abortPromise(run.signal)]);
-  } catch (error) {
+  } catch (error: any) {
     if (!run.signal.aborted) throw error;
     throw toRefreshAbortError(error, run);
   } finally {
@@ -248,7 +248,7 @@ export async function withLiveArtifactRefreshSourceTimeout<T>(
 
   try {
     return await Promise.race([callback(sourceController.signal), abortPromise(sourceController.signal)]);
-  } catch (error) {
+  } catch (error: any) {
     if (!sourceController.signal.aborted) throw error;
     throw toRefreshAbortError(error, run);
   } finally {
@@ -615,8 +615,8 @@ async function runGit(projectPath: string, args: string[], signal: AbortSignal |
   try {
     const result = await execFileAsync('git', args, { cwd: projectPath, signal, timeout: 10_000, maxBuffer: 128 * 1024 });
     return result.stdout.toString();
-  } catch (error) {
-    const maybeError = error as { stdout?: string | Buffer; stderr?: string | Buffer; message?: string; code?: unknown };
+  } catch (error: any) {
+    const maybeError = error as { stdout?: string | Buffer; stderr?: string | Buffer; message?: string; code?: any };
     if (maybeError.code === 128) return '';
     throw new Error(maybeError.stderr?.toString().trim() || maybeError.message || 'git command failed');
   }

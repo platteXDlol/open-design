@@ -263,7 +263,7 @@ async function freezeVideoFrameCover(
       bytes: frozen.bytes,
       mime: frozen.mime,
     });
-  } catch (err) {
+  } catch (err: any) {
     logCoverFailure(row.labelAtCapture, err);
     try {
       recordCoverFailure(deps, row, 'internal_error');
@@ -331,7 +331,7 @@ async function freezeCoverDocument(
       html,
       readAsset,
     });
-  } catch (err) {
+  } catch (err: any) {
     // A graph that cannot be closed (a missing local dependency, a document
     // past the bundler's limits) has no dependency-complete freeze available.
     // Spec §6.3's fallback — render the live file immediately while its
@@ -377,7 +377,7 @@ async function renderCoversSequentially(
   for (const item of pending) {
     try {
       await renderOneCover(deps, renderer, item.row, item.render, onRefsChanged);
-    } catch (err) {
+    } catch (err: any) {
       // A cover is never allowed to take anything else down with it: the turn
       // has already been reported as finished by the time this runs.
       logCoverFailure(item.row.labelAtCapture, err);
@@ -404,7 +404,7 @@ async function renderOneCover(
       CHAT_ARTIFACT_COVER_BUDGET_MS,
       (err) => logCoverFailure(row.labelAtCapture, err),
     );
-  } catch (err) {
+  } catch (err: any) {
     logCoverFailure(row.labelAtCapture, err);
     recordCoverFailure(deps, row, err instanceof CoverBudgetExceededError ? 'timeout' : 'renderer_unavailable');
     return;
@@ -427,7 +427,7 @@ async function renderOneCover(
     // Never allowed to fail the render it is reporting on.
     try {
       onRefsChanged?.(row);
-    } catch (err) {
+    } catch (err: any) {
       logCoverFailure(row.labelAtCapture, err);
     }
   } finally {
@@ -503,7 +503,7 @@ class CoverBudgetExceededError extends Error {
 async function withBudget(
   work: Promise<DesktopExportArtifactResult>,
   budgetMs: number,
-  onLateCleanupFailure: (err: unknown) => void,
+  onLateCleanupFailure: (err: any) => void,
 ): Promise<DesktopExportArtifactResult> {
   let timer: NodeJS.Timeout | undefined;
   let timedOut = false;
@@ -512,7 +512,7 @@ async function withBudget(
     // already owns a failed snapshot; only release the renderer's late temp
     // output, never attach it or announce a ready cover.
     if (timedOut && result?.ok && typeof result.path === 'string' && result.path.length > 0) {
-      await fs.promises.rm(result.path, { force: true }).catch(onLateCleanupFailure);
+      await fs.promises.rm(result.path, { force: true }).catch((onLateCleanupFailure: any) => {});
     }
     return result;
   });
@@ -555,7 +555,7 @@ function resolveInsideProject(projectRoot: string, projectPath: string): string 
   return absolute;
 }
 
-function logCoverFailure(label: string, err: unknown): void {
+function logCoverFailure(label: string, err: any): void {
   const message = err instanceof Error ? err.message : String(err);
   try {
     // Project-relative label only — never bytes, never an absolute path.

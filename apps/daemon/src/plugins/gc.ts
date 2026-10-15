@@ -69,7 +69,7 @@ export function startSnapshotGc(opts: SnapshotGcOptions): SnapshotGcHandle {
         });
       }
       opts.onTick?.(result);
-    } catch (err) {
+    } catch (err: any) {
       log(`[plugins] snapshot GC tick failed: ${(err as Error).message ?? String(err)}`);
     }
   };

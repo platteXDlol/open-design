@@ -31,7 +31,7 @@ export const IGNORED_PROJECT_DIR_NAMES = new Set([
   '.ruff_cache',
 ].map((name) => name.toLowerCase()));
 
-export function isIgnoredProjectDirName(name: unknown): boolean {
+export function isIgnoredProjectDirName(name: any): boolean {
   const normalized = String(name).toLowerCase();
   return (
     IGNORED_PROJECT_DIR_NAMES.has(normalized) ||

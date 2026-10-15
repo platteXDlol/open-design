@@ -11,7 +11,7 @@ export function browserUseRegistryPath(tmpDir: string = os.tmpdir()): string {
   return path.join(tmpDir, BROWSER_USE_REGISTRY_BASENAME);
 }
 
-export function isBrowserUseRequested(...values: unknown[]): boolean {
+export function isBrowserUseRequested(...values: any[]): boolean {
   return values.some((value) => (
     typeof value === 'string' &&
     (
@@ -69,8 +69,8 @@ export function collectBrowserUseDiscoveryFacts({
       ...(newestMtime > 0 ? { newestSocketAgeMs: Math.max(0, now - newestMtime) } : {}),
       staleThresholdMs,
     };
-  } catch (error) {
-    const code = typeof (error as { code?: unknown })?.code === 'string'
+  } catch (error: any) {
+    const code = typeof (error as { code?: any })?.code === 'string'
       ? (error as { code: string }).code
       : '';
     return {

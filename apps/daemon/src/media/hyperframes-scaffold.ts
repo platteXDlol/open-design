@@ -102,7 +102,7 @@ export async function scaffoldHyperFramesComposition(input: {
       writeFile(path.join(targetDir, files[1]), metadata, { encoding: 'utf8', flag: 'wx' }),
       writeFile(path.join(targetDir, files[2]), BLANK_COMPOSITION_HTML, { encoding: 'utf8', flag: 'wx' }),
     ]);
-  } catch (error) {
+  } catch (error: any) {
     await rm(targetDir, { recursive: true, force: true });
     throw error;
   }

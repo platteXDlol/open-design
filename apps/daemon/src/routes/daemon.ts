@@ -26,7 +26,7 @@ export interface RegisterDaemonRoutesDeps {
   getDaemonShuttingDown: () => boolean;
   sandboxRuntime: {
     enabled: boolean;
-    roots?: unknown;
+    roots?: any;
   };
   env: NodeJS.ProcessEnv;
 }
@@ -66,7 +66,7 @@ export function registerDaemonRoutes(app: Express, deps: RegisterDaemonRoutesDep
       const file = path.join(paths.RUNTIME_DATA_DIR, 'app.sqlite');
       const report = await inspectSqliteDatabase({ db, file });
       res.json(report);
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -90,7 +90,7 @@ export function registerDaemonRoutes(app: Express, deps: RegisterDaemonRoutesDep
         platform: result.platform,
         error: result.reason,
       });
-    } catch (err) {
+    } catch (err: any) {
       return res.status(500).json({
         ok: false,
         error: String(err),
@@ -109,7 +109,7 @@ export function registerDaemonRoutes(app: Express, deps: RegisterDaemonRoutesDep
         runtimeDataDir: paths.RUNTIME_DATA_DIR,
       });
       return res.json(result);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof AgentCompanionSetupError) {
         const status = error.code === 'AGENT_NOT_INSTALLED' ? 409 : 500;
         return res.status(status).json({
@@ -127,7 +127,7 @@ export function registerDaemonRoutes(app: Express, deps: RegisterDaemonRoutesDep
       const quick = String(req.query.quick ?? '').toLowerCase();
       const report = verifySqliteIntegrity({ db, quick: quick === '1' || quick === 'true' });
       res.json(report);
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -148,7 +148,7 @@ export function registerDaemonRoutes(app: Express, deps: RegisterDaemonRoutesDep
         reclaimedBytes: Math.max(0, before.sizeBytes - after.sizeBytes),
         elapsedMs,
       });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -171,12 +171,12 @@ export function registerDaemonRoutes(app: Express, deps: RegisterDaemonRoutesDep
     });
   }
 
-  const parsePositiveInt = (raw: unknown, fallback: number): number => {
+  const parsePositiveInt = (raw: any, fallback: number): number => {
     if (typeof raw !== 'string' || raw.length === 0) return fallback;
     const n = Number(raw);
     return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
   };
-  const parseRate = (raw: unknown, fallback: number): number => {
+  const parseRate = (raw: any, fallback: number): number => {
     if (typeof raw !== 'string' || raw.length === 0) return fallback;
     const n = Number(raw);
     return Number.isFinite(n) && n >= 0 && n <= 1 ? n : fallback;
@@ -195,7 +195,7 @@ export function registerDaemonRoutes(app: Express, deps: RegisterDaemonRoutesDep
         cleanParseThreshold,
       });
       res.json({ window: { days: windowDays, history }, decision });
-    } catch (err) {
+    } catch (err: any) {
       sendApiError(res, 500, 'INTERNAL_ERROR', err instanceof Error ? err.message : String(err));
     }
   });

@@ -13,22 +13,22 @@ const ORCHESTRATOR_WORKSPACE_KEYS = new Set([
   'writeback',
 ]);
 
-function stringField(value: unknown): string | null {
+function stringField(value: any): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
-function plainObject(value: unknown): Record<string, unknown> | null {
+function plainObject(value: any): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
 }
 
-export function normalizeOrchestratorWorkspace(value: unknown) {
+export function normalizeOrchestratorWorkspace(value: any) {
   const parsed = parseOrchestratorWorkspace(value);
   return parsed.ok ? parsed.value : null;
 }
 
-export function parseOrchestratorWorkspace(value: unknown): {
+export function parseOrchestratorWorkspace(value: any): {
   ok: true;
   value: OrchestratorWorkspace | null;
 } | {
@@ -84,12 +84,12 @@ export function parseOrchestratorWorkspace(value: unknown): {
   return { ok: true, value: result };
 }
 
-export function isOrchestratorScratchWorkspace(metadata: unknown): boolean {
+export function isOrchestratorScratchWorkspace(metadata: any): boolean {
   const record = plainObject(metadata);
   return !!record && normalizeOrchestratorWorkspace(record.orchestratorWorkspace) !== null;
 }
 
-export function projectWorkspaceProvenance(metadata: unknown): RunWorkspace {
+export function projectWorkspaceProvenance(metadata: any): RunWorkspace {
   const record = plainObject(metadata);
   const baseDir = stringField(record?.baseDir);
   const orchestratorWorkspace = normalizeOrchestratorWorkspace(record?.orchestratorWorkspace);

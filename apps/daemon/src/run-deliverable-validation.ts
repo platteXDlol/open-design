@@ -63,7 +63,7 @@ const PROJECT_KIND_FILE_KINDS: Partial<
   audio: new Set(['audio']),
 };
 
-function safeRelativeFile(value: unknown): string | null {
+function safeRelativeFile(value: any): string | null {
   if (typeof value !== 'string') return null;
   const normalized = value.trim().replaceAll('\\', '/');
   if (!normalized || normalized.startsWith('/')) return null;

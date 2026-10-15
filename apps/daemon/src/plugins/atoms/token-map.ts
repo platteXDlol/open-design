@@ -407,6 +407,6 @@ async function pathExists(p: string): Promise<boolean> {
   try { await fsp.access(p); return true; } catch { return false; }
 }
 
-function digestObject(obj: unknown): string {
+function digestObject(obj: any): string {
   return createHash('sha1').update(JSON.stringify(obj)).digest('hex');
 }

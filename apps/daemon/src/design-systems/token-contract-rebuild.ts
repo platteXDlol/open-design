@@ -326,7 +326,7 @@ async function readManifest(
 ): Promise<{ sourceFiles?: { evidence?: string; tokens?: string; report?: string } } | null> {
   try {
     const raw = await readFile(path.join(baseDir, 'manifest.json'), 'utf8');
-    const parsed = JSON.parse(raw) as unknown;
+    const parsed = JSON.parse(raw) as any;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
     const record = parsed as Record<string, unknown>;
     if (record.schemaVersion !== 'od-design-system-project/v1' || record.id !== expectedId) return null;
@@ -349,7 +349,7 @@ async function readReport(baseDir: string, relativePath: string): Promise<TokenC
   if (!safeManifestPath(relativePath)) return null;
   try {
     const raw = await readFile(path.join(baseDir, relativePath), 'utf8');
-    const parsed = JSON.parse(raw) as unknown;
+    const parsed = JSON.parse(raw) as any;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
     return parsed as TokenContractReport;
   } catch {
@@ -366,7 +366,7 @@ async function readTextOptional(baseDir: string, relativePath: string | undefine
   }
 }
 
-function safeManifestPath(value: unknown): value is string {
+function safeManifestPath(value: any): value is string {
   if (typeof value !== 'string') return false;
   const trimmed = value.trim().replace(/\\/g, '/');
   if (!trimmed || path.posix.isAbsolute(trimmed)) return false;
@@ -382,7 +382,7 @@ function sanitizeDesignSystemId(id: string): string | null {
   return dirId;
 }
 
-function numberOrUndefined(value: unknown): number | undefined {
+function numberOrUndefined(value: any): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 

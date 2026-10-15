@@ -8,7 +8,7 @@ export const ok = <T, E = ApiError>(value: T): Result<T, E> => ({ ok: true, valu
 export const err = <T = never, E = ApiError>(error: E): Result<T, E> => ({ ok: false, error });
 
 export interface RouteInputContext {
-  body: unknown;
+  body: any;
   query: Record<string, unknown>;
   params: Record<string, string>;
 }

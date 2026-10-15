@@ -231,8 +231,8 @@ export interface AIHubMixCatalogModel {
 // pickers — NOT the chat model picker.
 const AIHUBMIX_MEDIA_GENERATION_TYPES = new Set(['image_generation', 'video', 'tts']);
 
-function aihubmixRowTypes(row: unknown): string[] {
-  const raw = (row as { types?: unknown })?.types;
+function aihubmixRowTypes(row: any): string[] {
+  const raw = (row as { types?: any })?.types;
   if (typeof raw !== 'string') return [];
   return raw
     .split(',')
@@ -254,15 +254,15 @@ export interface ParseAIHubMixCatalogOptions {
 /** Parse the AIHubMix catalogue envelope into { id, label } options. Reads
  *  `model_id` (the wire name sent as `model`) and `model_name` (display). */
 export function parseAIHubMixCatalog(
-  data: unknown,
+  data: any,
   options?: ParseAIHubMixCatalogOptions,
 ): AIHubMixCatalogModel[] {
-  const rows = (data as { data?: unknown })?.data;
+  const rows = (data as { data?: any })?.data;
   if (!Array.isArray(rows)) return [];
   const seen = new Set<string>();
   const out: AIHubMixCatalogModel[] = [];
   for (const row of rows) {
-    const id = typeof (row as { model_id?: unknown })?.model_id === 'string'
+    const id = typeof (row as { model_id?: any })?.model_id === 'string'
       ? (row as { model_id: string }).model_id
       : '';
     if (!id || seen.has(id)) continue;
@@ -273,7 +273,7 @@ export function parseAIHubMixCatalog(
       continue;
     }
     seen.add(id);
-    const name = typeof (row as { model_name?: unknown })?.model_name === 'string'
+    const name = typeof (row as { model_name?: any })?.model_name === 'string'
       ? (row as { model_name: string }).model_name
       : '';
     out.push({ id, label: name || id });

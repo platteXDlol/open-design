@@ -243,7 +243,7 @@ function parseJavaScript(
   try {
     parse(sourceText, options);
     return {};
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof Error) {
       const diagnostic = javascriptDiagnostic(error as BabelLikeError, file, source);
       if (diagnostic) return { syntax: diagnostic };

@@ -19,7 +19,7 @@ export interface AiHtmlVersionSnapshotInput {
   prompt: string | null;
   promptSource?: ProjectFileVersionPromptSource;
   origin?: ArtifactOrigin;
-  metadata?: unknown;
+  metadata?: any;
 }
 
 export interface AiHtmlVersionSnapshotFailure {
@@ -75,7 +75,7 @@ function formatAiHtmlVersionSnapshotError(failures: AiHtmlVersionSnapshotFailure
   return `HTML version snapshots failed for ${failures.length} files`;
 }
 
-function failureMessage(reason: unknown): string {
+function failureMessage(reason: any): string {
   return reason instanceof Error ? reason.message : String(reason);
 }
 

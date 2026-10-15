@@ -48,16 +48,16 @@ export function createDshProfileJsonlStream({
       fail('DSH_PROFILE_FRAME_TOO_LARGE', 'DeepSeek Harness profile emitted an oversized frame.', line);
       return;
     }
-    let parsed: unknown;
+    let parsed: any;
     try {
-      parsed = JSON.parse(candidate) as unknown;
+      parsed = JSON.parse(candidate) as any;
     } catch {
       fail('DSH_PROFILE_MALFORMED_FRAME', 'DeepSeek Harness profile emitted malformed JSON.', line);
       return;
     }
     try {
       onFrame(parseDshProfileRuntimeFrame(parsed));
-    } catch (error) {
+    } catch (error: any) {
       const detail = error instanceof Error ? error.message : 'frame validation failed';
       fail('DSH_PROFILE_INVALID_FRAME', `DeepSeek Harness profile emitted an invalid frame: ${detail}.`, line);
     }

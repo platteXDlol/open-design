@@ -63,7 +63,7 @@ export interface RegisterDeliverableSyntaxToolRoutesDeps {
   monotonicNow?: () => number;
 }
 
-function storedRepairState(value: unknown): DeliverableSyntaxRepairState | undefined {
+function storedRepairState(value: any): DeliverableSyntaxRepairState | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
   const candidate = value as Partial<DeliverableSyntaxRepairState>;
   if (
@@ -242,7 +242,7 @@ export function registerDeliverableSyntaxToolRoutes(
       };
       ctx.persistRunState(run);
       res.json(response);
-    } catch (error) {
+    } catch (error: any) {
       sendApiError(
         res,
         500,

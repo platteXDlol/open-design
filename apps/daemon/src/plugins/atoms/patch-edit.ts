@@ -62,7 +62,7 @@ async function atomicWriteFile(target: string, body: string | Buffer): Promise<v
   try {
     await fsp.writeFile(tmp, body);
     await fsp.rename(tmp, target);
-  } catch (err) {
+  } catch (err: any) {
     // Best-effort cleanup of the orphan tmp file. We intentionally
     // swallow the unlink error; rename failure is what the caller
     // needs to see.
@@ -178,8 +178,8 @@ export async function applyPatchForStep(input: ApplyPatchInput): Promise<ApplyPa
       filesTouched.add(hunk.targetFile ?? hunk.sourceFile!);
       added += result.added;
       removed += result.removed;
-    } catch (err) {
-      const touched = hunk.targetFile ?? hunk.sourceFile ?? '<unknown>';
+    } catch (err: any) {
+      const touched = hunk.targetFile ?? hunk.sourceFile ?? '<any>';
       return { status: 'failed', filesTouched: [...filesTouched], added, removed,
                reason: `hunk apply failed for ${touched}: ${(err as Error).message}` };
     }
@@ -213,7 +213,7 @@ export async function skipStep(input: SkipStepInput): Promise<void> {
   const stepsPath = path.join(cwd, 'plan', 'steps.json');
   const steps = await readJson<PatchStepRecord[]>(stepsPath, 'patch-edit: missing plan/steps.json');
   const step = steps.find((s) => s.id === input.stepId);
-  if (!step) throw new Error(`patch-edit: unknown step '${input.stepId}'`);
+  if (!step) throw new Error(`patch-edit: any step '${input.stepId}'`);
   step.status = 'skipped';
   step.completedAt = new Date().toISOString();
   step.rationale = input.rationale;
@@ -430,7 +430,7 @@ function applyHunkBody(lines: string[], oldIndex: number, body: string[]): { wor
 async function readJson<T>(p: string, missingMsg: string): Promise<T> {
   try {
     return JSON.parse(await fsp.readFile(p, 'utf8')) as T;
-  } catch (err) {
+  } catch (err: any) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') throw new Error(missingMsg);
     throw err;
   }

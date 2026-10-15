@@ -73,7 +73,7 @@ type PersistedAgentEvent =
   | { kind: 'status'; label: string; detail?: string }
   | { kind: 'text'; text: string }
   | { kind: 'thinking'; text: string }
-  | { kind: 'tool_use'; id: string; name: string; input: unknown }
+  | { kind: 'tool_use'; id: string; name: string; input: any }
   | { kind: 'tool_result'; toolUseId: string; content: string; isError: boolean }
   | {
       kind: 'diagnostic';
@@ -131,7 +131,7 @@ interface CommentAttachmentRef {
 type Block =
   | { type: 'text'; text: string }
   | { type: 'thinking'; thinking: string }
-  | { type: 'tool_use'; id: string; name: string; input: unknown }
+  | { type: 'tool_use'; id: string; name: string; input: any }
   | { type: 'tool_result'; toolUseId: string; content: string; isError: boolean };
 
 export interface TranscriptExportOptions {
@@ -181,7 +181,7 @@ export function exportProjectTranscript(
   let lockFd: number | null = null;
   try {
     lockFd = fs.openSync(lockPath, 'wx');
-  } catch (err: unknown) {
+  } catch (err: any) {
     if ((err as NodeJS.ErrnoException)?.code === 'EEXIST') {
       throw new TranscriptExportLockedError(
         `transcript export for project ${projectId} is already in progress`,
@@ -341,7 +341,7 @@ export function exportProjectTranscript(
         fs.closeSync(fsyncFd);
       }
       fs.renameSync(tmpPath, finalPath);
-    } catch (err) {
+    } catch (err: any) {
       try {
         fs.unlinkSync(tmpPath);
       } catch {
@@ -377,7 +377,7 @@ function parseEvents(raw: string | null): {
   reason: 'ok' | 'null' | 'malformed' | 'not_array';
 } {
   if (raw == null) return { events: [], reason: 'null' };
-  let v: unknown;
+  let v: any;
   try {
     v = JSON.parse(raw);
   } catch {
@@ -389,7 +389,7 @@ function parseEvents(raw: string | null): {
 
 function parseAttachments(raw: string | null): AttachmentRef[] {
   if (raw == null) return [];
-  let v: unknown;
+  let v: any;
   try {
     v = JSON.parse(raw);
   } catch {
@@ -415,7 +415,7 @@ function parseAttachments(raw: string | null): AttachmentRef[] {
 
 function parseCommentAttachments(raw: string | null): CommentAttachmentRef[] {
   if (raw == null) return [];
-  let v: unknown;
+  let v: any;
   try {
     v = JSON.parse(raw);
   } catch {

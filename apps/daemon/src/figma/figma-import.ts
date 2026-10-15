@@ -253,7 +253,7 @@ function buildSuggestedPrompt(
 // Small helpers
 // ---------------------------------------------------------------------------
 
-async function writeJson(file: string, value: unknown): Promise<void> {
+async function writeJson(file: string, value: any): Promise<void> {
   await fsp.writeFile(file, JSON.stringify(value, null, 2) + '\n', 'utf8');
 }
 

@@ -233,7 +233,7 @@ export interface ResolveOdNextRuntimeCapabilityInput {
   runtimeCompanionName?: string | null;
   runtimeCompanionVersion?: string | null;
   fixtureVersion: string;
-  fixtureManifest?: unknown;
+  fixtureManifest?: any;
   registry?: readonly RuntimeCapabilityRegistryEntryV1[];
   incompatibleVersions?: readonly {
     agentId: string;
@@ -259,7 +259,7 @@ export interface OdNextRuntimeCapabilityResolution {
   snapshot: OdNextRuntimeCapabilitySnapshotV1 | null;
 }
 
-function canonicalize(value: unknown): unknown {
+function canonicalize(value: any): any {
   if (value === null || typeof value !== 'object') return value;
   if (Array.isArray(value)) return value.map(canonicalize);
   return Object.fromEntries(
@@ -270,7 +270,7 @@ function canonicalize(value: unknown): unknown {
   );
 }
 
-function sha256Canonical(value: unknown): string {
+function sha256Canonical(value: any): string {
   return `sha256:${createHash('sha256')
     .update(JSON.stringify(canonicalize(value)), 'utf8')
     .digest('hex')}`;
@@ -278,7 +278,7 @@ function sha256Canonical(value: unknown): string {
 
 /** Hash only the replay contract and recording identity, not review timestamps. */
 export function hashRuntimeCapabilityFixtureManifestV1(
-  input: unknown,
+  input: any,
 ): string {
   const manifest = RuntimeCapabilityFixtureManifestV1Schema.parse(input);
   return sha256Canonical({
@@ -306,7 +306,7 @@ export function hashRuntimeCapabilityFixtureManifestV1(
 
 function snapshotHashInput(
   snapshot: Omit<OdNextRuntimeCapabilitySnapshotV1, 'snapshotHash'>,
-): unknown {
+): any {
   return {
     schema: snapshot.schema,
     runtimePath: snapshot.runtimePath,

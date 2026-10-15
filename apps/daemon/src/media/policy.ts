@@ -17,12 +17,12 @@ export function defaultMediaExecutionPolicy(): MediaExecutionPolicy {
   return { ...DEFAULT_MEDIA_EXECUTION_POLICY };
 }
 
-export function normalizeMediaExecutionPolicyForRun(value: unknown): MediaExecutionPolicy {
+export function normalizeMediaExecutionPolicyForRun(value: any): MediaExecutionPolicy {
   const parsed = parseMediaExecutionPolicyInput(value);
   return parsed.ok ? parsed.policy : defaultMediaExecutionPolicy();
 }
 
-export function parseMediaExecutionPolicyInput(value: unknown):
+export function parseMediaExecutionPolicyInput(value: any):
   | { ok: true; policy: MediaExecutionPolicy }
   | { ok: false; message: string } {
   if (value === undefined || value === null) {
@@ -86,6 +86,6 @@ export function mediaPolicyDenial(
   return mediaExecutionPolicyDenial(policy, target);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value);
 }

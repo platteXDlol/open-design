@@ -98,7 +98,7 @@ export function openCompletePromptAsStdin(runDir: string, prompt: string): Stage
   let fd: number;
   try {
     fd = fs.openSync(filePath, 'r');
-  } catch (error) {
+  } catch (error: any) {
     try { fs.unlinkSync(filePath); } catch { /* best-effort */ }
     throw error;
   }
@@ -147,7 +147,7 @@ export function writeAgentProcessRecord(runDir: string, record: AgentProcessReco
   try {
     fs.writeFileSync(tempPath, `${JSON.stringify(record)}\n`, { encoding: 'utf8', mode: 0o600 });
     fs.renameSync(tempPath, filePath);
-  } catch (error) {
+  } catch (error: any) {
     try { fs.unlinkSync(tempPath); } catch { /* best-effort */ }
     throw error;
   }
@@ -204,7 +204,7 @@ function recordAgentProcessUntilGroupExits(child: ChildProcess, context: AgentPr
       ownerPid: process.pid,
       ownerStartedAtMs: DAEMON_PROCESS_STARTED_AT_MS,
     });
-  } catch (error) {
+  } catch (error: any) {
     try {
       if (context.processGroupId != null) process.kill(-context.processGroupId, 'SIGKILL');
       else child.kill('SIGKILL');
@@ -487,7 +487,7 @@ export async function reapLeftoverAgentProcesses(options: {
     return result;
   }
   const reapLeftover = async (record: AgentProcessRecord, filePath: string): Promise<void> => {
-    const outcome = await terminateLeftoverAgent(record, terminateOptions).catch((error: unknown) => {
+    const outcome = await terminateLeftoverAgent(record, terminateOptions).catch((error: any) => {
       console.warn('[agent-process] could not terminate leftover agent', {
         runId: record.runId,
         pid: record.pid,

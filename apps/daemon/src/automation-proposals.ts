@@ -42,13 +42,13 @@ export async function listAutomationProposals(
   dataDir: string,
   opts: { status?: AutomationProposalStatus | 'all' } = {},
 ): Promise<AutomationEvolutionProposal[]> {
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(await fsp.readFile(storePath(dataDir), 'utf8'));
   } catch {
     return [];
   }
-  const proposals = Array.isArray((parsed as { proposals?: unknown }).proposals)
+  const proposals = Array.isArray((parsed as { proposals?: any }).proposals)
     ? ((parsed as { proposals: AutomationEvolutionProposal[] }).proposals)
     : [];
   const filtered =
@@ -123,7 +123,7 @@ function assertReviewable(proposal: AutomationEvolutionProposal): void {
   throw new Error(`proposal ${proposal.id} is ${proposal.status}, not reviewable`);
 }
 
-function safeMemoryType(value: unknown): MemoryType {
+function safeMemoryType(value: any): MemoryType {
   return typeof value === 'string' && VALID_MEMORY_TYPES.has(value as MemoryType)
     ? (value as MemoryType)
     : 'project';

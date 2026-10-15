@@ -267,9 +267,9 @@ async function reconcileProjects(
   paths: ReconcileLibraryPaths,
   result: ReconcileLibraryResult,
 ): Promise<void> {
-  let projects: Array<{ id: string; metadata?: unknown }>;
+  let projects: Array<{ id: string; metadata?: any }>;
   try {
-    projects = listProjects(db) as Array<{ id: string; metadata?: unknown }>;
+    projects = listProjects(db) as Array<{ id: string; metadata?: any }>;
   } catch {
     return;
   }

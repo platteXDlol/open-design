@@ -11,7 +11,7 @@ import { type AttachmentContextEntry, evidenceMode } from '../observability/eval
 
 type FrozenSource = Omit<TraceObjectSource, 'body'> & { snapshotHash?: string };
 interface ObjectJob { taskTraceId?: string; context: ReportContext; sources: FrozenSource[]; capturedAt: string; environment?: string }
-interface FeedbackJob { context: FeedbackReportContext; batch: unknown[] }
+interface FeedbackJob { context: FeedbackReportContext; batch: any[] }
 const stores = new Map<string, Promise<TelemetryOutbox>>();
 const sha = (body: Buffer | string) => createHash('sha256').update(body).digest('hex');
 export async function evidenceStore(dataDir: string): Promise<TelemetryOutbox> {

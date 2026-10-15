@@ -20,7 +20,7 @@
  * @returns An object with `feed(chunk)` for incremental input and `flush()` to
  *   drain any residual buffered content at stream end.
  */
-export function createJsonLineStream(onMessage: (message: unknown, rawLine: string) => void) {
+export function createJsonLineStream(onMessage: (message: any, rawLine: string) => void) {
   let buffer = '';
   let pendingJsonLines: string[] = [];
 

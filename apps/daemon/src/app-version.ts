@@ -18,14 +18,14 @@ export interface AppVersionInfo {
   arch: string;
 }
 
-export function normalizeTelemetryAppVersion(value: unknown): string | null {
+export function normalizeTelemetryAppVersion(value: any): string | null {
   const version = cleanString(value);
   return version && version !== APP_VERSION_FALLBACK && version !== UNKNOWN_APP_VERSION
     ? version
     : null;
 }
 
-export function normalizeTelemetryAppVersionInfo(value: unknown): AppVersionInfo | null {
+export function normalizeTelemetryAppVersionInfo(value: any): AppVersionInfo | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const candidate = value as Partial<AppVersionInfo>;
   const version = normalizeTelemetryAppVersion(candidate.version);
@@ -39,7 +39,7 @@ export function normalizeTelemetryAppVersionInfo(value: unknown): AppVersionInfo
 }
 
 interface PackageMetadata {
-  version?: unknown;
+  version?: any;
 }
 
 export interface ResolveAppVersionInfoOptions {
@@ -92,7 +92,7 @@ async function findNearestPackageJsonUrl(startUrl: URL): Promise<URL | null> {
   }
 }
 
-function cleanString(value: unknown): string | null {
+function cleanString(value: any): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
 }
 
@@ -149,7 +149,7 @@ export function resolveAppVersionInfo({
 async function readPackageMetadata(packageJsonUrl: URL): Promise<PackageMetadata | null> {
   try {
     const raw = await readFile(packageJsonUrl, 'utf8');
-    const parsed = JSON.parse(raw) as unknown;
+    const parsed = JSON.parse(raw) as any;
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
   } catch {
     return null;
