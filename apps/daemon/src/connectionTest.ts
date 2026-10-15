@@ -1,4 +1,3 @@
-import { fetchVelaPresetModels, fetchVelaRemoteModelsWithRetry } from './v05-stubs.js';
 // Smoke tests for the Settings dialog. Two entry points:
 //
 //   - testProviderConnection: posts a tiny "Reply with only: ok" request to
@@ -2031,36 +2030,6 @@ async function prepareOpenCodeConnectionTestCwd(tempDir: string): Promise<void> 
   }
 }
 
-async function resolveConnectionTestModelForAgent(
-  def: RuntimeAgentDef,
-  requestedModel: string | null,
-  env: NodeJS.ProcessEnv,
-  liveModelScope: string | null,
-  launchPath?: string | null,
-): Promise<string | null> {
-  const resolved = resolveModelForAgent(def, requestedModel, env, liveModelScope);
-  if (def.id !== 'amr' || resolved !== 'default' || !launchPath) return resolved;
-
-  try {
-    const cacheKey = ((..._v05_unused: any[]) => ({} as any))({
-      launchPath,
-      env,
-      credentialRevision: ((..._v05_unused: any[]) => ({} as any))(env),
-    });
-    const catalog = await (((..._v05_args: any[]) => ({} as any))() as any).get(cacheKey, {
-      fetchPreset: () => fetchVelaPresetModels(launchPath, env),
-      fetchRemote: () => fetchVelaRemoteModelsWithRetry(launchPath, env),
-    });
-    const liveModels = preferFreshLiveModels(
-      catalog.models ?? [],
-      getRememberedLiveModels(def.id, liveModelScope),
-    );
-    return resolveDefaultModelFromOptions(liveModels) ?? resolved;
-  } catch {
-    return resolved;
-  }
-}
-
 async function testAgentConnectionInternal(
   input: AgentConnectionInput,
 ): Promise<ConnectionTestResponse> {
@@ -2400,12 +2369,11 @@ async function testAgentConnectionInternal(
       ...baseEnv,
       ...(mmdRouteLaunchEnv || {}),
     }, executableResolution);
-    model = await resolveConnectionTestModelForAgent(
+    model = await resolveModelForAgent(
       def,
       model,
       env,
       liveModelScope,
-      executableResolution.launchPath,
     ) ?? model;
     const auth = await probeAgentAuthStatus(def, executableResolution.launchPath, env);
     if (auth?.status === 'missing') {

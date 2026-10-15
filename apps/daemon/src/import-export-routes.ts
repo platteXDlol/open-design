@@ -1,4 +1,6 @@
-import { AuthorizeProjectToolRequest, AuthorizedProjectToolRequest, headerValue } from './v05-stubs.js';
+// NOTE: previously imported `headerValue` from './v05-stubs.js'; the local
+// `const headerValue = req.get(...)` declarations on lines 238 and 371 shadow
+// the import and are the only live header-extraction sites.
 import type { Express, Response } from 'express';
 import {
   PROJECT_EXPORT_MANIFEST_SCHEMA,
@@ -579,7 +581,7 @@ const SCREENSHOT_RENDER_PREVIEW_SCOPE_TTL_MS =
   DESKTOP_RENDERER_IPC_TIMEOUT_MS + RENDERER_PREVIEW_SCOPE_SETUP_MARGIN_MS;
 
 type AuthorizedExportRead = {
-  readonly previewWorkspace: AuthorizedProjectToolRequest['workspace'];
+  readonly previewWorkspace: any;
 };
 
 type ScreenshotExportBody = {
@@ -601,7 +603,7 @@ type ScreenshotExportRequest = {
 
 export interface RegisterProjectExportRoutesDeps extends RouteDeps<'db' | 'http' | 'paths' | 'node' | 'ids' | 'projectStore' | 'exports' | 'projectFiles' | 'validation' | 'auth' | 'projectPreviewScopes'> {
   authorizeProjectRequest: any;
-  authorizeProjectToolRequest: AuthorizeProjectToolRequest;
+  authorizeProjectToolRequest: any;
   isApiTokenAuthorization: (authorization: string | undefined) => boolean;
 }
 

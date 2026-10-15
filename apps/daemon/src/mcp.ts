@@ -1,4 +1,3 @@
-import { resolveMcpWorkspaceContext } from './v05-stubs.js';
 // `od mcp` - stdio MCP server that proxies project tool calls to the
 // running daemon's HTTP API. Lets a coding agent in a *different* repo
 // (Claude Code, Cursor, Zed) pull files from a local OpenDesign
@@ -987,8 +986,7 @@ export async function _listMcpResources(
       // out. Resolve the signed-in workspace once and forward the headers on
       // both listing calls so the MCP resource catalog matches what the user
       // sees in the app. See #6770.
-      const workspaceContext = await resolveMcpWorkspaceContext(baseUrl);
-      const headers = workspaceContext?.headers;
+      const headers = undefined;
       const [skillsData, dsData] = await Promise.all([
         getJson<SkillsPayload>(`${baseUrl}/api/skills`, headers).catch((): SkillsPayload => ({ skills: [] })),
         getJson<DesignSystemsPayload>(`${baseUrl}/api/design-systems`, headers).catch((): DesignSystemsPayload => ({ designSystems: [] })),
@@ -1075,8 +1073,7 @@ export async function _readMcpResource(
   // headers as the project/run tools (#6569) so the resource read lands on
   // the binding instead of returning `404 design system not found`. See #6770.
   const result = await daemonTarget.call('read_resource', {}, async (baseUrl) => {
-    const workspaceContext = await resolveMcpWorkspaceContext(baseUrl);
-    const headers = workspaceContext?.headers;
+    const headers = undefined;
     return ok(await getJson<ResourcePayload>(
       `${baseUrl}/api/${route}/${encodeURIComponent(decodeURIComponent(id))}`,
       headers,
@@ -2137,26 +2134,9 @@ function publicVelaLoginStatus(status: any): any {
   return publicStatus;
 }
 
-// Tools that address projects or runs are workspace-scoped after 0.18.0:
-// bound projects are invisible to a headerless caller and bound-project reads
-// 400 with WORKSPACE_CONTEXT_REQUIRED (#6569). These resolve the signed-in
-// workspace and send x-od-workspace-* headers on every daemon call.
-const PROJECT_OR_RUN_TOOLS = new Set([
-  'list_projects',
-  'get_project',
-  'get_file',
-  'list_files',
-  'search_files',
-  'get_artifact',
-  'write_file',
-  'delete_file',
-  'delete_project',
-  'create_project',
-  'create_artifact',
-  'start_run',
-  'get_run',
-  'cancel_run',
-]);
+// Tools that address projects or runs were workspace-scoped after 0.18.0 in
+// the multi-tenant build. The local-only fork has no team plane, so every
+// project tool is un-scoped and `headers` is always undefined.
 
 async function handleMcpToolCall(
   baseUrl: string,
@@ -2165,11 +2145,8 @@ async function handleMcpToolCall(
   options: HandleMcpToolCallOptions = {},
 ): Promise<McpToolCallResult> {
   try {
-    const workspaceContext = PROJECT_OR_RUN_TOOLS.has(String(name))
-      ? await resolveMcpWorkspaceContext(baseUrl)
-      : null;
-    const headers = workspaceContext?.headers;
-    const workspaceId = workspaceContext?.workspaceId;
+    const headers = undefined;
+    const workspaceId = undefined;
     switch (name) {
       case 'collect_brief': {
         const collected = (options.briefStore ?? createLocalMcpBriefStore())

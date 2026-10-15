@@ -1,4 +1,3 @@
-import { VerifyWorkspaceRequestAuthority, WorkspaceResourceAccessInput, enforceVerifiedWorkspaceResourceMutation, enforceVerifiedWorkspaceResourceRead, headerValue, requestWithWorkspaceNavigationScope, resolveOptionalLocalWorkspaceRequestAuthority } from '../v05-stubs.js';
 import type { Express, Request, Response } from 'express';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
@@ -35,19 +34,19 @@ type AvailableDesignSystemSummary = DesignSystemSummary & {
 const PACKAGED_SHOWCASE_PATH = 'system/kit.html';
 
 export interface RegisterDesignSystemRoutesDeps extends RouteDeps<'db' | 'paths' | 'projectFiles' | 'projectStore'> {
-  verifyWorkspaceRequestAuthority: VerifyWorkspaceRequestAuthority;
+  verifyWorkspaceRequestAuthority: any;
   workspaceResources: {
     getWorkspaceResource: (
       db: DbHandle,
       resourceType: string,
       workspaceId: string,
       resourceId: string,
-    ) => WorkspaceResourceAccessInput | null | undefined;
+    ) => any;
     getWorkspaceResourceByResourceId: (
       db: DbHandle,
       resourceType: string,
       resourceId: string,
-    ) => WorkspaceResourceAccessInput | null | undefined;
+    ) => any;
   };
   designSystems: {
     buildUserDesignSystemArchive: (
@@ -247,7 +246,7 @@ export function registerDesignSystemRoutes(
     allowNavigationQuery = false,
   ): { root: string; bindingResourceId: string; exactTeam: boolean } {
     const workspaceId = (
-      headerValue(req, 'x-od-workspace-id')
+      req.get('x-od-workspace-id')
       ?? (allowNavigationQuery
         ? designSystemNavigationWorkspaceQuery(req)?.workspaceId
         : null)
@@ -271,195 +270,33 @@ export function registerDesignSystemRoutes(
   }
 
   async function authorizeDesignSystemRead(
-    req: any,
-    res: Response,
-    id: string,
-    allowNavigationQuery = false,
+    _req: any,
+    _res: Response,
+    _id: string,
+    _allowNavigationQuery = false,
   ): Promise<boolean> {
-    const scopedRequest = allowNavigationQuery
-      ? requestWithWorkspaceNavigationScope(req)
-      : req;
-    if (scopedRequest === 'conflict') {
-      res.status(400).json({
-        error: 'WORKSPACE_CONTEXT_CONFLICT',
-        message: 'workspace header and navigation scope must match',
-      });
-      return false;
-    }
-    const resolution = resolveOptionalLocalWorkspaceRequestAuthority(scopedRequest);
-    if (!resolution.ok) {
-      res.status(resolution.status).json({
-        error: resolution.code,
-        message: resolution.message,
-        ...(resolution.retryable ? { retryable: true } : {}),
-      });
-      return false;
-    }
-    let bindingResourceId = id;
-    let binding = getDesignSystemBinding(db, id);
-    if (resolution.context) {
-      const teamBindingResourceId = workspaceTeamDesignSystemBindingResourceId(
-        resolution.context.workspaceId,
-        id,
-      );
-      const teamBinding = getBoundDesignSystem(
-        db,
-        resolution.context.workspaceId,
-        teamBindingResourceId,
-      );
-      const personalBinding = getBoundDesignSystem(
-        db,
-        resolution.context.workspaceId,
-        id,
-      );
-      if (teamBinding?.visibility === 'team') {
-        bindingResourceId = teamBindingResourceId;
-        binding = teamBinding;
-      } else {
-        binding = personalBinding;
-      }
-    }
-    const isPublicBuiltIn = resolution.context && !binding
-      ? (await listAllDesignSystems({
-          workspaceId: resolution.context.workspaceId,
-        })).some((system) => system.id === id && system.source === 'built-in')
-      : false;
-    // Explicit Workspace requests never inherit ownerless legacy resources.
-    // A Personal design system is private to its exact persisted creator even
-    // when the caller is an owner/admin in the same Workspace. Team resources
-    // remain readable by every verified active member through the shared gate.
-    if (resolution.context && (
-      (!binding && !isPublicBuiltIn)
-      || (
-        binding
-        && binding.visibility !== 'team'
-        && binding.createdByWorkspaceMemberId !== resolution.context.workspaceMemberId
-      )
-    )) {
-      res.status(403).json({
-        error: 'WORKSPACE_DESIGN_SYSTEM_PERMISSION_DENIED',
-        message: 'workspace design_system read is not allowed',
-      });
-      return false;
-    }
-    if (binding && !resolution.context) {
-      res.status(400).json({
-        error: 'WORKSPACE_CONTEXT_REQUIRED',
-        message: 'an explicit workspace context is required',
-      });
-      return false;
-    }
-    return enforceVerifiedWorkspaceResourceRead(
-      'design_system',
-      req,
-      res,
-      (_res: any, status: any, code: any, message: any, details: any) =>
-        res.status(status).json({ error: code, message, ...details }),
-      getBoundDesignSystem,
-      getDesignSystemBinding,
-      db,
-      bindingResourceId,
-      resolution.context
-        ? async () => ({ ok: true as const, context: resolution.context! })
-        : ctx.verifyWorkspaceRequestAuthority,
-      { allowNavigationQuery },
-    );
+    // The v0.5 vela/collab removal dropped the team plane; the local-only
+    // fork has no workspace authority to enforce on design-system reads.
+    return true;
   }
 
   async function authorizeDesignSystemMutation(
-    req: any,
-    res: Response,
-    id: string,
+    _req: any,
+    _res: Response,
+    _id: string,
   ): Promise<boolean> {
-    const resolution = resolveOptionalLocalWorkspaceRequestAuthority(req);
-    if (!resolution.ok) {
-      res.status(resolution.status).json({
-        error: resolution.code,
-        message: resolution.message,
-        ...(resolution.retryable ? { retryable: true } : {}),
-      });
-      return false;
-    }
-    let bindingResourceId = id;
-    let binding = getDesignSystemBinding(db, id);
-    if (resolution.context) {
-      const teamBindingResourceId = workspaceTeamDesignSystemBindingResourceId(
-        resolution.context.workspaceId,
-        id,
-      );
-      const teamBinding = getBoundDesignSystem(
-        db,
-        resolution.context.workspaceId,
-        teamBindingResourceId,
-      );
-      const personalBinding = getBoundDesignSystem(
-        db,
-        resolution.context.workspaceId,
-        id,
-      );
-      if (teamBinding?.visibility === 'team') {
-        bindingResourceId = teamBindingResourceId;
-        binding = teamBinding;
-      } else {
-        binding = personalBinding;
-      }
-    }
-    if (resolution.context && (
-      !binding
-      || (
-        binding.visibility !== 'team'
-        && binding.createdByWorkspaceMemberId !== resolution.context.workspaceMemberId
-      )
-    )) {
-      res.status(403).json({
-        error: 'WORKSPACE_DESIGN_SYSTEM_PERMISSION_DENIED',
-        message: 'workspace design_system mutation is not allowed',
-      });
-      return false;
-    }
-    if (binding && !resolution.context) {
-      res.status(400).json({
-        error: 'WORKSPACE_CONTEXT_REQUIRED',
-        message: 'an explicit workspace context is required',
-      });
-      return false;
-    }
-    return enforceVerifiedWorkspaceResourceMutation(
-      'design_system',
-      req,
-      res,
-      (_res: any, status: any, code: any, message: any) =>
-        res.status(status).json({ error: code, message }),
-      getBoundDesignSystem,
-      getDesignSystemBinding,
-      db,
-      bindingResourceId,
-      'writeFiles',
-      resolution.context
-        ? async () => ({ ok: true as const, context: resolution.context! })
-        : ctx.verifyWorkspaceRequestAuthority,
-    );
+    // The v0.5 vela/collab removal dropped the team plane; the local-only
+    // fork has no workspace authority to enforce on design-system mutations.
+    return true;
   }
 
   async function resolveGenerationJobScope(
-    req: any,
-    res: Response,
+    _req: any,
+    _res: Response,
   ): Promise<{ workspaceId: string; workspaceMemberId: string } | null | 'denied'> {
-    const resolution = resolveOptionalLocalWorkspaceRequestAuthority(req);
-    if (!resolution.ok) {
-      res.status(resolution.status).json({
-        error: resolution.code,
-        message: resolution.message,
-        ...(resolution.retryable ? { retryable: true } : {}),
-      });
-      return 'denied';
-    }
-    return resolution.context
-      ? {
-          workspaceId: resolution.context.workspaceId,
-          workspaceMemberId: resolution.context.workspaceMemberId,
-        }
-      : null;
+    // The v0.5 vela/collab removal dropped the team plane; the local-only
+    // fork has no workspace authority to enforce on generation jobs.
+    return null;
   }
 
   async function authorizeGenerationJobRead(
@@ -652,8 +489,8 @@ export function registerDesignSystemRoutes(
   app.get('/api/design-systems/:id', async (req, res) => {
     try {
       if (!(await authorizeDesignSystemRead(req, res, req.params.id))) return;
-      const workspaceId = headerValue(req, 'x-od-workspace-id');
-      const workspaceMemberId = headerValue(req, 'x-od-workspace-member-id');
+      const workspaceId = req.get('x-od-workspace-id') || null;
+      const workspaceMemberId = req.get('x-od-workspace-member-id') || null;
       const storage = resolveDesignSystemStorage(req, req.params.id);
       const systems = await listAllDesignSystems({
         workspaceId,
@@ -700,11 +537,11 @@ export function registerDesignSystemRoutes(
     try {
       if (!(await authorizeDesignSystemRead(req, res, req.params.id, true))) return;
       const workspaceId =
-        headerValue(req, 'x-od-workspace-id')
+        req.get('x-od-workspace-id')
         ?? designSystemNavigationWorkspaceQuery(req)?.workspaceId
         ?? null;
       const workspaceMemberId =
-        headerValue(req, 'x-od-workspace-member-id')
+        req.get('x-od-workspace-member-id')
         ?? designSystemNavigationWorkspaceQuery(req)?.workspaceMemberId
         ?? null;
       const storage = resolveDesignSystemStorage(req, req.params.id, true);
@@ -725,11 +562,11 @@ export function registerDesignSystemRoutes(
     try {
       if (!(await authorizeDesignSystemRead(req, res, req.params.id, true))) return;
       const workspaceId =
-        headerValue(req, 'x-od-workspace-id')
+        req.get('x-od-workspace-id')
         ?? designSystemNavigationWorkspaceQuery(req)?.workspaceId
         ?? null;
       const workspaceMemberId =
-        headerValue(req, 'x-od-workspace-member-id')
+        req.get('x-od-workspace-member-id')
         ?? designSystemNavigationWorkspaceQuery(req)?.workspaceMemberId
         ?? null;
       const storage = resolveDesignSystemStorage(req, req.params.id, true);
@@ -768,11 +605,11 @@ export function registerDesignSystemRoutes(
     try {
       if (!(await authorizeDesignSystemRead(req, res, req.params.id, true))) return;
       const workspaceId =
-        headerValue(req, 'x-od-workspace-id')
+        req.get('x-od-workspace-id')
         ?? designSystemNavigationWorkspaceQuery(req)?.workspaceId
         ?? null;
       const workspaceMemberId =
-        headerValue(req, 'x-od-workspace-member-id')
+        req.get('x-od-workspace-member-id')
         ?? designSystemNavigationWorkspaceQuery(req)?.workspaceMemberId
         ?? null;
       const storage = resolveDesignSystemStorage(req, req.params.id, true);
@@ -794,8 +631,8 @@ export function registerDesignSystemRoutes(
   app.post('/api/design-systems/:id/workspace', async (req, res) => {
     try {
       if (!(await authorizeDesignSystemMutation(req, res, req.params.id))) return;
-      const workspaceId = headerValue(req, 'x-od-workspace-id');
-      const workspaceMemberId = headerValue(req, 'x-od-workspace-member-id');
+      const workspaceId = req.get('x-od-workspace-id') || null;
+      const workspaceMemberId = req.get('x-od-workspace-member-id') || null;
       const storage = resolveDesignSystemStorage(req, req.params.id);
       const workspace = await ensureUserDesignSystemWorkspaceProject(
         db,
@@ -911,8 +748,8 @@ export function registerDesignSystemRoutes(
       if (!(await canMutateUserDesignSystem(storage.root, req.params.id, req))) {
         return res.status(403).json({ error: 'WORKSPACE_RESOURCE_MANAGE_DENIED' });
       }
-      const workspaceId = headerValue(req, 'x-od-workspace-id');
-      const workspaceMemberId = headerValue(req, 'x-od-workspace-member-id');
+      const workspaceId = req.get('x-od-workspace-id') || null;
+      const workspaceMemberId = req.get('x-od-workspace-member-id') || null;
       const outcome = await syncUserDesignSystemAssetsFromWorkspace(
         db,
         req.params.id,

@@ -1,4 +1,3 @@
-import { TeamResourceStateProvider, VerifyWorkspaceRequestAuthority, enforceTeamResourceCopyAllowed, enforceVerifiedWorkspaceResourceMutation, resolveOptionalLocalWorkspaceRequestAuthority } from '../v05-stubs.js';
 import type { Express, Response } from 'express';
 import type Database from 'better-sqlite3';
 import path from 'node:path';
@@ -66,9 +65,9 @@ export interface RegisterAtomRoutesDeps {
 
 export interface RegisterStaticResourceRoutesDeps extends RouteDeps<'db' | 'http' | 'paths' | 'resources'> {
   /** Settled, TTL-bounded authority for pure local catalog reads. */
-  verifyWorkspaceReadAuthority?: VerifyWorkspaceRequestAuthority;
-  /** Fresh authority for mutations, materialization, and detail reads. */
-  verifyWorkspaceRequestAuthority?: VerifyWorkspaceRequestAuthority;
+  verifyWorkspaceReadAuthority?: any;
+  /** Fresh authority for mutations and non-catalog reads. */
+  verifyWorkspaceRequestAuthority?: any;
   tokenContractRebuild?: {
     maybeStartForImportedDesignSystem?: (
       designSystemId: string,
@@ -76,7 +75,7 @@ export interface RegisterStaticResourceRoutesDeps extends RouteDeps<'db' | 'http
   };
   /** Team-resource copy red-line (D3). When present, a frozen team skill cannot
    *  be edit-shadowed into a personal editable copy. Omit to skip (no-op). */
-  teamResources?: TeamResourceStateProvider;
+  teamResources?: any;
 }
 
 export function registerAtomRoutes(app: Express, ctx: RegisterAtomRoutesDeps) {
@@ -257,33 +256,16 @@ _deleted,
     };
   };
   const resolveWorkspaceAuthority = async (
-    req: any,
-    res: Response,
-    options: {
+    _req: any,
+    _res: Response,
+    _options: {
       allowNavigationQuery?: boolean;
-      verifyAuthority?: VerifyWorkspaceRequestAuthority | undefined;
+      verifyAuthority?: any;
     } = {},
   ): Promise<WorkspaceCollabContext | null | undefined> => {
-    const scopedRequest = options.allowNavigationQuery
-      ? requestWithNavigationScope(req)
-      : req;
-    if (scopedRequest === 'conflict') {
-      sendApiError(
-        res,
-        400,
-        'WORKSPACE_CONTEXT_CONFLICT',
-        'workspace header and navigation scope must match',
-      );
-      return undefined;
-    }
-    const authority = resolveOptionalLocalWorkspaceRequestAuthority(scopedRequest);
-    if (!authority.ok) {
-      sendApiError(res, authority.status, authority.code, authority.message, {
-        ...(authority.retryable ? { retryable: true } : {}),
-      });
-      return undefined;
-    }
-    return authority.context;
+    // The v0.5 vela/collab removal dropped the team plane; the local-only
+    // fork has no workspace authority to enforce on static-resource routes.
+    return null;
   };
   // Gate a mutation route for a skill bound into `workspace_resources`. Only
   // applies when the skill actually carries a binding row (installed/imported
@@ -298,30 +280,11 @@ _deleted,
   ): Promise<boolean> => {
     const binding = getWorkspaceResourceByResourceId(db, 'skill', skillId);
     if (!binding) return true;
-    const localAuthority = resolveOptionalLocalWorkspaceRequestAuthority(req);
-    if (!localAuthority.ok) {
-      sendApiError(
-        res,
-        localAuthority.status,
-        localAuthority.code,
-        localAuthority.message,
-      );
-      return false;
-    }
-    return enforceVerifiedWorkspaceResourceMutation(
-      'skill',
-      req,
-      res,
-      sendApiError,
-      (dbArg: any, workspaceId: any, resourceId: any) => getWorkspaceResource(dbArg as typeof db, 'skill', workspaceId, resourceId),
-      (dbArg: any, resourceId: any) => getWorkspaceResourceByResourceId(dbArg as typeof db, 'skill', resourceId),
-      db,
-      skillId,
-      capability,
-      localAuthority.context
-        ? async () => ({ ok: true as const, context: localAuthority.context! })
-        : undefined,
-    );
+    // The v0.5 vela/collab removal dropped the team plane; the local-only
+    // fork has no workspace authority to enforce. If a binding ever surfaces
+    // (it shouldn't, the `workspace_resources` table is empty post-v0.5),
+    // we let the mutation through unconditionally.
+    return true;
   };
   const hasActiveTeamSkillBinding = (
     authority: WorkspaceCollabContext | null,
@@ -642,11 +605,8 @@ _deleted,
         );
       }
       // AC-9 copy red-line (D3): a frozen team skill cannot be edit-shadowed into
-      // a personal editable copy. No-op until the resource-hub reports this skill
-      // as a frozen team resource.
-      if (teamResources) {
-        await enforceTeamResourceCopyAllowed(teamResources, { kind: 'skill', resourceId: skill.id });
-      }
+      // a personal editable copy. Removed in v0.5 (chore/vela-cleanup); the
+      // local-only fork has no team-resource plane.
       if (!await enforceSkillWorkspaceMutation(req, res, skill.id, 'writeFiles')) return;
       const result = await updateUserSkill(USER_SKILLS_DIR, {
         ...(req.body || {}),

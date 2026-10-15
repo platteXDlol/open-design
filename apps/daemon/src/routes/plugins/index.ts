@@ -1,4 +1,3 @@
-import { TeamResourceStateProvider, VerifyWorkspaceRequestAuthority, WorkspaceResourceAccessInput, enforceTeamResourceCopyAllowed, enforceVerifiedWorkspaceResourceMutation, resolveOptionalLocalWorkspaceRequestAuthority } from '../../v05-stubs.js';
 import type { Express, NextFunction, Request, RequestHandler, Response } from 'express';
 import type {
   InstalledPluginRecord,
@@ -15,7 +14,9 @@ import {
 } from '../../plugins/duplicate-project.js';
 import type { PluginShareAction } from '../../services/plugin-share-tasks.js';
 import { workspaceTeamPluginBindingResourceId } from '../../plugins/registry.js';
-import { localPluginRegistryScope } from '../../plugins/local-source.js';
+// v0.5 removed the team-plugin source path; localPluginRegistryScope
+// and resolveLocalPluginBySource from plugins/local-source.js are gone
+// alongside the rest of the team/collab/vela surface.
 import {
   classifyPluginInstallError,
   type PluginInstallErrorCode,
@@ -40,7 +41,7 @@ export interface RegisterPluginEventRoutesDeps {
     requireLocalDaemonRequest: RequestHandler;
     sendApiError: (res: Response, status: number, code: string, message: string) => unknown;
   };
-  verifyWorkspaceRequestAuthority?: VerifyWorkspaceRequestAuthority;
+  verifyWorkspaceRequestAuthority?: any;
   plugins: {
     listVisiblePluginIds(
       workspaceId: string | null,
@@ -179,7 +180,7 @@ export interface RegisterPluginRoutesDeps {
   authorizeProjectRequest: any;
   /** Team-resource copy red-line (D3). When present, a frozen team plugin cannot
    *  be duplicated into a personal project. Omit to skip the guard (no-op). */
-  teamResources?: TeamResourceStateProvider;
+  teamResources?: any;
   paths: { PROJECTS_DIR: string; PLUGIN_REGISTRY_ROOTS: string[]; PLUGIN_LOCKFILE_PATH: string };
   ids: { randomId(): string };
   projectStore: {
@@ -191,9 +192,9 @@ export interface RegisterPluginRoutesDeps {
   };
   fetchProjectCreationWorkspaceDirectory?: () => Promise<any>;
   /** Settled, TTL-bounded authority for the pure Plugin catalog read. */
-  verifyWorkspaceReadAuthority?: VerifyWorkspaceRequestAuthority;
+  verifyWorkspaceReadAuthority?: any;
   /** Fresh authority for mutations and non-catalog reads. */
-  verifyWorkspaceRequestAuthority?: VerifyWorkspaceRequestAuthority;
+  verifyWorkspaceRequestAuthority?: any;
   conversations: {
     insertConversation(db: SqliteDbLike, conversation: any): any;
   };
@@ -286,20 +287,12 @@ function duplicatedProjectKind(plugin: InstalledPluginLike): ProjectMetadata['ki
 }
 
 export function registerPluginEventRoutes(app: Express, deps: RegisterPluginEventRoutesDeps): void {
-  const resolveEventScope = async (req: Request, res: Response) => {
-    const authority = resolveOptionalLocalWorkspaceRequestAuthority(req);
-    if (!authority.ok) {
-      deps.http.sendApiError(
-        res,
-        authority.status,
-        authority.code,
-        authority.message,
-      );
-      return null;
-    }
+  const resolveEventScope = async (_req: Request, _res: Response) => {
+    // The v0.5 vela/collab removal dropped the team plane; the local-only
+    // fork has no workspace authority to enforce on plugin event routes.
     return {
-      workspaceId: authority.context?.workspaceId ?? null,
-      workspaceMemberId: authority.context?.workspaceMemberId ?? null,
+      workspaceId: null,
+      workspaceMemberId: null,
     };
   };
   const visibleEvents = async <T extends { pluginId: string }>(
@@ -382,22 +375,13 @@ export function registerPluginEventRoutes(app: Express, deps: RegisterPluginEven
 export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDeps): void {
   const { db, paths, ids, projectStore, conversations, plugins, helpers, teamResources, workspaceResources } = deps;
   const resolveWorkspaceAuthority = async (
-    req: Request,
-    res: Response,
-    verifyAuthority: VerifyWorkspaceRequestAuthority | undefined =
-      deps.verifyWorkspaceRequestAuthority,
+    _req: Request,
+    _res: Response,
+    _verifyAuthority: any = deps.verifyWorkspaceRequestAuthority,
   ): Promise<WorkspaceCollabContext | null | undefined> => {
-    const authority = resolveOptionalLocalWorkspaceRequestAuthority(req);
-    if (!authority.ok) {
-      helpers.sendApiError(
-        res,
-        authority.status,
-        authority.code,
-        authority.message,
-      );
-      return undefined;
-    }
-    return authority.context;
+    // The v0.5 vela/collab removal dropped the team plane; the local-only
+    // fork has no workspace authority to enforce on plugin routes.
+    return null;
   };
   const resolveRequestPlugin = async (
     id: string,
@@ -570,20 +554,7 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
         return res.status(403).json({ error: 'WORKSPACE_RESOURCE_MANAGE_DENIED' });
       }
       const binding = workspaceResources?.getWorkspaceResourceByResourceId(db, 'plugin', req.params.id);
-      if (binding && workspaceResources && !await enforceVerifiedWorkspaceResourceMutation(
-        'plugin',
-        req,
-        res,
-        helpers.sendApiError,
-        (dbArg: any, workspaceId: any, resourceId: any) => workspaceResources.getWorkspaceResource(dbArg as SqliteDbLike, 'plugin', workspaceId, resourceId),
-        (dbArg: any, resourceId: any) => workspaceResources.getWorkspaceResourceByResourceId(dbArg as SqliteDbLike, 'plugin', resourceId),
-        db,
-        req.params.id,
-        'delete',
-        authority
-          ? async () => ({ ok: true as const, context: authority })
-          : undefined,
-      )) return;
+      if (binding && workspaceResources && !await Promise.resolve({ ok: true as const })) return;
       const result = await plugins.uninstallPlugin(db, req.params.id, paths.PLUGIN_REGISTRY_ROOTS); if (!result.ok && !result.removedFolder) return res.status(404).json({ error: 'plugin not found', warning: result.warning }); res.json(result);
     } catch (err: any) { res.status(500).json({ error: String(err) }); }
   });
@@ -599,20 +570,7 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
     if (!requestedPlugin) return res.status(404).json({ error: 'plugin not found' });
     if (denyTeamPluginMutation(res, req.params.id, authority, requestedPlugin)) return;
     const binding = workspaceResources?.getWorkspaceResourceByResourceId(db, 'plugin', req.params.id);
-    if (binding && workspaceResources && !await enforceVerifiedWorkspaceResourceMutation(
-      'plugin',
-      req,
-      res,
-      helpers.sendApiError,
-      (dbArg: any, workspaceId: any, resourceId: any) => workspaceResources.getWorkspaceResource(dbArg as SqliteDbLike, 'plugin', workspaceId, resourceId),
-      (dbArg: any, resourceId: any) => workspaceResources.getWorkspaceResourceByResourceId(dbArg as SqliteDbLike, 'plugin', resourceId),
-      db,
-      req.params.id,
-      'writeFiles',
-      authority
-        ? async () => ({ ok: true as const, context: authority })
-        : undefined,
-    )) return;
+    if (binding && workspaceResources && !await Promise.resolve({ ok: true as const })) return;
     return helpers.installOrUpgradePlugin(req, res, 'upgrade', authority);
   });
   app.post('/api/plugins/:id/apply-local', async (req, res) => {
@@ -630,9 +588,7 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
       }
       const plugin = await plugins.getLocalPluginBySource(db, req.params.id, source);
       if (!plugin) return res.status(404).json({ error: 'plugin not found' });
-      const registry = await helpers.loadPluginRegistryView(
-        localPluginRegistryScope(plugin),
-      );
+      const registry = await helpers.loadPluginRegistryView(undefined);
       // Registry loading walks local Skill/Design System files asynchronously.
       // Re-resolve immediately before apply so a local reconciliation tombstone
       // that landed during that walk cannot activate stale plugin bytes.
@@ -697,12 +653,9 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
         return res.status(422).json({ error: { code: 'plugin-not-duplicable', message: 'plugin record is missing a filesystem source' } });
       }
       // AC-9 copy red-line (D3): a frozen team plugin cannot be duplicated into a
-      // personal project. Runs before any project is created (nothing to clean up
-      // if it throws). No-op until the resource-hub reports this plugin as a
-      // frozen team resource.
-      if (teamResources) {
-        await enforceTeamResourceCopyAllowed(teamResources, { kind: 'plugin', resourceId: plugin.id });
-      }
+      // personal project. Removed in v0.5 (chore/vela-cleanup); the local-only
+      // fork has no team-resource plane so plugin duplication is always
+      // allowed at this gate.
       const createWorkspace = await ((..._v05_unused: any[]) => ({} as any))(
         req,
         deps.fetchProjectCreationWorkspaceDirectory,

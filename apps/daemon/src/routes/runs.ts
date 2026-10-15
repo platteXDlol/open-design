@@ -1,4 +1,3 @@
-import { WorkspaceResourceAccessInput } from '../v05-stubs.js';
 import type { Express, Request, Response } from 'express';
 import type Database from 'better-sqlite3';
 import fs from 'node:fs';
@@ -726,15 +725,15 @@ export interface RegisterRunRoutesDeps {
       db: any,
       workspaceId: string,
       projectId: string,
-    ) => WorkspaceResourceAccessInput | null | undefined;
+    ) => any;
     getWorkspaceProjectByProjectId: (
       db: any,
       projectId: string,
-    ) => (WorkspaceResourceAccessInput & { workspaceId?: string | null }) | null | undefined;
+    ) => any;
     ensureWorkspaceProject?: (
       db: any,
       input: Record<string, unknown>,
-    ) => (WorkspaceResourceAccessInput & { workspaceId?: string | null }) | null | undefined;
+    ) => any;
   };
   amrWorkspaceScope?: {
     isSignedIn: () => boolean | Promise<boolean>;

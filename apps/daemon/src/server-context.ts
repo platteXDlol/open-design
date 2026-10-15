@@ -1,4 +1,3 @@
-import { AuthorizeProjectToolRequest } from './v05-stubs.js';
 import type { Express } from 'express';
 import type { SkillInfo } from './skills.js';
 import type { DesignSystemSummary } from './design-systems/index.js';
@@ -191,7 +190,7 @@ export interface ServerContext {
   node: any;
   projectStore: any;
   authorizeProjectRequest: any;
-  authorizeProjectToolRequest: AuthorizeProjectToolRequest;
+  authorizeProjectToolRequest: any;
   isApiTokenAuthorization: (authorization: string | undefined) => boolean;
   projectFiles: any;
   conversations: any;
