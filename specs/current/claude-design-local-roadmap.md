@@ -418,7 +418,16 @@ Total: ~12 files, ~3000 lines reviewed, ~500 / -2000 line diff expected. The sma
 | **M4** | Canvas pan/zoom + tweaks + undo | not started |
 | **M5** | Comments end-to-end | not started |
 | **M6** | Handoff bundle consumed by Claude Code | not started |
-| **M7** | OIDC SSO via Authentik/Keycloak | not started |
+| **M7** | OIDC SSO via Authentik/Keycloak | **storage half landed in v0.6 (data-prefix only, synthetic user); auth half remains v7** |
+
+### v0.6 — Per-user project prefix (storage half of M7)
+
+Lands the on-disk shape `users/<user-id>/projects/<project-id>/` while
+the daemon is still single-tenant. v0.6 only changes the storage path;
+no auth surface, no OIDC, no Postgres, no quota tracking. v7 (M7)
+inherits the per-user prefix and only has to ship auth. The full
+rationale and the migration mechanics are recorded in
+`local-only-divergence.md` § 4.2.1.
 
 ### Next concrete steps (in order)
 

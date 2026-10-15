@@ -61,6 +61,7 @@ describe('static resource mutation routes', () => {
             USER_DESIGN_SYSTEMS_DIR: path.join(tempRoot, 'user-design-systems'),
             USER_DESIGN_TEMPLATES_DIR: path.join(tempRoot, 'user-design-templates'),
             USER_SKILLS_DIR: path.join(tempRoot, 'user-skills'),
+            OD_USER_ID: 'local',
           },
           resources: {
             listAllDesignSystems: async () => {
@@ -233,6 +234,7 @@ describe('design system import catalog lookup', () => {
             USER_DESIGN_SYSTEMS_DIR: userDesignSystemsDir,
             USER_DESIGN_TEMPLATES_DIR: path.join(tempRoot, 'user-design-templates'),
             USER_SKILLS_DIR: path.join(tempRoot, 'user-skills'),
+            OD_USER_ID: 'local',
           },
           resources: {
             listAllDesignSystems: async () =>

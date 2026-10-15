@@ -108,6 +108,7 @@ async function startTestApp(projectRoot: string): Promise<TestApp> {
     USER_DESIGN_SYSTEMS_DIR: '',
     USER_DESIGN_TEMPLATES_DIR: '',
     USER_SKILLS_DIR: '',
+    OD_USER_ID: 'local',
   };
 
   registerXaiRoutes(app, {
