@@ -28,11 +28,11 @@ When --project is omitted, the active OpenDesign project is used.
 Existing target paths are rejected.
 `;
 
-function writeJson(value: unknown, stream: NodeJS.WriteStream = process.stdout): void {
+function writeJson(value: any, stream: NodeJS.WriteStream = process.stdout): void {
   stream.write(`${JSON.stringify(value)}\n`);
 }
 
-function fail(message: string, details?: unknown, status?: number): ArtifactCliResult {
+function fail(message: string, details?: any, status?: number): ArtifactCliResult {
   writeJson(
     {
       ok: false,
@@ -90,10 +90,10 @@ function parseOptions(args: string[]): ParsedOptions | { error: string } {
 
 async function readJsonObject(filePath: string): Promise<JsonObject> {
   const text = await readFile(filePath, 'utf8');
-  let value: unknown;
+  let value: any;
   try {
-    value = JSON.parse(text) as unknown;
-  } catch (error) {
+    value = JSON.parse(text) as any;
+  } catch (error: any) {
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(`invalid JSON in ${filePath}: ${message}`);
   }
@@ -139,10 +139,10 @@ export async function runArtifactsCli(args: string[]): Promise<ArtifactCliResult
       : { result: response };
     writeJson({ ok: true, ...withActiveEcho(payload, active, resolved) });
     return { exitCode: 0 };
-  } catch (error) {
+  } catch (error: any) {
     const message = error instanceof Error ? error.message : String(error);
     const details = error && typeof error === 'object' && 'details' in error
-      ? (error as { details?: unknown }).details
+      ? (error as { details?: any }).details
       : undefined;
     const status = error && typeof error === 'object' && 'status' in error
       ? (error as { status?: number }).status

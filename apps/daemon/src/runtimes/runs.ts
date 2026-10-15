@@ -558,7 +558,7 @@ function atomicWriteJson(filePath, value) {
     fs.writeFileSync(tempPath, `${JSON.stringify(value)}\n`, { encoding: 'utf8', mode: 0o600 });
     fs.renameSync(tempPath, filePath);
     return { ok: true };
-  } catch (error) {
+  } catch (error: any) {
     try { fs.unlinkSync(tempPath); } catch { /* best-effort cleanup */ }
     return { ok: false, errorType: terminalPersistenceErrorType(error) };
   }
@@ -793,7 +793,7 @@ export function createChatRunService({
     if (!onTerminal) return;
     try {
       onTerminal(run, status, terminalAt);
-    } catch (error) {
+    } catch (error: any) {
       console.warn('[runs] terminal local finalizer failed', error);
     }
   };
@@ -2071,7 +2071,7 @@ export function createChatRunService({
         if (closed) return;
         if (nextId !== prefixEnd + 1) throw new Error('Incomplete run event journal replay');
         completeReplay();
-      } catch (error) {
+      } catch (error: any) {
         if (closed) return;
         // A replay transport failure is not a failure of the running agent.
         // End this connection so the existing client reconnects; never present
@@ -2139,7 +2139,7 @@ export function createChatRunService({
       try {
         process.kill(-processGroupId, signal);
         return true;
-      } catch (err) {
+      } catch (err: any) {
         if (err?.code !== 'ESRCH') {
           // Fall through to the direct child signal path below. This keeps
           // cancellation working if the child was not spawned as a process
@@ -2194,7 +2194,7 @@ export function createChatRunService({
     try {
       process.kill(-processGroupId, 0);
       return true;
-    } catch (err) {
+    } catch (err: any) {
       return err?.code !== 'ESRCH';
     }
   };

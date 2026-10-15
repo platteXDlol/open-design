@@ -190,7 +190,7 @@ const TELEMETRY_KEYS: ReadonlySet<string> = new Set([
   'artifactManifest',
 ]);
 
-function validateTelemetry(raw: unknown): TelemetryPrefs | undefined {
+function validateTelemetry(raw: any): TelemetryPrefs | undefined {
   if (raw === undefined || raw === null) return undefined;
   if (typeof raw !== 'object' || Array.isArray(raw)) return undefined;
   const result: Record<string, boolean> = Object.create(null);
@@ -246,7 +246,7 @@ const AGENT_CLI_AUTH_ENV_KEYS: ReadonlyMap<string, {
   }],
 ]);
 
-function isValidAgentModelEntry(v: unknown): v is AgentModelPrefs {
+function isValidAgentModelEntry(v: any): v is AgentModelPrefs {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return false;
   const obj = v as Record<string, unknown>;
   for (const k of Object.keys(obj)) {
@@ -257,7 +257,7 @@ function isValidAgentModelEntry(v: unknown): v is AgentModelPrefs {
 }
 
 function validateAgentModels(
-  raw: unknown,
+  raw: any,
 ): Record<string, AgentModelPrefs> | undefined {
   if (raw === undefined || raw === null) return undefined;
   if (typeof raw !== 'object' || Array.isArray(raw)) return undefined;
@@ -271,7 +271,7 @@ function validateAgentModels(
   return Object.keys(result).length > 0 ? result : undefined;
 }
 
-export function validateAgentCliEnv(raw: unknown): AgentCliEnvPrefs | undefined {
+export function validateAgentCliEnv(raw: any): AgentCliEnvPrefs | undefined {
   if (raw === undefined || raw === null) return undefined;
   if (typeof raw !== 'object' || Array.isArray(raw)) return undefined;
   const result: AgentCliEnvPrefs = Object.create(null);
@@ -294,7 +294,7 @@ export function validateAgentCliEnv(raw: unknown): AgentCliEnvPrefs | undefined 
   return Object.keys(result).length > 0 ? result : undefined;
 }
 
-export function validateAgentCliEnvIntent(raw: unknown): AgentCliEnvIntentPrefs | undefined {
+export function validateAgentCliEnvIntent(raw: any): AgentCliEnvIntentPrefs | undefined {
   if (raw === undefined || raw === null) return undefined;
   if (typeof raw !== 'object' || Array.isArray(raw)) return undefined;
   const result: AgentCliEnvIntentPrefs = Object.create(null);
@@ -318,7 +318,7 @@ function isValidOrbitTime(time: string): boolean {
   return hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59;
 }
 
-function validateOrbit(raw: unknown): OrbitConfigPrefs | undefined {
+function validateOrbit(raw: any): OrbitConfigPrefs | undefined {
   if (raw === undefined || raw === null) return undefined;
   if (typeof raw !== 'object' || Array.isArray(raw)) return undefined;
   const obj = raw as Record<string, unknown>;
@@ -366,7 +366,7 @@ function autoProjectLocationId(pathKey: string): string {
   return `loc_${createHash('sha256').update(pathKey).digest('base64url').slice(0, 16)}`;
 }
 
-function validateProjectLocations(raw: unknown): ProjectLocationPrefs[] | undefined {
+function validateProjectLocations(raw: any): ProjectLocationPrefs[] | undefined {
   if (raw === undefined || raw === null) return undefined;
   if (!Array.isArray(raw)) return undefined;
   const result: ProjectLocationPrefs[] = [];
@@ -535,7 +535,7 @@ function inferAgentCliEnvIntentForExplicitEnvWrite(prefs: AppConfigPrefs): AppCo
 function applyConfigValue(
   target: Record<string, unknown>,
   key: keyof AppConfigPrefs,
-  value: unknown,
+  value: any,
 ): void {
   if (key === 'onboardingCompleted') {
     if (typeof value === 'boolean') target[key] = value;
@@ -811,14 +811,14 @@ export function readAppConfigSync(dataDir: string): AppConfigPrefs {
 
 function readAppConfigFileOnlySync(dataDir: string): AppConfigPrefs {
   try {
-    const parsed: unknown = JSON.parse(
+    const parsed: any = JSON.parse(
       readFileSync(configFile(dataDir), 'utf8'),
     );
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
       return filterAllowedKeys(parsed as Record<string, unknown>);
     }
     return {};
-  } catch (err: unknown) {
+  } catch (err: any) {
     const e = err as { code?: string; name?: string };
     if (e.code === 'ENOENT') return {};
     if (e.name === 'SyntaxError') return {};
@@ -829,13 +829,13 @@ function readAppConfigFileOnlySync(dataDir: string): AppConfigPrefs {
 async function readAppConfigFileOnly(dataDir: string): Promise<AppConfigPrefs> {
   try {
     const raw = await readFile(configFile(dataDir), 'utf8');
-    const parsed: unknown = JSON.parse(raw);
+    const parsed: any = JSON.parse(raw);
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
       return filterAllowedKeys(parsed as Record<string, unknown>);
     }
     console.warn('[app-config] Invalid shape in config file, returning empty');
     return {};
-  } catch (err: unknown) {
+  } catch (err: any) {
     const e = err as { code?: string; name?: string; message?: string };
     if (e.code === 'ENOENT') return {};
     if (e.name === 'SyntaxError') {
@@ -848,7 +848,7 @@ async function readAppConfigFileOnly(dataDir: string): Promise<AppConfigPrefs> {
 
 // Serialize concurrent writes to the same dataDir so the read-modify-write
 // cycle doesn't lose updates when two PUT requests overlap.
-const writeLocks = new Map<string, Promise<unknown>>();
+const writeLocks = new Map<string, Promise<any>>();
 const configObservers = new Map<string, Set<() => void>>();
 export function observeAppConfig(dataDir: string, observer: () => void): () => void {
   const observers = configObservers.get(dataDir) ?? new Set<() => void>();
@@ -859,7 +859,7 @@ export function observeAppConfig(dataDir: string, observer: () => void): () => v
 /** Automatic content upload must fail closed on corrupt preferences instead of applying defaults. */
 export function automaticDiagnosticsConsent(dataDir: string): boolean {
   try {
-    const raw: unknown = JSON.parse(readFileSync(configFile(dataDir), 'utf8'));
+    const raw: any = JSON.parse(readFileSync(configFile(dataDir), 'utf8'));
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return false;
     const telemetry = (raw as Record<string, unknown>).telemetry;
     if (telemetry !== undefined && (telemetry === null || typeof telemetry !== 'object' || Array.isArray(telemetry))) return false;
@@ -869,7 +869,7 @@ export function automaticDiagnosticsConsent(dataDir: string): boolean {
     }
     const prefs = applyTelemetryDefaults(filterAllowedKeys(raw as Record<string, unknown>));
     return prefs.telemetry?.metrics === true && prefs.telemetry?.content === true;
-  } catch (error) {
+  } catch (error: any) {
     // A new installation has the same defaults as the existing telemetry settings.
     return (error as NodeJS.ErrnoException).code === 'ENOENT';
   }
@@ -991,7 +991,7 @@ async function doWrite(
   return normalizedNextWithoutRetiredAgents;
 }
 
-function isMetricsExplicitlyDisabled(value: unknown): boolean {
+function isMetricsExplicitlyDisabled(value: any): boolean {
   return value != null
     && typeof value === 'object'
     && !Array.isArray(value)

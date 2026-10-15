@@ -6,7 +6,7 @@ type JsonObject = Record<string, unknown>;
 interface CliError {
   code?: string;
   message: string;
-  details?: unknown;
+  details?: any;
   retryable?: boolean;
   requestId?: string;
 }
@@ -39,11 +39,11 @@ Agent runtime invocation:
   "$OD_NODE_BIN" "$OD_BIN" tools live-artifacts list --format compact
 `;
 
-function writeJson(value: unknown, stream: NodeJS.WriteStream = process.stdout): void {
+function writeJson(value: any, stream: NodeJS.WriteStream = process.stdout): void {
   stream.write(`${JSON.stringify(value)}\n`);
 }
 
-function fail(message: string, details?: unknown): ToolCliResult {
+function fail(message: string, details?: any): ToolCliResult {
   writeJson({ ok: false, error: { message, ...(details === undefined ? {} : { details }) } }, process.stderr);
   return { exitCode: 1 };
 }
@@ -106,11 +106,11 @@ function endpoint(baseUrl: URL, pathname: string): string {
   return url.toString();
 }
 
-async function readJsonFile(filePath: string): Promise<unknown> {
+async function readJsonFile(filePath: string): Promise<any> {
   const text = await readFile(filePath, 'utf8');
   try {
-    return JSON.parse(text) as unknown;
-  } catch (error) {
+    return JSON.parse(text) as any;
+  } catch (error: any) {
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(`invalid JSON in ${filePath}: ${message}`);
   }
@@ -120,7 +120,7 @@ async function readOptionalTextFile(filePath: string): Promise<string | undefine
   try {
     await access(filePath);
     return await readFile(filePath, 'utf8');
-  } catch (error) {
+  } catch (error: any) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') return undefined;
     throw error;
   }
@@ -129,7 +129,7 @@ async function readOptionalTextFile(filePath: string): Promise<string | undefine
 async function readOptionalJsonObject(filePath: string): Promise<JsonObject | undefined> {
   try {
     await access(filePath);
-  } catch (error) {
+  } catch (error: any) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') return undefined;
     throw error;
   }
@@ -140,7 +140,7 @@ async function readOptionalJsonObject(filePath: string): Promise<JsonObject | un
   return value as JsonObject;
 }
 
-async function readArtifactInput(inputPath: string): Promise<{ input: unknown; templateHtml?: string; provenanceJson?: JsonObject }> {
+async function readArtifactInput(inputPath: string): Promise<{ input: any; templateHtml?: string; provenanceJson?: JsonObject }> {
   const resolvedInputPath = path.resolve(inputPath);
   const input = await readJsonFile(resolvedInputPath);
   const inputDir = path.dirname(resolvedInputPath);
@@ -158,7 +158,7 @@ async function readArtifactInput(inputPath: string): Promise<{ input: unknown; t
   return { input: inputWithDataJson, ...(templateHtml === undefined ? {} : { templateHtml }), ...(provenanceJson === undefined ? {} : { provenanceJson }) };
 }
 
-async function requestJson(baseUrl: URL, token: string, pathname: string, init: RequestInit = {}): Promise<{ status: number; body: unknown }> {
+async function requestJson(baseUrl: URL, token: string, pathname: string, init: RequestInit = {}): Promise<{ status: number; body: any }> {
   const response = await fetch(endpoint(baseUrl, pathname), {
     ...init,
     headers: {
@@ -169,10 +169,10 @@ async function requestJson(baseUrl: URL, token: string, pathname: string, init: 
     },
   });
   const text = await response.text();
-  let body: unknown = text;
+  let body: any = text;
   if (text.length > 0) {
     try {
-      body = JSON.parse(text) as unknown;
+      body = JSON.parse(text) as any;
     } catch {
       body = { message: text };
     }
@@ -180,7 +180,7 @@ async function requestJson(baseUrl: URL, token: string, pathname: string, init: 
   return { status: response.status, body };
 }
 
-function compactArtifact(value: unknown): unknown {
+function compactArtifact(value: any): any {
   if (!value || typeof value !== 'object') return value;
   const artifact = value as JsonObject;
   return {
@@ -193,7 +193,7 @@ function compactArtifact(value: unknown): unknown {
   };
 }
 
-function compactList(value: unknown): unknown {
+function compactList(value: any): any {
   if (!value || typeof value !== 'object') return value;
   const response = value as JsonObject;
   const artifacts = Array.isArray(response.artifacts) ? response.artifacts : [];
@@ -202,7 +202,7 @@ function compactList(value: unknown): unknown {
   };
 }
 
-function compactValidationDetails(details: unknown): unknown {
+function compactValidationDetails(details: any): any {
   if (!details || typeof details !== 'object') return details;
   const record = details as JsonObject;
   if (record.kind !== 'validation' || !Array.isArray(record.issues)) return details;
@@ -220,7 +220,7 @@ function compactValidationDetails(details: unknown): unknown {
   };
 }
 
-function normalizeCliError(body: unknown): CliError {
+function normalizeCliError(body: any): CliError {
   const rawError = body && typeof body === 'object' && 'error' in body ? (body as JsonObject).error : body;
 
   if (typeof rawError === 'string') return { message: rawError };
@@ -237,7 +237,7 @@ function normalizeCliError(body: unknown): CliError {
   return normalized;
 }
 
-async function printApiResult(response: { status: number; body: unknown }, compact: (body: unknown) => unknown): Promise<ToolCliResult> {
+async function printApiResult(response: { status: number; body: any }, compact: (body: any) => unknown): Promise<ToolCliResult> {
   if (response.status < 200 || response.status >= 300) {
     writeJson({ ok: false, status: response.status, error: normalizeCliError(response.body) }, process.stderr);
     return { exitCode: 1 };
@@ -305,7 +305,7 @@ export async function runLiveArtifactsToolCli(args: string[]): Promise<ToolCliRe
     }
 
     return fail(`unknown live-artifacts command: ${options.command}`);
-  } catch (error) {
+  } catch (error: any) {
     const message = error instanceof Error ? error.message : String(error);
     return fail(message);
   }

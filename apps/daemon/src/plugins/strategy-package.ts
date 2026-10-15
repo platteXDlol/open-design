@@ -181,7 +181,7 @@ function readBundledStrategyPackageV2(input: {
       })),
     });
     selectedPath = normalizeStrategyAssetPath(selectedProfile.path);
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof StrategyPackageIdentityError) throw error;
     throw new StrategyPackageIdentityError(
       error instanceof Error ? error.message : 'Strategy package identity could not be computed.',
@@ -226,7 +226,7 @@ function readControlledStrategyAsset(pluginRoot: string, assetPath: string): Uin
   let normalized: string;
   try {
     normalized = normalizeStrategyAssetPath(assetPath);
-  } catch (error) {
+  } catch (error: any) {
     throw new StrategyPackageAssetPathError(
       error instanceof Error ? error.message : 'Invalid strategy asset path.',
     );
@@ -283,7 +283,7 @@ function readControlledStrategyAsset(pluginRoot: string, assetPath: string): Uin
     } finally {
       closeSync(descriptor);
     }
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof StrategyPackageIdentityError) throw error;
     throw new StrategyPackageIdentityError(
       `Declared strategy asset is unavailable: ${normalized}`,

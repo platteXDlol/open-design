@@ -286,8 +286,8 @@ export interface LibraryAssetPatch {
 
 export function updateLibraryAsset(db: SqliteDb, id: string, patch: LibraryAssetPatch): void {
   const sets: string[] = [];
-  const args: unknown[] = [];
-  const assign = (col: string, value: unknown) => {
+  const args: any[] = [];
+  const assign = (col: string, value: any) => {
     sets.push(`${col} = ?`);
     args.push(value);
   };
@@ -365,7 +365,7 @@ export function deleteLibraryAsset(db: SqliteDb, id: string): void {
 
 export function listLibraryAssets(db: SqliteDb, filter: LibraryAssetFilter = {}): LibraryAssetRecord[] {
   const where: string[] = [];
-  const args: unknown[] = [];
+  const args: any[] = [];
   if (filter.kind) {
     where.push('a.kind = ?');
     args.push(filter.kind);

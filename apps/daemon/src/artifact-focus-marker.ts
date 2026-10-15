@@ -97,7 +97,7 @@ export interface ArtifactFocusMarkerStripperOptions {
  * an acceptable path.
  */
 export function resolveArtifactFocusProjectPath(
-  raw: unknown,
+  raw: any,
   projectRoot: string | null,
 ): string | null {
   const direct = normalizeArtifactFocusPath(raw);

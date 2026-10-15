@@ -103,7 +103,7 @@ interface TaskRunLike {
   status: string;
   createdAt: number;
   updatedAt: number;
-  events: Array<{ event: string; data: unknown; timestamp?: number }>;
+  events: Array<{ event: string; data: any; timestamp?: number }>;
   promptTelemetry?: Parameters<typeof buildStructuredMainRunObservationV1>[0]['promptTelemetry'];
   analyticsTelemetry?: Parameters<typeof summarizeRunTimingAnalytics>[0]['telemetry'];
   model?: string | null;
@@ -441,9 +441,9 @@ function childEvidenceCoverageFromEvents(
   for (let index = events.length - 1; index >= 0; index -= 1) {
     const record = events[index];
     if (!record || typeof record !== 'object' || Array.isArray(record)) continue;
-    const data = (record as { data?: unknown }).data;
+    const data = (record as { data?: any }).data;
     if (!data || typeof data !== 'object' || Array.isArray(data)) continue;
-    const diagnostic = data as { type?: unknown; name?: unknown; coverage?: unknown };
+    const diagnostic = data as { type?: any; name?: any; coverage?: any };
     if (diagnostic.type !== 'diagnostic' || diagnostic.name !== 'child_evidence_coverage_v1') {
       continue;
     }

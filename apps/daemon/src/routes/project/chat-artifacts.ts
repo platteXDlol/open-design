@@ -16,7 +16,6 @@
 
 import type { Express, Request, Response } from 'express';
 
-import type { AuthorizeProjectRequest } from '../../collab/project-request-authority.js';
 import type { RouteDeps } from '../../server-context.js';
 import { createChatArtifactBlobStore } from '../../chat-artifacts/blob-store.js';
 import {
@@ -34,7 +33,7 @@ import type {
 
 export interface RegisterProjectChatArtifactRoutesDeps
   extends RouteDeps<'db' | 'http' | 'paths' | 'projectStore'> {
-  authorizeProjectRequest: AuthorizeProjectRequest;
+  authorizeProjectRequest: any;
 }
 
 /** Mime types safe to hand a browser inline from the app's own origin. */
@@ -178,7 +177,7 @@ export function registerProjectChatArtifactRoutes(
     res: Response,
     snapshot: ChatArtifactSnapshotRow,
     digest: string | null,
-  ): Promise<unknown> {
+  ): Promise<any> {
     if (snapshot.captureState !== 'ready' || !digest) {
       // Honest 404 with the reason. The client degrades on this rather than
       // being handed the current workspace file as a stand-in.

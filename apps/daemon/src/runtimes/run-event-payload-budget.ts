@@ -66,7 +66,7 @@ const MAX_WALK_DEPTH = 64;
 
 type JsonRecord = Record<string, unknown>;
 
-function isRecord(value: unknown): value is JsonRecord {
+function isRecord(value: any): value is JsonRecord {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
@@ -92,16 +92,16 @@ function jsonFitsBudget(json: string, budget = RUN_EVENT_JSON_BUDGET_BYTES): boo
  * as soon as the bound passes `limit`, so a typical small event costs a few
  * property reads. `false` only means "measure exactly".
  */
-function jsonCertainlyWithin(value: unknown, limit: number): boolean {
+function jsonCertainlyWithin(value: any, limit: number): boolean {
   let total = 0;
-  const pending: unknown[] = [value];
+  const pending: any[] = [value];
   while (pending.length > 0) {
     const next = pending.pop();
     if (typeof next === 'string') {
       total += next.length * 6 + 2;
     } else if (next === null || typeof next !== 'object') {
       total += 24;
-    } else if (typeof (next as { toJSON?: unknown }).toJSON === 'function') {
+    } else if (typeof (next as { toJSON?: any }).toJSON === 'function') {
       return false;
     } else if (Array.isArray(next)) {
       total += 2 + next.length;
@@ -118,7 +118,7 @@ function jsonCertainlyWithin(value: unknown, limit: number): boolean {
   return true;
 }
 
-function eventFitsBudget(event: unknown): boolean {
+function eventFitsBudget(event: any): boolean {
   if (jsonCertainlyWithin(event, RUN_EVENT_JSON_BUDGET_BYTES)) return true;
   return jsonFitsBudget(JSON.stringify(event) ?? 'null');
 }
@@ -170,14 +170,14 @@ export function truncateTextToUtf8Budget(value: string, budgetBytes: number): st
  * structure — and every untouched branch, by reference — is preserved, so the
  * result stays valid JSON of the same shape.
  */
-function capStringLeaves(value: unknown, leafBudget: number, depth = 0): unknown {
+function capStringLeaves(value: any, leafBudget: number, depth = 0): any {
   if (typeof value === 'string') {
     if (value.length * 3 <= leafBudget) return value;
     return utf8Bytes(value) > leafBudget ? truncateTextToUtf8Budget(value, leafBudget) : value;
   }
   if (depth >= MAX_WALK_DEPTH) return value;
   if (Array.isArray(value)) {
-    let copy: unknown[] | null = null;
+    let copy: any[] | null = null;
     for (let index = 0; index < value.length; index += 1) {
       const next = capStringLeaves(value[index], leafBudget, depth + 1);
       if (next !== value[index]) {
@@ -252,7 +252,7 @@ function omitCursorFullContentFields(line: JsonRecord): JsonRecord {
   return toolCall ? { ...line, tool_call: toolCall } : line;
 }
 
-function parseJsonLine(line: string): unknown {
+function parseJsonLine(line: string): any {
   const first = line.trimStart()[0];
   if (first !== '{' && first !== '[') return undefined;
   try {
@@ -277,7 +277,7 @@ function rawEventFits(line: string, truncated?: AgentEventPayloadTruncation): bo
  */
 export function boundRawAgentLine(
   line: string,
-  parsed?: unknown,
+  parsed?: any,
 ): { line: string; truncated?: AgentEventPayloadTruncation } {
   if (rawEventFits(line)) return { line };
   const truncated = { originalBytes: utf8Bytes(line) };
@@ -301,7 +301,7 @@ export function boundRawAgentLine(
 /** The SSE `agent` payload for an unrecognised stdout line, already bounded. */
 export function boundedRawAgentEvent(
   line: string,
-  parsed?: unknown,
+  parsed?: any,
 ): { type: 'raw'; line: string; truncated?: AgentEventPayloadTruncation } {
   const bounded = boundRawAgentLine(line, parsed);
   return bounded.truncated
@@ -329,7 +329,7 @@ function lineCount(value: string): number {
  * (same tool names, same `split('\n').length` count) so a shortened row shows
  * the same numbers it showed before; tools it never counted get nothing.
  */
-function withOriginalDiffStat(name: unknown, original: unknown, shortened: unknown): unknown {
+function withOriginalDiffStat(name: any, original: any, shortened: any): any {
   if (!isRecord(original) || !isRecord(shortened) || original.od_diff_stat !== undefined) {
     return shortened;
   }
@@ -356,7 +356,7 @@ function withOriginalDiffStat(name: unknown, original: unknown, shortened: unkno
  * budget: keep, in order, the small scalar fields a reader identifies it by
  * (paths, commands, ids, flags) until half the budget is used.
  */
-function summarizeRecord(value: unknown, keep: JsonRecord = {}): JsonRecord {
+function summarizeRecord(value: any, keep: JsonRecord = {}): JsonRecord {
   const summary: JsonRecord = { ...keep };
   let bytes = utf8Bytes(JSON.stringify(summary));
   if (!isRecord(value)) return summary;

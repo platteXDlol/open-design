@@ -37,19 +37,19 @@ export interface ExternalPluginRunAnalyticsHints {
 }
 
 interface PluginAnalyticsContextLike {
-  deviceId?: unknown;
-  sessionId?: unknown;
-  clientType?: unknown;
-  locale?: unknown;
-  requestId?: unknown;
-  entrySurface?: unknown;
-  hostProduct?: unknown;
-  externalPluginId?: unknown;
-  externalPluginVersion?: unknown;
-  distributionMechanism?: unknown;
-  publisherClass?: unknown;
-  attributionQuality?: unknown;
-  mcpSessionId?: unknown;
+  deviceId?: any;
+  sessionId?: any;
+  clientType?: any;
+  locale?: any;
+  requestId?: any;
+  entrySurface?: any;
+  hostProduct?: any;
+  externalPluginId?: any;
+  externalPluginVersion?: any;
+  distributionMechanism?: any;
+  publisherClass?: any;
+  attributionQuality?: any;
+  mcpSessionId?: any;
 }
 
 const ALLOWED_CONTEXT_KEYS = new Set([
@@ -102,7 +102,7 @@ export function pluginContractError(message: string): Error {
 }
 
 export function validateExternalPluginContext(
-  value: unknown,
+  value: any,
 ): ExternalPluginContext {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw pluginContractError('externalPluginContext must be an object');
@@ -148,7 +148,7 @@ export function validateExternalPluginContext(
 }
 
 function validateCanonicalPluginCorrelationId(
-  value: unknown,
+  value: any,
   fieldName: 'pluginWorkflowId' | 'requestId',
 ): string {
   if (
@@ -163,16 +163,16 @@ function validateCanonicalPluginCorrelationId(
   return value;
 }
 
-export function validatePluginWorkflowId(value: unknown): string {
+export function validatePluginWorkflowId(value: any): string {
   return validateCanonicalPluginCorrelationId(value, 'pluginWorkflowId');
 }
 
-export function validatePluginRequestId(value: unknown): string {
+export function validatePluginRequestId(value: any): string {
   return validateCanonicalPluginCorrelationId(value, 'requestId');
 }
 
 export function mapMcpHostProduct(
-  clientInfo: { name?: unknown; version?: unknown } | null | undefined,
+  clientInfo: { name?: any; version?: any } | null | undefined,
 ): AnalyticsHostProduct {
   const name =
     typeof clientInfo?.name === 'string'
@@ -196,9 +196,9 @@ export function logicalPluginRequestDigest(requestId: string): {
 }
 
 export function normalizeExternalPluginRunAnalyticsHints(
-  value: unknown,
+  value: any,
   input: {
-    clientRequestId: unknown;
+    clientRequestId: any;
     analyticsContext: PluginAnalyticsContextLike | null | undefined;
   },
 ): ExternalPluginRunAnalyticsHints {

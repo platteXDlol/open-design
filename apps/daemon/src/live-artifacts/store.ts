@@ -82,7 +82,7 @@ export interface GenerateLiveArtifactIdOptions {
 export interface CreateLiveArtifactOptions {
   projectsRoot: string;
   projectId: string;
-  input: unknown;
+  input: any;
   templateHtml?: string;
   provenanceJson?: LiveArtifactProvenance;
   createdByRunId?: string;
@@ -104,7 +104,7 @@ export interface UpdateLiveArtifactOptions {
   projectsRoot: string;
   projectId: string;
   artifactId: string;
-  input: unknown;
+  input: any;
   templateHtml?: string;
   provenanceJson?: LiveArtifactProvenance;
   now?: Date;
@@ -340,7 +340,7 @@ export async function ensureLiveArtifactStoreLayout(
   return paths;
 }
 
-function stableJson(value: unknown): string {
+function stableJson(value: any): string {
   return `${JSON.stringify(value, null, 2)}\n`;
 }
 
@@ -399,9 +399,9 @@ function truncateText(value: string, maxLength: number): string {
   return value.length <= maxLength ? value : `${value.slice(0, Math.max(0, maxLength - 1))}…`;
 }
 
-export function compactLiveArtifactRefreshError(error: unknown): LiveArtifactRefreshErrorRecord {
+export function compactLiveArtifactRefreshError(error: any): LiveArtifactRefreshErrorRecord {
   if (error && typeof error === 'object') {
-    const record = error as { code?: unknown; message?: unknown; path?: unknown };
+    const record = error as { code?: any; message?: any; path?: any };
     const compact: LiveArtifactRefreshErrorRecord = {
       message: truncateText(typeof record.message === 'string' ? record.message : String(error), 2_048),
     };
@@ -459,7 +459,7 @@ function defaultRefreshState(projectId: string, artifactId: string): LiveArtifac
   return { schemaVersion: 1, projectId, artifactId, nextRefreshOrdinal: 1 };
 }
 
-function normalizeRefreshState(value: unknown, projectId: string, artifactId: string): LiveArtifactRefreshState {
+function normalizeRefreshState(value: any, projectId: string, artifactId: string): LiveArtifactRefreshState {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw validationError('refresh-state.json', 'live artifact refresh state must be an object');
   }
@@ -495,7 +495,7 @@ async function readLiveArtifactRefreshState(paths: LiveArtifactStorePaths, proje
   if (text.trim().length === 0) return defaultRefreshState(projectId, artifactId);
   try {
     return normalizeRefreshState(JSON.parse(text), projectId, artifactId);
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof SyntaxError) throw validationError('refresh-state.json', 'live artifact refresh state contains invalid JSON');
     throw error;
   }
@@ -505,7 +505,7 @@ async function writeLiveArtifactRefreshState(paths: LiveArtifactStorePaths, stat
   await writeFile(paths.refreshStatePath, stableJson(state), 'utf8');
 }
 
-function normalizeRefreshLockMetadata(value: unknown, lockPath: string): LiveArtifactRefreshLockMetadata {
+function normalizeRefreshLockMetadata(value: any, lockPath: string): LiveArtifactRefreshLockMetadata {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw validationError(lockPath, 'live artifact refresh lock must be an object');
   }
@@ -531,17 +531,17 @@ function normalizeRefreshLockMetadata(value: unknown, lockPath: string): LiveArt
 async function readLiveArtifactRefreshLockMetadata(paths: LiveArtifactStorePaths): Promise<LiveArtifactRefreshLockMetadata> {
   try {
     return normalizeRefreshLockMetadata(JSON.parse(await readFile(paths.refreshLockPath, 'utf8')), LIVE_ARTIFACT_REFRESH_LOCK_FILE);
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof SyntaxError) throw validationError(LIVE_ARTIFACT_REFRESH_LOCK_FILE, 'live artifact refresh lock contains invalid JSON');
     throw error;
   }
 }
 
 async function readPersistedLiveArtifact(paths: LiveArtifactStorePaths): Promise<LiveArtifact> {
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(await readFile(paths.artifactJsonPath, 'utf8'));
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof SyntaxError) {
       throw validationError('artifact.json', 'live artifact file contains invalid JSON');
     }
@@ -561,10 +561,10 @@ async function writePersistedLiveArtifact(paths: LiveArtifactStorePaths, artifac
 }
 
 async function readPersistedDataJson(paths: LiveArtifactStorePaths): Promise<BoundedJsonObject> {
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(await readFile(paths.dataJsonPath, 'utf8'));
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof SyntaxError) {
       throw validationError('data.json', 'live artifact data file contains invalid JSON');
     }
@@ -613,7 +613,7 @@ async function readLiveArtifactWithDataJsonCache(paths: LiveArtifactStorePaths):
 function renderPreviewHtml(templateHtml: string, dataJson: BoundedJsonObject): string {
   try {
     return renderHtmlTemplateV1({ templateHtml, dataJson }).html;
-  } catch (error) {
+  } catch (error: any) {
     const message = error instanceof Error ? error.message : String(error);
     throw new LiveArtifactStoreValidationError(message, [{ path: 'template.html', message }]);
   }
@@ -655,7 +655,7 @@ async function renderLiveArtifactPreviewFromFiles(paths: LiveArtifactStorePaths,
 async function readTextFileOrDefault(filePath: string, fallback: string): Promise<string> {
   try {
     return await readFile(filePath, 'utf8');
-  } catch (error) {
+  } catch (error: any) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') return fallback;
     throw error;
   }
@@ -665,7 +665,7 @@ async function readProvenanceOrDefault(paths: LiveArtifactStorePaths, nowIso: st
   try {
     const parsed = JSON.parse(await readFile(paths.provenanceJsonPath, 'utf8')) as LiveArtifactProvenance;
     return parsed;
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof SyntaxError) throw validationError('provenance.json', 'live artifact provenance file contains invalid JSON');
     if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') return defaultProvenance(nowIso);
     throw error;
@@ -715,7 +715,7 @@ export async function createLiveArtifact(options: CreateLiveArtifactOptions): Pr
     const writtenArtifact = await writeLiveArtifactFiles(tempPaths, persisted.value, templateHtml, provenanceJson);
     await rename(tempPaths.artifactDir, finalPaths.artifactDir);
     return { artifact: writtenArtifact, paths: finalPaths };
-  } catch (error) {
+  } catch (error: any) {
     await rm(tempPaths.artifactDir, { recursive: true, force: true });
     throw error;
   }
@@ -726,7 +726,7 @@ export async function listLiveArtifacts(options: ListLiveArtifactsOptions): Prom
   let entries: Dirent[];
   try {
     entries = await readdir(rootDir, { withFileTypes: true });
-  } catch (error) {
+  } catch (error: any) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') return [];
     throw error;
   }
@@ -795,7 +795,7 @@ export async function acquireLiveArtifactRefreshLock(
 
   try {
     await writeFile(paths.refreshLockPath, stableJson(metadata), { encoding: 'utf8', flag: 'wx' });
-  } catch (error) {
+  } catch (error: any) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'EEXIST') {
       throw new LiveArtifactRefreshLockError('live artifact refresh already active', {
         projectId: options.projectId,
@@ -811,7 +811,7 @@ export async function acquireLiveArtifactRefreshLock(
       ...state,
       nextRefreshOrdinal: refreshOrdinal + 1,
     });
-  } catch (error) {
+  } catch (error: any) {
     await rm(paths.refreshLockPath, { force: true });
     throw error;
   }
@@ -916,7 +916,7 @@ async function writeLiveArtifactSuccessfulSnapshot(
       writeFile(resolveInside(tempSnapshotDir, LIVE_ARTIFACT_PROVENANCE_FILE, 'live artifact snapshot path escapes snapshot dir'), stableJson(options.provenanceJson), 'utf8'),
     ]);
     await rename(tempSnapshotDir, finalSnapshotDir);
-  } catch (error) {
+  } catch (error: any) {
     await rm(tempSnapshotDir, { recursive: true, force: true });
     throw error;
   }
@@ -996,7 +996,7 @@ export async function releaseLiveArtifactRefreshLock(lock: LiveArtifactRefreshLo
   let current: LiveArtifactRefreshLockMetadata;
   try {
     current = JSON.parse(await readFile(lock.lockPath, 'utf8')) as LiveArtifactRefreshLockMetadata;
-  } catch (error) {
+  } catch (error: any) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') return;
     throw error;
   }
@@ -1040,10 +1040,10 @@ export async function listLiveArtifactRefreshLogEntries(
   const entries: LiveArtifactRefreshLogEntry[] = [];
   for (const [index, line] of text.split('\n').entries()) {
     if (line.trim().length === 0) continue;
-    let parsed: unknown;
+    let parsed: any;
     try {
       parsed = JSON.parse(line);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof SyntaxError) {
         throw validationError(`refreshes.jsonl.${index + 1}`, 'live artifact refresh log contains invalid JSON');
       }
@@ -1132,7 +1132,7 @@ export async function recoverStaleLiveArtifactRefreshes(
   let projectEntries: Dirent[];
   try {
     projectEntries = await readdir(options.projectsRoot, { withFileTypes: true });
-  } catch (error) {
+  } catch (error: any) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') return [];
     throw error;
   }
@@ -1144,7 +1144,7 @@ export async function recoverStaleLiveArtifactRefreshes(
     let artifactEntries: Dirent[];
     try {
       artifactEntries = await readdir(liveArtifactsRootDir(options.projectsRoot, projectId), { withFileTypes: true });
-    } catch (error) {
+    } catch (error: any) {
       if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') continue;
       results.push({ projectId, artifactId: '', refreshId: '', status: 'skipped', reason: error instanceof Error ? error.message : String(error) });
       continue;
@@ -1161,14 +1161,14 @@ export async function recoverStaleLiveArtifactRefreshes(
       const paths = liveArtifactStorePaths(options.projectsRoot, projectId, artifactId);
       try {
         await stat(paths.refreshLockPath);
-      } catch (error) {
+      } catch (error: any) {
         if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') continue;
         throw error;
       }
 
       try {
         results.push(await recoverLiveArtifactRefreshLock(options.projectsRoot, projectId, artifactId, now, staleAfterMs));
-      } catch (error) {
+      } catch (error: any) {
         results.push({
           projectId,
           artifactId,
@@ -1212,7 +1212,7 @@ export async function ensureLiveArtifactPreview(options: RegenerateLiveArtifactP
     if (previewStat.mtimeMs > newestDependencyMtime) {
       return { artifact, paths, html: await readFile(paths.generatedPreviewHtmlPath, 'utf8') };
     }
-  } catch (error) {
+  } catch (error: any) {
     if (!(error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT')) throw error;
   }
 

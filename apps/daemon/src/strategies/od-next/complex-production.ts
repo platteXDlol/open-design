@@ -36,7 +36,7 @@ export type OdNextComplexProductionReasonCode =
   | 'od_next_complex_parent_summary_incomplete';
 
 export interface OdNextComplexRuntimeEvidence {
-  capabilitySnapshot?: unknown;
+  capabilitySnapshot?: any;
   /**
    * Provider-neutral observations emitted by a verified runtime adapter. The
    * package association is a structured `attributes.buildPackageId` field;
@@ -73,7 +73,7 @@ function capabilitySnapshotHashIsValid(
 export function evaluateOdNextComplexEligibility(input: {
   plan: OpenDesignPlanContractV2;
   selectedAgentId: string;
-  capabilitySnapshot?: unknown;
+  capabilitySnapshot?: any;
 }): OdNextComplexGateResult {
   if (input.capabilitySnapshot === undefined) {
     return {

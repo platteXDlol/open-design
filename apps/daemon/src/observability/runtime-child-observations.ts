@@ -32,11 +32,11 @@ const CHILD_TERMINAL_STATUSES: ReadonlySet<string> = new Set([
   'canceled',
 ]);
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-function safeToolName(value: unknown): string | undefined {
+function safeToolName(value: any): string | undefined {
   return typeof value === 'string' && SAFE_TOOL_NAME_RE.test(value) ? value : undefined;
 }
 
@@ -54,7 +54,7 @@ export function mainRunToolObservationId(runId: string, rawToolCallId: string): 
  * call ids never cross this adapter.
  */
 export function adaptMainRunToolObservationsV1(input: {
-  events: ReadonlyArray<{ event: string; data: unknown; timestamp?: number }>;
+  events: ReadonlyArray<{ event: string; data: any; timestamp?: number }>;
   taskExecutionId: string;
   runId: string;
   taskRunIndex: number;
@@ -194,7 +194,7 @@ export function adaptMainRunToolObservationsV1(input: {
 }
 
 export interface AdaptRuntimeChildObservationsInput {
-  events: ReadonlyArray<{ event: string; data: unknown }>;
+  events: ReadonlyArray<{ event: string; data: any }>;
   taskExecutionId: string;
   runId: string;
   taskRunIndex: number;
@@ -239,7 +239,7 @@ function verifiedOpenCodeChildren(input: AdaptRuntimeChildObservationsInput): {
     if (!childSessionId) return;
     try {
       const observation = adaptOpenCodeChildRuntimeFactV1({
-        fact: diagnostic as unknown as OpenCodeChildRuntimeFact,
+        fact: diagnostic as any as OpenCodeChildRuntimeFact,
         ...input,
       });
       adapted.set(index, { observation, childSessionId });
@@ -285,7 +285,7 @@ export function adaptRuntimeChildObservationsV1(input: AdaptRuntimeChildObservat
         return verified ? [verified] : [];
       }
       if (diagnostic.name === 'opencode_child_task_candidate') {
-        const candidate = diagnostic as unknown as OpenCodeTaskTerminalCandidate;
+        const candidate = diagnostic as any as OpenCodeTaskTerminalCandidate;
         // The verified export already covers this child on its own observation
         // id. Emitting both would leave a terminal-only L1 id in the same graph
         // and drop the whole Run back below L2.
@@ -296,12 +296,12 @@ export function adaptRuntimeChildObservationsV1(input: AdaptRuntimeChildObservat
       }
       if (diagnostic.name === 'vela_opencode_child_agent_lifecycle') {
         return [adaptVelaChildRuntimeFactV1({
-          fact: diagnostic as unknown as VelaChildRuntimeFact,
+          fact: diagnostic as any as VelaChildRuntimeFact,
           ...input,
         })];
       }
       if (diagnostic.name === 'claude_child_runtime_fact') {
-        const fact = diagnostic as unknown as ClaudeChildRuntimeFact;
+        const fact = diagnostic as any as ClaudeChildRuntimeFact;
         return [adaptClaudeChildRuntimeFactV1({
           fact,
           ...(() => {
@@ -316,7 +316,7 @@ export function adaptRuntimeChildObservationsV1(input: AdaptRuntimeChildObservat
       if (diagnostic.name === 'claude_child_tool_runtime_fact') {
         if (input.includeChildTools !== true) return [];
         return [adaptClaudeChildToolRuntimeFactV1({
-          fact: diagnostic as unknown as ClaudeChildToolRuntimeFact,
+          fact: diagnostic as any as ClaudeChildToolRuntimeFact,
           ...input,
         })];
       }

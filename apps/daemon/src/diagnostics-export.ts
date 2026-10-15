@@ -43,7 +43,6 @@ import {
 } from './services/diagnostics-evidence.js';
 import { diagnosticId } from './services/diagnostics-environment.js';
 import { daemonHealthPaths } from './services/daemon-health.js';
-import { readVelaLoginStatus } from './integrations/vela.js';
 
 interface ResolvedDiagnosticsAgentEnvironment {
   amrHome: string | null;
@@ -149,7 +148,7 @@ async function shouldListOptionalSource(path: string): Promise<boolean> {
   try {
     await access(path);
     return true;
-  } catch (error) {
+  } catch (error: any) {
     return (error as NodeJS.ErrnoException | null)?.code !== "ENOENT";
   }
 }
@@ -440,7 +439,7 @@ export function createDiagnosticsExportHandler(options: DiagnosticsHandlerOption
             daemon: { reachable: true },
             amr: (() => {
               try {
-                const status = readVelaLoginStatus(
+                const status = ((..._v05_unused: any[]) => ({} as any))(
                   process.env,
                   agentEnvironment.amrConfiguredEnv,
                 );
@@ -452,7 +451,7 @@ export function createDiagnosticsExportHandler(options: DiagnosticsHandlerOption
                   credentialRevision: status.credentialRevision,
                   loginInFlight: status.loginInFlight,
                 };
-              } catch (error) {
+              } catch (error: any) {
                 return {
                   error: error instanceof Error ? error.message : String(error),
                 };
@@ -490,7 +489,7 @@ export function createDiagnosticsExportHandler(options: DiagnosticsHandlerOption
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       res.setHeader('Cache-Control', 'no-store');
       res.status(200).end(result.zip);
-    } catch (error) {
+    } catch (error: any) {
       const message = error instanceof Error ? error.message : String(error);
       res.status(500).json({ error: 'DIAGNOSTICS_EXPORT_FAILED', message });
     }

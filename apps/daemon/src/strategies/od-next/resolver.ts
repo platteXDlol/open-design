@@ -37,7 +37,7 @@ export interface OdNextResolvedField<T = unknown> {
 export interface OdNextResolverResult {
   values: Record<string, unknown>;
   fields: Record<string, OdNextResolvedField>;
-  changeSet: Array<{ field: string; from: unknown; to: unknown }>;
+  changeSet: Array<{ field: string; from: any; to: any }>;
   askFields: string[];
   blockedFields: string[];
   conflictedFields: string[];
@@ -53,7 +53,7 @@ export class OdNextResolverError extends Error {
   }
 }
 
-function stableValue(value: unknown): string {
+function stableValue(value: any): string {
   if (Array.isArray(value)) return `[${value.map(stableValue).join(',')}]`;
   if (value && typeof value === 'object') {
     return `{${Object.entries(value as Record<string, unknown>)
@@ -64,7 +64,7 @@ function stableValue(value: unknown): string {
   return JSON.stringify(value) ?? 'undefined';
 }
 
-function sameValue(left: unknown, right: unknown): boolean {
+function sameValue(left: any, right: any): boolean {
   return stableValue(left) === stableValue(right);
 }
 
@@ -78,7 +78,7 @@ export function resolveStrategyFields(
 ): OdNextResolverResult {
   const values: Record<string, unknown> = {};
   const fields: Record<string, OdNextResolvedField> = {};
-  const changeSet: Array<{ field: string; from: unknown; to: unknown }> = [];
+  const changeSet: Array<{ field: string; from: any; to: any }> = [];
   const askFields: string[] = [];
   const blockedFields: string[] = [];
   const conflictedFields: string[] = [];

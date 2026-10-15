@@ -103,7 +103,7 @@ export function registerXaiRoutes(app: Express, ctx: RegisterXaiRoutesDeps) {
       }
       await setXAIToken(mediaConfigDir(PROJECT_ROOT), stored);
       console.log('[xai-oauth] token stored');
-    } catch (err: unknown) {
+    } catch (err: any) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error('[xai-oauth] token exchange failed:', msg);
     } finally {
@@ -139,7 +139,7 @@ export function registerXaiRoutes(app: Express, ctx: RegisterXaiRoutesDeps) {
           port: activeListener.address.port,
         },
       });
-    } catch (err: unknown) {
+    } catch (err: any) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error('[xai-oauth] start failed:', msg);
       await stopActiveListener();
@@ -187,7 +187,7 @@ export function registerXaiRoutes(app: Express, ctx: RegisterXaiRoutesDeps) {
       await stopActiveListener();
       console.log('[xai-oauth] manual paste-back ok, token stored');
       res.json({ ok: true });
-    } catch (err: unknown) {
+    } catch (err: any) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error('[xai-oauth] manual complete failed:', msg);
       res.status(400).json({ error: msg });
@@ -212,7 +212,7 @@ export function registerXaiRoutes(app: Express, ctx: RegisterXaiRoutesDeps) {
         savedAt: tok.savedAt,
         listening: activeListener !== null,
       });
-    } catch (err: unknown) {
+    } catch (err: any) {
       const msg = err instanceof Error ? err.message : String(err);
       res.status(500).json({ error: msg });
     }
@@ -230,7 +230,7 @@ export function registerXaiRoutes(app: Express, ctx: RegisterXaiRoutesDeps) {
     try {
       await stopActiveListener();
       res.json({ ok: true });
-    } catch (err: unknown) {
+    } catch (err: any) {
       const msg = err instanceof Error ? err.message : String(err);
       res.status(500).json({ error: msg });
     }
@@ -244,7 +244,7 @@ export function registerXaiRoutes(app: Express, ctx: RegisterXaiRoutesDeps) {
       await stopActiveListener();
       await clearXAIToken(mediaConfigDir(PROJECT_ROOT));
       res.json({ ok: true });
-    } catch (err: unknown) {
+    } catch (err: any) {
       const msg = err instanceof Error ? err.message : String(err);
       res.status(500).json({ error: msg });
     }
@@ -324,7 +324,7 @@ export function registerXaiRoutes(app: Express, ctx: RegisterXaiRoutesDeps) {
         ...proxyDispatcher.requestInit,
       });
       text = await resp.text();
-    } catch (err: unknown) {
+    } catch (err: any) {
       const msg = err instanceof Error ? err.message : String(err);
       return res.status(502).json({ error: `xAI request failed: ${msg}` });
     } finally {
@@ -336,7 +336,7 @@ export function registerXaiRoutes(app: Express, ctx: RegisterXaiRoutesDeps) {
         .status(502)
         .json({ error: `xAI ${resp.status}: ${text.slice(0, 240)}` });
     }
-    let data: unknown;
+    let data: any;
     try {
       data = JSON.parse(text);
     } catch {
@@ -366,14 +366,14 @@ interface XaiSearchRequest {
   model?: string;
 }
 
-function isPlainObject(v: unknown): v is Record<string, unknown> {
+function isPlainObject(v: any): v is Record<string, unknown> {
   return Boolean(v) && typeof v === 'object' && !Array.isArray(v);
 }
 
 /** Pull the assistant's main text out of an xAI Responses API payload.
  * Handles both the convenience `output_text` field and the structured
  * `output[].content[].text` form. */
-export function extractAnswerText(data: unknown): string {
+export function extractAnswerText(data: any): string {
   if (!isPlainObject(data)) return '';
   const direct = data.output_text;
   if (typeof direct === 'string' && direct.trim()) return direct;
@@ -397,7 +397,7 @@ export function extractAnswerText(data: unknown): string {
  * unique URL citations. xAI tags them with `type: 'url_citation'` and
  * fills in `url` / `title` (we only surface url here; the title is
  * already inlined into the answer text). */
-export function extractUrlCitations(data: unknown): string[] {
+export function extractUrlCitations(data: any): string[] {
   if (!isPlainObject(data)) return [];
   const output = data.output;
   if (!Array.isArray(output)) return [];

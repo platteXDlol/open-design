@@ -18,6 +18,6 @@ export function validationError(
     return createApiError('BAD_REQUEST', message);
   }
   return createApiError('BAD_REQUEST', message, {
-    details: { kind: 'validation', issues } as unknown as NonNullable<ApiError['details']>,
+    details: { kind: 'validation', issues } as any as NonNullable<ApiError['details']>,
   });
 }

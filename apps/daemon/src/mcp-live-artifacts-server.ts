@@ -144,23 +144,23 @@ async function requestJson<T = unknown>(pathname: string, init: RequestInit = {}
     },
   });
   const text = await response.text();
-  let body: unknown = text;
+  let body: any = text;
   if (text.length > 0) {
     try {
-      body = JSON.parse(text) as unknown;
+      body = JSON.parse(text) as any;
     } catch {
       body = { message: text };
     }
   }
   if (!response.ok) {
     const error = new Error(`daemon tool endpoint failed with ${response.status}`);
-    (error as Error & { details?: unknown }).details = body;
+    (error as Error & { details?: any }).details = body;
     throw error;
   }
   return body as T;
 }
 
-async function callTool(name: string, args: JsonObject): Promise<unknown> {
+async function callTool(name: string, args: JsonObject): Promise<any> {
   if (name === 'live_artifacts_create') {
     return await requestJson('/api/tools/live-artifacts/create', {
       method: 'POST',
@@ -239,9 +239,9 @@ export async function handleLiveArtifactsMcpRequest(request: JsonRpcRequest): Pr
     }
 
     return { jsonrpc: '2.0', id, error: { code: -32601, message: `method not found: ${String(method)}` } };
-  } catch (error) {
+  } catch (error: any) {
     const message = error instanceof Error ? error.message : String(error);
-    const details = error && typeof error === 'object' && 'details' in error ? (error as { details?: unknown }).details : undefined;
+    const details = error && typeof error === 'object' && 'details' in error ? (error as { details?: any }).details : undefined;
     return { jsonrpc: '2.0', id, error: { code: -32000, message, ...(details === undefined ? {} : { data: details }) } };
   }
 }

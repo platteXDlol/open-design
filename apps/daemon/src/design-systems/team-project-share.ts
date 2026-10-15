@@ -1,9 +1,3 @@
-import {
-  TeamResourceAuthorityUnavailableError,
-  TeamResourceShareForbiddenError,
-  type TeamResourceRequestScope,
-  type TeamResourceShareService,
-} from '../collab/team-resource-share.js';
 
 export interface PreparedLinkedProjectShare {
   projectId: string;
@@ -16,14 +10,14 @@ export interface PreparedLinkedProjectShare {
 }
 
 export interface CreateLinkedProjectTeamResourceShareServiceOptions {
-  resource: TeamResourceShareService;
+  resource: any;
   /**
    * Resolve and authorize the backing project before either hub is mutated.
    * The returned transition is pinned to this exact Workspace principal.
    */
   prepare(
     resourceId: string,
-    scope: TeamResourceRequestScope,
+    scope: any,
   ): Promise<PreparedLinkedProjectShare>;
 }
 
@@ -35,7 +29,7 @@ export interface DesignSystemBackingProjectBinding {
 export interface CreateDesignSystemBackingProjectPreparerOptions {
   resolveProjectId(
     resourceId: string,
-    scope: TeamResourceRequestScope,
+    scope: any,
   ): Promise<string | null> | string | null;
   /**
    * Materialize and bind a missing backing project under the request's exact
@@ -44,37 +38,37 @@ export interface CreateDesignSystemBackingProjectPreparerOptions {
    */
   ensureProjectId?(
     resourceId: string,
-    scope: TeamResourceRequestScope,
+    scope: any,
   ): Promise<string | null> | string | null;
   projectExists(projectId: string): boolean;
   getProjectBinding(projectId: string): DesignSystemBackingProjectBinding | undefined;
   publishProject(
     projectId: string,
-    scope: TeamResourceRequestScope,
+    scope: any,
   ): Promise<{ version: number | null }>;
-  unpublishProject(projectId: string, scope: TeamResourceRequestScope): Promise<void>;
+  unpublishProject(projectId: string, scope: any): Promise<void>;
   persistVisibility(input: {
     projectId: string;
-    scope: TeamResourceRequestScope;
+    scope: any;
     visibility: 'personal' | 'team';
   }): Promise<void> | void;
   onPrepared?: (input: {
     resourceId: string;
     projectId: string;
-    scope: TeamResourceRequestScope;
+    scope: any;
   }) => void;
 }
 
 function compensationError(
   operation: 'share' | 'unshare',
-  primary: unknown,
-  compensation: unknown,
+  primary: any,
+  compensation: any,
 ): Error {
   const error = new Error(
     `linked project ${operation} failed and compensation also failed: ${String(primary)}; ${String(compensation)}`,
   );
   error.name = 'LinkedProjectShareCompensationError';
-  (error as Error & { cause?: unknown }).cause = primary;
+  (error as Error & { cause?: any }).cause = primary;
   return error;
 }
 
@@ -102,7 +96,7 @@ export function createDesignSystemBackingProjectPreparer(
       throw new Error('design system backing project belongs to another workspace');
     }
     if (binding?.createdByWorkspaceMemberId !== memberId) {
-      throw new TeamResourceShareForbiddenError();
+      throw new Error();
     }
     options.onPrepared?.({ resourceId, projectId, scope });
     return {
@@ -115,10 +109,10 @@ export function createDesignSystemBackingProjectPreparer(
           }
           try {
             await options.persistVisibility({ projectId, scope, visibility });
-          } catch (error) {
+          } catch (error: any) {
             try {
               await options.unpublishProject(projectId, scope);
-            } catch (rollbackError) {
+            } catch (rollbackError: any) {
               // Remote rollback failed, so the project publication is still
               // Team-authoritative. Retry the local forward projection once;
               // a transient SQLite failure can converge to the original share
@@ -127,7 +121,7 @@ export function createDesignSystemBackingProjectPreparer(
               try {
                 await options.persistVisibility({ projectId, scope, visibility });
                 return;
-              } catch (forwardError) {
+              } catch (forwardError: any) {
                 throw compensationError(
                   'share',
                   error,
@@ -142,17 +136,17 @@ export function createDesignSystemBackingProjectPreparer(
         await options.unpublishProject(projectId, scope);
         try {
           await options.persistVisibility({ projectId, scope, visibility });
-        } catch (error) {
+        } catch (error: any) {
           try {
             await options.publishProject(projectId, scope);
-          } catch (rollbackError) {
+          } catch (rollbackError: any) {
             // The inverse publish failed, so the project remains remotely
             // unshared. Retry the Personal projection once and converge
             // forward before returning control to the resource half.
             try {
               await options.persistVisibility({ projectId, scope, visibility });
               return;
-            } catch (forwardError) {
+            } catch (forwardError: any) {
               throw compensationError(
                 'unshare',
                 error,
@@ -186,20 +180,20 @@ export function createDesignSystemBackingProjectPreparer(
  */
 export function createLinkedProjectTeamResourceShareService(
   options: CreateLinkedProjectTeamResourceShareServiceOptions,
-): TeamResourceShareService {
+): any {
   const { resource } = options;
-  const service: TeamResourceShareService = {
+  const service: any = {
     configured: resource.configured,
-    async share(resourceId, scope) {
+    async share(resourceId: any, scope: any) {
       const linkedProject = await options.prepare(resourceId, scope);
       const result = await resource.share(resourceId, scope);
       if (!result) return null;
       try {
         await linkedProject.transition('team');
-      } catch (error) {
+      } catch (error: any) {
         try {
           await resource.unshare(resourceId, scope);
-        } catch (rollbackError) {
+        } catch (rollbackError: any) {
           // The inverse resource write can fail independently. Retry the
           // forward project write once: if that succeeds, the user's original
           // share intent is fully true and no orphan remains despite the
@@ -207,7 +201,7 @@ export function createLinkedProjectTeamResourceShareService(
           try {
             await linkedProject.transition('team');
             return result;
-          } catch (forwardError) {
+          } catch (forwardError: any) {
             throw compensationError(
               'share',
               error,
@@ -219,36 +213,36 @@ export function createLinkedProjectTeamResourceShareService(
       }
       return result;
     },
-    async unshare(resourceId, scope) {
+    async unshare(resourceId: any, scope: any) {
       // This live read is the idempotency boundary. A cached/session fallback
       // may still remember an already-removed design system, so it must never
       // authorize moving the independently shareable backing project.
       let sharedResource;
       try {
         sharedResource = (await resource.sharedResources(scope, { authoritative: true }))
-          .find((candidate) => candidate.id === resourceId);
-      } catch (error) {
-        throw new TeamResourceAuthorityUnavailableError(error);
+          .find((candidate: any) => candidate.id === resourceId);
+      } catch (error: any) {
+        throw new Error(error);
       }
       if (!sharedResource) return false;
       if (!sharedResource.canUnshare) {
-        throw new TeamResourceShareForbiddenError();
+        throw new Error();
       }
       const linkedProject = await options.prepare(resourceId, scope);
       await linkedProject.transition('personal');
       try {
         return await resource.unshare(resourceId, scope);
-      } catch (error) {
+      } catch (error: any) {
         try {
           await linkedProject.transition('team');
-        } catch (rollbackError) {
+        } catch (rollbackError: any) {
           // Same convergence rule in reverse: when restoring Team also fails,
           // retry the original resource removal once. A success means both
           // halves are Personal and the requested unshare can truthfully
           // complete.
           try {
             return await resource.unshare(resourceId, scope);
-          } catch (forwardError) {
+          } catch (forwardError: any) {
             throw compensationError(
               'unshare',
               error,
@@ -259,8 +253,8 @@ export function createLinkedProjectTeamResourceShareService(
         throw error;
       }
     },
-    sharedIds: (scope) => resource.sharedIds(scope),
-    async sharedResources(scope, readOptions) {
+    sharedIds: (scope: any) => resource.sharedIds(scope),
+    async sharedResources(scope: any, readOptions: any) {
       const resources = await resource.sharedResources(scope, readOptions);
       for (const candidate of resources) {
         // Generic hub capability grants Workspace owner/admin broadly. Linked
@@ -272,7 +266,7 @@ export function createLinkedProjectTeamResourceShareService(
       }
       return resources;
     },
-    isShared: (resourceId, scope) => resource.isShared(resourceId, scope),
+    isShared: (resourceId: any, scope: any) => resource.isShared(resourceId, scope),
   };
   return service;
 }

@@ -5,7 +5,6 @@ import { basename } from 'node:path';
 import { runDaemonCliStartup, startDaemonRuntime } from './daemon-startup.js';
 import { runLiveArtifactsMcpServer } from './mcp-live-artifacts-server.js';
 import { runArtifactsCli } from './artifacts-cli.js';
-import { runResource } from './resource-cli.js';
 import { runProjectHandoff } from './handoff-cli.js';
 import { runConnectorsToolCli } from './tools-connectors-cli.js';
 import { runDesignSystemsToolCli } from './tools-design-systems-cli.js';
@@ -29,7 +28,6 @@ import {
   applyJsonInstall,
   removeJsonInstall,
 } from './mcp-agent-install.js';
-import { resolveMcpWorkspaceContext } from './mcp-workspace-context.js';
 
 const argv = process.argv.slice(2);
 
@@ -504,7 +502,7 @@ async function runStrategy(args) {
     let response;
     try {
       response = await fetch(`${base}/api/strategies/od-next/rollout`);
-    } catch (error) {
+    } catch (error: any) {
       surfaceFetchError(error, base);
       process.exit(3);
     }
@@ -532,7 +530,7 @@ async function runAgent(args) {
   let flags;
   try {
     flags = parseFlags(args, { string: AGENT_STRING_FLAGS, boolean: AGENT_BOOLEAN_FLAGS });
-  } catch (error) {
+  } catch (error: any) {
     console.error(error.message);
     process.exit(2);
   }
@@ -553,7 +551,7 @@ async function runAgent(args) {
       headers: { 'content-type': 'application/json' },
       body: '{}',
     });
-  } catch (error) {
+  } catch (error: any) {
     surfaceFetchError(error, base);
     process.exit(3);
   }
@@ -613,7 +611,7 @@ async function runExport(args) {
   let flags;
   try {
     flags = parseFlags(args, { string: EXPORT_STRING_FLAGS, boolean: EXPORT_BOOLEAN_FLAGS });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     process.exit(2);
   }
@@ -656,7 +654,7 @@ async function runExport(args) {
       page: flags.page === true,
       noDeck: flags['no-deck'] === true,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err instanceof Error ? err.message : String(err));
     process.exit(2);
   }
@@ -674,7 +672,7 @@ async function runExport(args) {
       headers: { 'content-type': 'application/json', ...requestHeaders },
       body: JSON.stringify(requestBody),
     });
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -746,7 +744,7 @@ async function runLint(args) {
   let flags;
   try {
     flags = parseFlags(args, { string: LINT_STRING_FLAGS, boolean: LINT_BOOLEAN_FLAGS });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     process.exit(2);
   }
@@ -771,7 +769,7 @@ async function runLint(args) {
       const { readFile } = await import('node:fs/promises');
       html = await readFile(file, 'utf8');
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error(`cannot read ${file}: ${err instanceof Error ? err.message : String(err)}`);
     process.exit(2);
   }
@@ -787,7 +785,7 @@ async function runLint(args) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ html }),
     });
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -826,7 +824,7 @@ if (argv[0] === 'mcp' && argv[1] === 'live-artifacts') {
   try {
     const { exitCode } = await runLiveArtifactsMcpServer();
     process.exit(exitCode);
-  } catch (error) {
+  } catch (error: any) {
     const message = error instanceof Error ? error.message : String(error);
     process.stderr.write(`${JSON.stringify({ ok: false, error: { message } })}\n`);
     process.exit(1);
@@ -1273,7 +1271,7 @@ async function runCollab(args) {
   let flags;
   try {
     flags = parseFlags(rest, { string: COLLAB_STRING_FLAGS, boolean: COLLAB_BOOLEAN_FLAGS });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     process.exit(2);
   }
@@ -1303,7 +1301,7 @@ async function runCollab(args) {
           },
           ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
         });
-      } catch (err) {
+      } catch (err: any) {
         surfaceFetchError(err, base);
         process.exit(3);
       }
@@ -1376,7 +1374,7 @@ async function runCollab(args) {
         },
         ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
       });
-    } catch (err) {
+    } catch (err: any) {
       surfaceFetchError(err, base);
       process.exit(3);
     }
@@ -1502,7 +1500,7 @@ async function runMessageCenter(args) {
       string: MESSAGE_CENTER_STRING_FLAGS,
       boolean: MESSAGE_CENTER_BOOLEAN_FLAGS,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     printMessageCenterHelp();
     process.exit(2);
@@ -1542,7 +1540,7 @@ async function runMessageCenterList(rawArgs, flags, base) {
   let resp;
   try {
     resp = await fetch(`${base}/api/integrations/vela/message-center/messages?${query}`);
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -1580,7 +1578,7 @@ async function runMessageCenterRead(rawArgs, flags, base) {
     resp = await fetch(`${base}/api/integrations/vela/message-center/messages/${encodeURIComponent(id)}/read`, {
       method: 'POST',
     });
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -1602,7 +1600,7 @@ async function runMessageCenterReadAll(flags, base) {
     resp = await fetch(`${base}/api/integrations/vela/message-center/read-all`, {
       method: 'POST',
     });
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -1674,7 +1672,7 @@ async function runResearchSearch(rawArgs) {
       string: RESEARCH_SEARCH_STRING_FLAGS,
       boolean: RESEARCH_SEARCH_BOOLEAN_FLAGS,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     printResearchHelp();
     process.exit(2);
@@ -1698,7 +1696,7 @@ async function runResearchSearch(rawArgs) {
         ...(Number.isFinite(maxSources) ? { maxSources } : {}),
       }),
     });
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, daemonUrl);
     process.exit(3);
   }
@@ -1759,7 +1757,7 @@ async function runMediaScaffold(rawArgs) {
       string: MEDIA_SCAFFOLD_STRING_FLAGS,
       boolean: MEDIA_SCAFFOLD_BOOLEAN_FLAGS,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     printMediaHelp();
     process.exit(2);
@@ -1796,7 +1794,7 @@ async function runMediaScaffold(rawArgs) {
       },
       body: JSON.stringify({ compositionDir }),
     });
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, daemonUrl);
     process.exit(3);
   }
@@ -1815,7 +1813,7 @@ async function runMediaGenerate(rawArgs) {
       string: MEDIA_GENERATE_STRING_FLAGS,
       boolean: MEDIA_GENERATE_BOOLEAN_FLAGS,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     printMediaHelp();
     process.exit(2);
@@ -1972,7 +1970,7 @@ async function runMediaWait(rawArgs) {
       string: stringFlags,
       boolean: new Set(['help', 'h']),
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     printMediaHelp();
     process.exit(2);
@@ -2040,7 +2038,7 @@ async function pollUntilDoneOrBudget(daemonUrl, taskId, sinceStart, options = {}
         headers: { 'content-type': 'application/json', ...requestHeaders },
         body: JSON.stringify({ since, timeoutMs: callTimeout }),
       });
-    } catch (err) {
+    } catch (err: any) {
       surfaceFetchError(err, daemonUrl);
       await flushStreamsAndExit(3);
     }
@@ -2337,7 +2335,7 @@ async function runMcp(args) {
       string: MCP_STRING_FLAGS,
       boolean: MCP_BOOLEAN_FLAGS,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     printMcpHelp();
     process.exit(2);
@@ -2479,7 +2477,7 @@ async function runMcpInstall(args) {
       string: MCP_INSTALL_STRING_FLAGS,
       boolean: MCP_INSTALL_BOOLEAN_FLAGS,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     printMcpInstallHelp();
     process.exit(2);
@@ -2588,7 +2586,7 @@ async function runMcpInstall(args) {
   let existing = null;
   try {
     existing = await fs.readFile(plan.configPath, 'utf8');
-  } catch (err) {
+  } catch (err: any) {
     if (err && err.code !== 'ENOENT') throw err;
   }
 
@@ -2842,7 +2840,7 @@ Writes <out|cwd>/<id>/{SKILL.md,open-design.json,README.md}.`);
     console.log(`[scaffold] ${result.folder}`);
     for (const file of result.files) console.log(`  ${file}`);
     console.log(`\nNext: od plugin install ${result.folder}`);
-  } catch (err) {
+  } catch (err: any) {
     if (err instanceof ScaffoldError) {
       console.error(`[scaffold] ${err.message}`);
       process.exit(2);
@@ -2940,7 +2938,7 @@ Exit codes:
       }
       console.log(`[validate] ok=${result.ok}`);
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error(`[validate] failed: ${err?.message ?? err}`);
     process.exit(2);
   }
@@ -2988,7 +2986,7 @@ Exit codes:
         folder,
         ...(typeof flags.out === 'string' ? { out: flags.out } : {}),
       });
-    } catch (err) {
+    } catch (err: any) {
       if (err instanceof PackPluginError) {
         if (flags.json) {
           process.stdout.write(JSON.stringify({ ok: false, error: err.message }, null, 2) + '\n');
@@ -3018,7 +3016,7 @@ Exit codes:
       console.log(`[pack] bytes:  ${result.bytes}`);
       console.log(`\nNext: od plugin install --source ${result.outPath}`);
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error(`[pack] failed: ${err?.message ?? err}`);
     process.exit(2);
   }
@@ -4377,7 +4375,7 @@ Exit codes:
     try {
       const raw = await fs.readFile(configPath, 'utf8');
       config = JSON.parse(raw);
-    } catch (err) {
+    } catch (err: any) {
       const e = err;
       if (e?.code !== 'ENOENT') {
         console.error(`[verify] cannot read config ${configPath}: ${e?.message ?? e}`);
@@ -4627,7 +4625,7 @@ fixtures into a plugin's own tests/.`);
     let expected;
     try {
       expected = await fs.readFile(checkPath, 'utf8');
-    } catch (err) {
+    } catch (err: any) {
       console.error(`[canon --check] cannot read ${checkPath}: ${err?.message ?? err}`);
       process.exit(2);
     }
@@ -4821,7 +4819,7 @@ async function runPluginApply(rest) {
   // shell-escape dance.
   let inputs = {};
   if (typeof flags.inputs === 'string' && flags.inputs.trim().length > 0) {
-    try { inputs = JSON.parse(flags.inputs); } catch (err) {
+    try { inputs = JSON.parse(flags.inputs); } catch (err: any) {
       console.error(`--inputs must be valid JSON: ${err.message}`);
       process.exit(2);
     }
@@ -4849,7 +4847,7 @@ async function runPluginApply(rest) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ inputs, projectId: flags.project, grantCaps }),
     });
-  } catch (err) {
+  } catch (err: any) {
     return exitWithStructuredError({
       code: 'daemon-not-running',
       message: `Cannot reach daemon at ${await pluginDaemonUrl(flags)}: ${err?.message ?? err}`,
@@ -4902,7 +4900,7 @@ async function runPluginDuplicate(rest) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
     });
-  } catch (err) {
+  } catch (err: any) {
     return exitWithStructuredError({
       code: 'daemon-not-running',
       message: `Cannot reach daemon at ${await pluginDaemonUrl(flags)}: ${err?.message ?? err}`,
@@ -5130,7 +5128,7 @@ publish from a frozen run snapshot rather than the live installed copy.`);
   let link;
   try {
     link = buildPublishLink({ catalog: target, meta });
-  } catch (err) {
+  } catch (err: any) {
     if (err instanceof PublishError) {
       console.error(`[publish] ${err.message}`);
       process.exit(2);
@@ -5446,7 +5444,7 @@ async function publishToMarketplaceJson({ catalogPath, meta }) {
   let existing = null;
   try {
     existing = JSON.parse(await readFile(resolvedPath, 'utf8'));
-  } catch (err) {
+  } catch (err: any) {
     if (err?.code !== 'ENOENT') {
       throw err;
     }
@@ -5454,7 +5452,7 @@ async function publishToMarketplaceJson({ catalogPath, meta }) {
   let outcome;
   try {
     outcome = upsertMarketplaceJsonEntry({ manifest: existing, meta });
-  } catch (err) {
+  } catch (err: any) {
     if (err instanceof PublishError) {
       console.error(`[publish] ${err.message}`);
       process.exit(2);
@@ -6016,7 +6014,7 @@ async function runUiRespond(rest) {
     // semantics simple; spec §10.3.4 onTimeout='skip' lands in Phase 4.
     value = null;
   } else if (typeof flags['value-json'] === 'string') {
-    try { value = JSON.parse(flags['value-json']); } catch (err) {
+    try { value = JSON.parse(flags['value-json']); } catch (err: any) {
       console.error(`--value-json must be valid JSON: ${err.message}`);
       process.exit(2);
     }
@@ -6101,7 +6099,7 @@ async function runUiPrefill(rest) {
   }
   let value = null;
   if (typeof flags['value-json'] === 'string') {
-    try { value = JSON.parse(flags['value-json']); } catch (err) {
+    try { value = JSON.parse(flags['value-json']); } catch (err: any) {
       console.error(`--value-json must be valid JSON: ${err.message}`);
       process.exit(2);
     }
@@ -6397,7 +6395,7 @@ async function runFigma(args) {
   let bytes;
   try {
     bytes = readFileSync(file);
-  } catch (err) {
+  } catch (err: any) {
     console.error(`cannot read ${file}: ${err.message}`);
     process.exit(2);
   }
@@ -6506,7 +6504,7 @@ async function runBrandList(rest) {
   let flags;
   try {
     flags = parseFlags(rest, { string: BRAND_STRING_FLAGS, boolean: BRAND_BOOLEAN_FLAGS });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     process.exit(2);
   }
@@ -6514,7 +6512,7 @@ async function runBrandList(rest) {
   let resp;
   try {
     resp = await fetch(`${base}/api/brands`);
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -6537,7 +6535,7 @@ async function runBrandCreate(rest) {
   let flags;
   try {
     flags = parseFlags(rest, { string: BRAND_STRING_FLAGS, boolean: BRAND_BOOLEAN_FLAGS });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     process.exit(2);
   }
@@ -6569,7 +6567,7 @@ async function runBrandCreate(rest) {
           : {}),
       }),
     });
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -6597,7 +6595,7 @@ async function runBrandFinalize(rest) {
   let flags;
   try {
     flags = parseFlags(rest, { string: BRAND_STRING_FLAGS, boolean: BRAND_BOOLEAN_FLAGS });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     process.exit(2);
   }
@@ -6617,7 +6615,7 @@ async function runBrandFinalize(rest) {
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify(body),
     });
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -6640,7 +6638,7 @@ async function runBrandContinue(rest) {
   let flags;
   try {
     flags = parseFlags(rest, { string: BRAND_STRING_FLAGS, boolean: BRAND_BOOLEAN_FLAGS });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     process.exit(2);
   }
@@ -6656,7 +6654,7 @@ async function runBrandContinue(rest) {
       method: 'POST',
       headers: { accept: 'application/json' },
     });
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -6705,7 +6703,7 @@ async function runBrandExtractFromHtml(rest) {
   let flags;
   try {
     flags = parseFlags(rest, { string: BRAND_STRING_FLAGS, boolean: BRAND_BOOLEAN_FLAGS });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     process.exit(2);
   }
@@ -6718,7 +6716,7 @@ async function runBrandExtractFromHtml(rest) {
   let html;
   try {
     html = await readFileFlagOrStdin(flags['html-file']);
-  } catch (err) {
+  } catch (err: any) {
     console.error(`could not read --html-file: ${err.message}`);
     process.exit(2);
   }
@@ -6730,7 +6728,7 @@ async function runBrandExtractFromHtml(rest) {
   if (typeof flags['css-file'] === 'string' && flags['css-file'].length > 0) {
     try {
       css = (await readFileFlagOrStdin(flags['css-file'])) ?? '';
-    } catch (err) {
+    } catch (err: any) {
       console.error(`could not read --css-file: ${err.message}`);
       process.exit(2);
     }
@@ -6749,7 +6747,7 @@ async function runBrandExtractFromHtml(rest) {
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify(body),
     });
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -6774,7 +6772,7 @@ async function runBrandPreview(rest) {
   let flags;
   try {
     flags = parseFlags(rest, { string: BRAND_STRING_FLAGS, boolean: BRAND_BOOLEAN_FLAGS });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     process.exit(2);
   }
@@ -6794,7 +6792,7 @@ async function runBrandPreview(rest) {
       headers: { 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify(body),
     });
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -6816,7 +6814,7 @@ async function runBrandGet(rest) {
   let flags;
   try {
     flags = parseFlags(rest, { string: BRAND_STRING_FLAGS, boolean: BRAND_BOOLEAN_FLAGS });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     process.exit(2);
   }
@@ -6829,7 +6827,7 @@ async function runBrandGet(rest) {
   let resp;
   try {
     resp = await fetch(`${base}/api/brands/${encodeURIComponent(id)}`);
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -6865,7 +6863,7 @@ async function runBrandDelete(rest) {
   let flags;
   try {
     flags = parseFlags(rest, { string: BRAND_STRING_FLAGS, boolean: BRAND_BOOLEAN_FLAGS });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     process.exit(2);
   }
@@ -6878,7 +6876,7 @@ async function runBrandDelete(rest) {
   let resp;
   try {
     resp = await fetch(`${base}/api/brands/${encodeURIComponent(id)}`, { method: 'DELETE' });
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -6963,7 +6961,7 @@ async function postJsonToDaemon(base, route, body, headers = {}) {
       headers: { 'content-type': 'application/json', ...headers },
       body:    JSON.stringify(body),
     });
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -7205,7 +7203,7 @@ Common options:
       }
       if (flags.plugin) body.pluginId = flags.plugin;
       if (flags.inputs) {
-        try { body.pluginInputs = JSON.parse(flags.inputs); } catch (err) {
+        try { body.pluginInputs = JSON.parse(flags.inputs); } catch (err: any) {
           console.error(`--inputs must be valid JSON: ${err.message}`);
           process.exit(2);
         }
@@ -8084,7 +8082,7 @@ Common options:
       if (flags.model) body.model = flags.model;
       if (flags['service-tier']) body.serviceTier = flags['service-tier'];
       if (flags.inputs) {
-        try { body.pluginInputs = JSON.parse(flags.inputs); } catch (err) {
+        try { body.pluginInputs = JSON.parse(flags.inputs); } catch (err: any) {
           console.error(`--inputs must be valid JSON: ${err.message}`);
           process.exit(2);
         }
@@ -8439,7 +8437,7 @@ Common options:
       try {
         const stdin = readFileSync(0);
         chunks = [stdin];
-      } catch (err) {
+      } catch (err: any) {
         console.error(`stdin read failed: ${err.message ?? err}`);
         process.exit(1);
       }
@@ -8760,7 +8758,7 @@ Common options:
   let flags;
   try {
     flags = parseFlags(rest, { string: TEMPLATES_STRING_FLAGS, boolean: TEMPLATES_BOOLEAN_FLAGS });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     process.exit(2);
   }
@@ -8799,7 +8797,7 @@ Common options:
       let resp;
       try {
         resp = await fetch(`${base}/api/templates`);
-      } catch (err) {
+      } catch (err: any) {
         surfaceFetchError(err, base);
         process.exit(3);
       }
@@ -8839,7 +8837,7 @@ Common options:
           headers: { 'content-type': 'application/json' },
           body:    JSON.stringify(body),
         });
-      } catch (err) {
+      } catch (err: any) {
         surfaceFetchError(err, base);
         process.exit(3);
       }
@@ -8872,7 +8870,7 @@ Common options:
       let resp;
       try {
         resp = await fetch(`${base}/api/templates/${encodeURIComponent(id)}`, { method: 'DELETE' });
-      } catch (err) {
+      } catch (err: any) {
         surfaceFetchError(err, base);
         process.exit(3);
       }
@@ -9273,7 +9271,7 @@ async function runDaemonStatus(flags) {
   let resp;
   try {
     resp = await fetch(`${base}/api/daemon/status`);
-  } catch (err) {
+  } catch (err: any) {
     return exitWithStructuredError({
       code:    'daemon-not-running',
       message: `Cannot reach daemon at ${base}: ${err?.message ?? err}`,
@@ -9290,7 +9288,7 @@ async function runDaemonStop(flags) {
   let resp;
   try {
     resp = await fetch(`${base}/api/daemon/shutdown`, { method: 'POST' });
-  } catch (err) {
+  } catch (err: any) {
     return exitWithStructuredError({
       code:    'daemon-not-running',
       message: `Cannot reach daemon at ${base}: ${err?.message ?? err}`,
@@ -9437,7 +9435,7 @@ async function runLibrary(args) {
       string: LIBRARY_ASSET_STRING_FLAGS,
       boolean: LIBRARY_ASSET_BOOLEAN_FLAGS,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     process.exit(2);
   }
@@ -9515,7 +9513,7 @@ async function runLibrary(args) {
               body.dataUrl = `data:;base64,${bytes.toString('base64')}`;
               body.filename = nodePath.basename(src);
             }
-          } catch (err) {
+          } catch (err: any) {
             failed = true;
             results.push({ source: src, ok: false, error: err?.message ?? String(err) });
             if (!flags.json) console.error(`${src}\terror\t${err?.message ?? err}`);
@@ -9636,7 +9634,7 @@ async function runLibrary(args) {
         printLibraryHelp();
         process.exit(2);
     }
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -9754,7 +9752,7 @@ async function runSkillInstall(rest) {
     }
     if (flags.json) return process.stdout.write(JSON.stringify(body, null, 2) + '\n');
     console.log(`[install] ${body?.skill?.id ?? body?.skill?.name ?? source}`);
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -9833,7 +9831,7 @@ generated SKILLS.md usage guide).
     resp = await fetch(`${base}/api/design-systems/${encodeURIComponent(id)}/archive`, {
       headers: workspaceHeaders,
     });
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -10137,7 +10135,7 @@ diagnostics produces.
   let resp;
   try {
     resp = await fetch(`${base}${DIAGNOSTICS_EXPORT_PATH}`);
-  } catch (err) {
+  } catch (err: any) {
     return exitWithStructuredError({
       code:    'daemon-not-running',
       message: `Cannot reach daemon at ${base}: ${err?.message ?? err}`,
@@ -10162,7 +10160,7 @@ async function runVersion(args) {
   let resp;
   try {
     resp = await fetch(`${base}/api/version`);
-  } catch (err) {
+  } catch (err: any) {
     return exitWithStructuredError({
       code:    'daemon-not-running',
       message: `Cannot reach daemon at ${base}: ${err?.message ?? err}`,
@@ -10192,7 +10190,7 @@ async function runWhatsNew(args) {
   let resp;
   try {
     resp = await fetch(`${base}/api/whats-new`);
-  } catch (err) {
+  } catch (err: any) {
     return exitWithStructuredError({
       code:    'daemon-not-running',
       message: `Cannot reach daemon at ${base}: ${err?.message ?? err}`,
@@ -10255,7 +10253,7 @@ or the daemon cannot be reached.`);
     } else {
       report.daemon = await resp.json();
     }
-  } catch (err) {
+  } catch (err: any) {
     report.issues.push({ severity: 'error', code: 'daemon-not-running', message: String(err?.message ?? err) });
     if (flags.json) {
       process.stdout.write(JSON.stringify(report, null, 2) + '\n');
@@ -10289,7 +10287,7 @@ or the daemon cannot be reached.`);
       const data = await atomsResp.json();
       report.atoms = data?.atoms ?? [];
     }
-  } catch (err) {
+  } catch (err: any) {
     report.issues.push({ severity: 'warn', code: 'library-list-failed', message: String(err?.message ?? err) });
   }
 
@@ -10311,7 +10309,7 @@ or the daemon cannot be reached.`);
               message:  `${p.id}@${p.version}: ${(data?.issues ?? []).map((i) => i.code).join(', ')}`,
             });
           }
-        } catch (err) {
+        } catch (err: any) {
           report.issues.push({
             severity: 'warn',
             code:     'plugin-doctor-error',
@@ -10320,7 +10318,7 @@ or the daemon cannot be reached.`);
         }
       }
     }
-  } catch (err) {
+  } catch (err: any) {
     report.issues.push({ severity: 'warn', code: 'plugin-list-failed', message: String(err?.message ?? err) });
   }
 
@@ -10409,7 +10407,7 @@ Common options:
       }
       let parsed;
       if (typeof flags['value-json'] === 'string') {
-        try { parsed = JSON.parse(flags['value-json']); } catch (err) {
+        try { parsed = JSON.parse(flags['value-json']); } catch (err: any) {
           console.error(`--value-json must be valid JSON: ${err.message}`);
           process.exit(2);
         }
@@ -10576,7 +10574,7 @@ async function fetchMemoryTree(base) {
   let resp;
   try {
     resp = await fetch(`${base}/api/memory/tree`);
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -10592,7 +10590,7 @@ async function patchMemoryTreeNode(base, id, body) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body),
     });
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -10607,7 +10605,7 @@ async function fetchMemoryEntry(base, id) {
   let resp;
   try {
     resp = await fetch(`${base}/api/memory/${encodeURIComponent(id)}`);
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -10738,7 +10736,7 @@ async function runMemory(args) {
       string: MEMORY_STRING_FLAGS,
       boolean: MEMORY_BOOLEAN_FLAGS,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     process.exit(2);
   }
@@ -10795,7 +10793,7 @@ async function runMemory(args) {
     let resp;
     try {
       resp = await fetch(`${base}/api/memory/${encodeURIComponent(id)}`);
-    } catch (err) {
+    } catch (err: any) {
       surfaceFetchError(err, base);
       process.exit(3);
     }
@@ -10894,7 +10892,7 @@ async function runMemoryProfile(base, rest, flags, writeJson) {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
       });
-    } catch (err) {
+    } catch (err: any) {
       surfaceFetchError(err, base);
       process.exit(3);
     }
@@ -10921,7 +10919,7 @@ async function runMemoryRule(base, rest, flags, writeJson) {
     let resp;
     try {
       resp = await fetch(`${base}/api/memory`);
-    } catch (err) {
+    } catch (err: any) {
       surfaceFetchError(err, base);
       process.exit(3);
     }
@@ -10977,7 +10975,7 @@ async function runMemoryRule(base, rest, flags, writeJson) {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
       });
-    } catch (err) {
+    } catch (err: any) {
       surfaceFetchError(err, base);
       process.exit(3);
     }
@@ -11007,7 +11005,7 @@ async function runMemoryRule(base, rest, flags, writeJson) {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ annotations }),
       });
-    } catch (err) {
+    } catch (err: any) {
       surfaceFetchError(err, base);
       process.exit(3);
     }
@@ -11101,7 +11099,7 @@ async function runMemoryVerify(base, rest, flags, writeJson) {
     let resp;
     try {
       resp = await fetch(`${base}/api/memory/verifications`);
-    } catch (err) {
+    } catch (err: any) {
       surfaceFetchError(err, base);
       process.exit(3);
     }
@@ -11130,7 +11128,7 @@ async function runMemoryVerify(base, rest, flags, writeJson) {
     let resp;
     try {
       resp = await fetch(`${base}/api/memory/verifications`, { method: 'DELETE' });
-    } catch (err) {
+    } catch (err: any) {
       surfaceFetchError(err, base);
       process.exit(3);
     }
@@ -11178,7 +11176,7 @@ async function runMemoryConfig(base, rest, flags, writeJson) {
     let resp;
     try {
       resp = await fetch(`${base}/api/memory`);
-    } catch (err) {
+    } catch (err: any) {
       surfaceFetchError(err, base);
       process.exit(3);
     }
@@ -11207,7 +11205,7 @@ async function runMemoryConfig(base, rest, flags, writeJson) {
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(patch),
     });
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }
@@ -11463,7 +11461,7 @@ async function runAutomation(args) {
       string: AUTOMATION_STRING_FLAGS,
       boolean: AUTOMATION_BOOLEAN_FLAGS,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     process.exit(2);
   }
@@ -11512,7 +11510,7 @@ async function runAutomation(args) {
         let resp;
         try {
           resp = await fetch(`${base}/api/automation-templates`);
-        } catch (err) {
+        } catch (err: any) {
           surfaceFetchError(err, base);
           process.exit(3);
         }
@@ -11547,7 +11545,7 @@ async function runAutomation(args) {
         let resp;
         try {
           resp = await fetch(`${base}/api/automation-templates/${encodeURIComponent(id)}`);
-        } catch (err) {
+        } catch (err: any) {
           surfaceFetchError(err, base);
           process.exit(3);
         }
@@ -11598,7 +11596,7 @@ async function runAutomation(args) {
               memoryType: flags['memory-type'],
             }),
           });
-        } catch (err) {
+        } catch (err: any) {
           surfaceFetchError(err, base);
           process.exit(3);
         }
@@ -11627,7 +11625,7 @@ async function runAutomation(args) {
         let resp;
         try {
           resp = await fetch(`${base}/api/automation-source-packets${query}`);
-        } catch (err) {
+        } catch (err: any) {
           surfaceFetchError(err, base);
           process.exit(3);
         }
@@ -11660,7 +11658,7 @@ async function runAutomation(args) {
         let resp;
         try {
           resp = await fetch(`${base}/api/automation-source-packets/${encodeURIComponent(id)}`);
-        } catch (err) {
+        } catch (err: any) {
           surfaceFetchError(err, base);
           process.exit(3);
         }
@@ -11680,7 +11678,7 @@ async function runAutomation(args) {
         let resp;
         try {
           resp = await fetch(`${base}/api/automation-proposals${query}`);
-        } catch (err) {
+        } catch (err: any) {
           surfaceFetchError(err, base);
           process.exit(3);
         }
@@ -11714,7 +11712,7 @@ async function runAutomation(args) {
         let resp;
         try {
           resp = await fetch(`${base}/api/automation-proposals/${encodeURIComponent(id)}`);
-        } catch (err) {
+        } catch (err: any) {
           surfaceFetchError(err, base);
           process.exit(3);
         }
@@ -11739,7 +11737,7 @@ async function runAutomation(args) {
                 : '{}',
             },
           );
-        } catch (err) {
+        } catch (err: any) {
           surfaceFetchError(err, base);
           process.exit(3);
         }
@@ -11757,7 +11755,7 @@ async function runAutomation(args) {
       let resp;
       try {
         resp = await fetch(`${base}/api/routines`);
-      } catch (err) {
+      } catch (err: any) {
         surfaceFetchError(err, base);
         process.exit(3);
       }
@@ -11778,7 +11776,7 @@ async function runAutomation(args) {
       let resp;
       try {
         resp = await fetch(`${base}/api/routines/${encodeURIComponent(id)}`);
-      } catch (err) {
+      } catch (err: any) {
         surfaceFetchError(err, base);
         process.exit(3);
       }
@@ -11796,7 +11794,7 @@ async function runAutomation(args) {
         resp = await fetch(
           `${base}/api/routines/${encodeURIComponent(id)}/runs?limit=${limit}`,
         );
-      } catch (err) {
+      } catch (err: any) {
         surfaceFetchError(err, base);
         process.exit(3);
       }
@@ -11835,7 +11833,7 @@ async function runAutomation(args) {
           `${base}/api/routines/${encodeURIComponent(routineId)}/runs/${encodeURIComponent(runId)}/crystallize`,
           { method: 'POST' },
         );
-      } catch (err) {
+      } catch (err: any) {
         surfaceFetchError(err, base);
         process.exit(3);
       }
@@ -11876,7 +11874,7 @@ async function runAutomation(args) {
       try {
         schedule = parseScheduleFlag(flags.schedule);
         target = parseAutomationTarget(flags);
-      } catch (err) {
+      } catch (err: any) {
         console.error(err.message);
         process.exit(2);
       }
@@ -11899,7 +11897,7 @@ async function runAutomation(args) {
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify(body),
         });
-      } catch (err) {
+      } catch (err: any) {
         surfaceFetchError(err, base);
         process.exit(3);
       }
@@ -11922,7 +11920,7 @@ async function runAutomation(args) {
       if (flags.schedule) {
         try {
           patch.schedule = parseScheduleFlag(flags.schedule);
-        } catch (err) {
+        } catch (err: any) {
           console.error(err.message);
           process.exit(2);
         }
@@ -11930,7 +11928,7 @@ async function runAutomation(args) {
       if (flags.target || flags.project) {
         try {
           patch.target = parseAutomationTarget(flags);
-        } catch (err) {
+        } catch (err: any) {
           console.error(err.message);
           process.exit(2);
         }
@@ -11954,7 +11952,7 @@ async function runAutomation(args) {
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify(patch),
         });
-      } catch (err) {
+      } catch (err: any) {
         surfaceFetchError(err, base);
         process.exit(3);
       }
@@ -11979,7 +11977,7 @@ async function runAutomation(args) {
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ enabled }),
         });
-      } catch (err) {
+      } catch (err: any) {
         surfaceFetchError(err, base);
         process.exit(3);
       }
@@ -11999,7 +11997,7 @@ async function runAutomation(args) {
         resp = await fetch(`${base}/api/routines/${encodeURIComponent(id)}/run`, {
           method: 'POST',
         });
-      } catch (err) {
+      } catch (err: any) {
         surfaceFetchError(err, base);
         process.exit(3);
       }
@@ -12022,7 +12020,7 @@ async function runAutomation(args) {
         resp = await fetch(`${base}/api/routines/${encodeURIComponent(id)}`, {
           method: 'DELETE',
         });
-      } catch (err) {
+      } catch (err: any) {
         surfaceFetchError(err, base);
         process.exit(3);
       }
@@ -12046,7 +12044,7 @@ async function runDeploy(args) {
   let flags;
   try {
     flags = parseFlags(args, { string: DEPLOY_STRING_FLAGS, boolean: DEPLOY_BOOLEAN_FLAGS });
-  } catch (err) {
+  } catch (err: any) {
     console.error(err.message);
     process.exit(2);
   }
@@ -12117,7 +12115,7 @@ Options:
       headers: { 'content-type': 'application/json', ...workspaceHeaders },
       body: JSON.stringify(body),
     });
-  } catch (err) {
+  } catch (err: any) {
     surfaceFetchError(err, base);
     process.exit(3);
   }

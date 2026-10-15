@@ -44,7 +44,7 @@ type RunToolBundleAgent = Pick<
   'id' | 'name' | 'externalMcpInjection'
 >;
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
+function isPlainObject(value: any): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
@@ -52,14 +52,14 @@ function agentLabel(agent: RunToolBundleAgent): string {
   return agent.name ? `${agent.name} (${agent.id})` : agent.id;
 }
 
-export function normalizeRunToolBundleForRun(raw: unknown): RunToolBundle {
+export function normalizeRunToolBundleForRun(raw: any): RunToolBundle {
   if (!isPlainObject(raw)) return { mcpServers: [] };
   return {
     mcpServers: sanitizeMcpConfig({ servers: raw.mcpServers }).servers,
   };
 }
 
-export function parseRunToolBundleForRequest(raw: unknown): RunToolBundleParseResult {
+export function parseRunToolBundleForRequest(raw: any): RunToolBundleParseResult {
   if (raw == null) return { ok: true, bundle: { mcpServers: [] } };
   if (!isPlainObject(raw)) {
     return { ok: false, message: 'toolBundle must be an object' };

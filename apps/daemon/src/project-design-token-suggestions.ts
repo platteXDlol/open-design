@@ -23,7 +23,7 @@ type Candidate = {
 
 export type BuildProjectDesignTokenSuggestionsOptions = {
   projectId: string;
-  projectMetadata?: unknown;
+  projectMetadata?: any;
   project?: { designSystemId?: string | null } | null;
   projectsRoot: string;
   designSystemsRoot: string;
@@ -31,12 +31,12 @@ export type BuildProjectDesignTokenSuggestionsOptions = {
   listFiles: (
     projectsRoot: string,
     projectId: string,
-    options?: { metadata?: unknown },
+    options?: { metadata?: any },
   ) => Promise<ProjectFileLike[]>;
   resolveProjectDir: (
     projectsRoot: string,
     projectId: string,
-    metadata?: unknown,
+    metadata?: any,
   ) => string;
   query: ProjectDesignTokenSuggestionQuery;
 };

@@ -46,14 +46,14 @@ const ALLOWED_RENDERERS = new Set<string>([
 const ALLOWED_EXPORTS = new Set<string>(['html', 'pdf', 'zip', 'jsx', 'md', 'svg', 'txt']);
 const ALLOWED_STATUS = new Set<string>(['streaming', 'complete', 'error']);
 
-function isPlainObject(value: unknown): value is JsonRecord {
+function isPlainObject(value: any): value is JsonRecord {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const proto = Object.getPrototypeOf(value);
   return proto === Object.prototype || proto === null;
 }
 
 function validateBoundedString(
-  value: unknown,
+  value: any,
   field: string,
   maxLen: number,
   { allowEmpty = false }: { allowEmpty?: boolean } = {},
@@ -64,7 +64,7 @@ function validateBoundedString(
   return null;
 }
 
-function validateSupportingPath(value: unknown): string | null {
+function validateSupportingPath(value: any): string | null {
   if (typeof value !== 'string') return 'supportingFiles entries must be strings';
   if (value.length === 0) return 'supportingFiles entries cannot be empty';
   if (value.length > MAX_SUPPORTING_FILE_LENGTH) {
@@ -84,8 +84,8 @@ function validateSupportingPath(value: unknown): string | null {
 }
 
 export function validateArtifactManifestInput(
-  manifest: unknown,
-  entry: unknown,
+  manifest: any,
+  entry: any,
   options: ValidationOptions = {},
 ): ValidationResult {
   if (manifest == null) return { ok: true, value: null };

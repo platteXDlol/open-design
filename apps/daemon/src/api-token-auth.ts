@@ -3,7 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 export const API_TOKEN_BASIC_USERNAME = 'open-design';
 export const API_TOKEN_BASIC_CHALLENGE = 'Basic realm="OpenDesign", charset="UTF-8"';
 
-export function isTruthyEnvFlag(value: unknown): boolean {
+export function isTruthyEnvFlag(value: any): boolean {
   const normalized = String(value || '').trim().toLowerCase();
   return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on';
 }
@@ -48,7 +48,7 @@ function decodeBasicCredentials(value: string): { username: string; password: st
   };
 }
 
-export function apiTokenAuthorizationMatches(value: unknown, apiToken: string): boolean {
+export function apiTokenAuthorizationMatches(value: any, apiToken: string): boolean {
   if (typeof value !== 'string' || apiToken.length === 0) return false;
 
   const bearer = /^Bearer[\t ]+(\S+)[\t ]*$/i.exec(value);

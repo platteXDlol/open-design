@@ -1,3 +1,4 @@
+import { fetchVelaPresetModels, fetchVelaRemoteModelsWithRetry } from './v05-stubs.js';
 // Smoke tests for the Settings dialog. Two entry points:
 //
 //   - testProviderConnection: posts a tiny "Reply with only: ok" request to
@@ -79,13 +80,6 @@ import {
   type ParsedBaseUrl,
   type ProviderTestRequest,
 } from '@open-design/contracts/api/connectionTest';
-import { readVelaCredentialRevision, resolveAmrProfile } from './integrations/vela.js';
-import { amrModelLoadingCache } from './runtimes/amr-model-cache.js';
-import { buildAmrModelCacheKey } from './runtimes/amr-model-probe.js';
-import {
-  fetchVelaPresetModels,
-  fetchVelaRemoteModelsWithRetry,
-} from './runtimes/defs/amr.js';
 import {
   getRememberedLiveModels,
   preferFreshLiveModels,
@@ -292,15 +286,15 @@ export async function assertExternalAssetUrl(
  */
 export function createAssetValidatingLookup(
   lookupImpl: typeof dnsLookupCb = dnsLookupCb,
-): (hostname: string, options: unknown, callback: (...args: unknown[]) => void) => void {
+): (hostname: string, options: any, callback: (...args: any[]) => void) => void {
   return (
     hostname: string,
-    options: unknown,
-    callback: (...args: unknown[]) => void,
+    options: any,
+    callback: (...args: any[]) => void,
   ): void => {
     const cb = (typeof options === 'function' ? options : callback) as (
       err: Error | null,
-      address?: unknown,
+      address?: any,
       family?: number,
     ) => void;
     const opts = (typeof options === 'function' ? {} : (options ?? {})) as Record<string, unknown>;
@@ -336,7 +330,7 @@ const assetDispatcher = new Agent({
  * fails loudly (issue #5478).
  */
 export function getAssetValidatingDispatcher(): NonNullable<RequestInit['dispatcher']> {
-  return assetDispatcher as unknown as NonNullable<RequestInit['dispatcher']>;
+  return assetDispatcher as any as NonNullable<RequestInit['dispatcher']>;
 }
 
 /**
@@ -393,7 +387,7 @@ export async function assertAndFetchExternalAsset(
   // uses it to refuse a connect-time rebind to loopback/metadata (issue #5478).
   // Same pattern as plugins/plugin-asset-cache.ts safeExternalFetch.
   const requestInit: RequestInit = { ...init, redirect: 'error' };
-  (requestInit as { dispatcher?: unknown }).dispatcher = assetDispatcher;
+  (requestInit as { dispatcher?: any }).dispatcher = assetDispatcher;
   return fetchImpl(url, requestInit);
 }
 
@@ -771,7 +765,7 @@ export function proxyDispatcherRequestInit(
   return {
     close: () => dispatcher.close(),
     requestInit: {
-      dispatcher: dispatcher as unknown as NonNullable<RequestInit['dispatcher']>,
+      dispatcher: dispatcher as any as NonNullable<RequestInit['dispatcher']>,
     },
   };
 }
@@ -890,14 +884,14 @@ function appendVersionedApiPath(baseUrl: string, suffix: string): string {
   return url.toString();
 }
 
-function truncateSample(text: unknown): string {
+function truncateSample(text: any): string {
   if (typeof text !== 'string') return '';
   const trimmed = text.replace(/\s+/g, ' ').trim();
   if (trimmed.length <= SAMPLE_MAX_CHARS) return trimmed;
   return `${trimmed.slice(0, SAMPLE_MAX_CHARS - 1)}…`;
 }
 
-export function isSmokeOkReply(text: unknown): boolean {
+export function isSmokeOkReply(text: any): boolean {
   return typeof text === 'string' && text.trim().toLowerCase() === 'ok';
 }
 
@@ -933,7 +927,7 @@ function smokeFailureDetail(sample: string): string {
 
 function inspectProviderCompletion(
   protocol: ConnectionTestProtocol,
-  data: unknown,
+  data: any,
   requestedModel: string,
   enforceResponseModel: boolean,
 ): { valid: boolean; sample?: string; kind?: ConnectionTestKind; detail?: string } {
@@ -956,7 +950,7 @@ function inspectProviderCompletion(
     }
     const choices = obj.choices;
     if (!Array.isArray(choices) || choices.length === 0) return { valid: false };
-    const first = choices[0] as { finish_reason?: unknown } | undefined;
+    const first = choices[0] as { finish_reason?: any } | undefined;
     const finishReason =
       typeof first?.finish_reason === 'string' ? first.finish_reason : '';
     return {
@@ -970,17 +964,17 @@ function inspectProviderCompletion(
   if (protocol === 'anthropic') {
     return {
       valid:
-        Array.isArray((obj as { content?: unknown }).content) ||
-        typeof (obj as { stop_reason?: unknown }).stop_reason === 'string',
+        Array.isArray((obj as { content?: any }).content) ||
+        typeof (obj as { stop_reason?: any }).stop_reason === 'string',
       sample: 'valid completion',
     };
   }
 
   if (protocol === 'ollama') {
-    const msg = (obj as { message?: { content?: unknown } }).message;
+    const msg = (obj as { message?: { content?: any } }).message;
     const hasContent = typeof msg?.content === 'string';
     return {
-      valid: Array.isArray((obj as { messages?: unknown }).messages) || hasContent,
+      valid: Array.isArray((obj as { messages?: any }).messages) || hasContent,
       ...(hasContent ? { sample: truncateSample(msg?.content) } : {}),
     };
   }
@@ -1060,23 +1054,23 @@ function classifyProviderHttpFailure(
   return { kind, detail };
 }
 
-function extractOpenAiModelIds(data: unknown): string[] {
-  const items = (data as { data?: unknown }).data;
+function extractOpenAiModelIds(data: any): string[] {
+  const items = (data as { data?: any }).data;
   if (!Array.isArray(items)) return [];
   return items
-    .map((item) => (item as { id?: unknown })?.id)
+    .map((item) => (item as { id?: any })?.id)
     .filter((id): id is string => typeof id === 'string' && id.length > 0);
 }
 
-function extractProviderErrorDetail(data: unknown, rawText: string): string {
+function extractProviderErrorDetail(data: any, rawText: string): string {
   const obj = data && typeof data === 'object' ? data : null;
-  const error = obj ? (obj as { error?: unknown }).error : null;
+  const error = obj ? (obj as { error?: any }).error : null;
   if (typeof error === 'string') return error;
   if (error && typeof error === 'object') {
-    const message = (error as { message?: unknown }).message;
+    const message = (error as { message?: any }).message;
     if (typeof message === 'string' && message.trim()) return message;
   }
-  const message = obj ? (obj as { message?: unknown }).message : null;
+  const message = obj ? (obj as { message?: any }).message : null;
   if (typeof message === 'string' && message.trim()) return message;
   return rawText.trim().slice(0, 240);
 }
@@ -1088,21 +1082,21 @@ function extractProviderErrorDetail(data: unknown, rawText: string): string {
  * generic `fetch failed`, with the actual reason only on `cause.code`. Since
  * `networkErrorToKind` maps just an allowlist to `invalid_base_url`, everything
  * else — `DEPTH_ZERO_SELF_SIGNED_CERT`, `SELF_SIGNED_CERT_IN_CHAIN`,
- * `UNABLE_TO_GET_ISSUER_CERT_LOCALLY`, `EPROTO` — became `kind: unknown` with
+ * `UNABLE_TO_GET_ISSUER_CERT_LOCALLY`, `EPROTO` — became `kind: any` with
  * `detail: "fetch failed"`, i.e. a failure the user sees and we cannot name.
  * That is the bulk of the 776 unattributed connection tests / 196 devices a day.
  *
  * The cause code is an OpenSSL/libuv constant, never user content, so appending
  * it is safe; the message still goes through `redactSecrets`.
  */
-function networkErrorDetail(err: unknown, secrets: (string | undefined)[]): string {
+function networkErrorDetail(err: any, secrets: (string | undefined)[]): string {
   const message = redactSecrets(err instanceof Error ? err.message : String(err), secrets);
-  const code = (err as { cause?: { code?: unknown } } | null | undefined)?.cause?.code;
+  const code = (err as { cause?: { code?: any } } | null | undefined)?.cause?.code;
   if (typeof code !== 'string' || !code) return message;
   return message.includes(code) ? message : `${message} (${code})`;
 }
 
-function networkErrorToKind(err: unknown): ConnectionTestKind {
+function networkErrorToKind(err: any): ConnectionTestKind {
   if (err instanceof Error) {
     if (err.name === 'AbortError') return 'timeout';
     // fetch's TypeError surface for DNS/TLS/connect failures is
@@ -1154,7 +1148,7 @@ async function validateLocalOpenAiModel(
   }
   if (!response.ok) return null;
 
-  let data: unknown;
+  let data: any;
   try {
     const rawText = await response.text();
     data = rawText ? JSON.parse(rawText) : {};
@@ -1177,9 +1171,9 @@ async function validateLocalOpenAiModel(
 interface ProviderCallShape {
   url: string;
   headers: Record<string, string>;
-  body: unknown;
-  extractText: (data: unknown) => string;
-  retryBodyOnUnsupportedMaxTokens?: unknown;
+  body: any;
+  extractText: (data: any) => string;
+  retryBodyOnUnsupportedMaxTokens?: any;
 }
 
 export function resolveOpenAIConnectionTestRunProviderPackage(
@@ -1200,7 +1194,7 @@ export function resolveOpenAIConnectionTestRunProviderPackage(
   if (!providerEntries || typeof providerEntries !== 'object') return null;
   const provider = (providerEntries as Record<string, unknown>)[BYOK_OPENCODE_PROVIDER_ID];
   if (!provider || typeof provider !== 'object') return null;
-  const npm = (provider as { npm?: unknown }).npm;
+  const npm = (provider as { npm?: any }).npm;
   return typeof npm === 'string' ? npm : null;
 }
 
@@ -1279,14 +1273,14 @@ function buildProviderCall(input: ProviderTestRequest): ProviderCallShape {
           stream: false,
         },
         extractText: (data) => {
-          const blocks = (data as { content?: unknown }).content;
+          const blocks = (data as { content?: any }).content;
           if (!Array.isArray(blocks)) return '';
           for (const block of blocks) {
             if (
               block &&
               typeof block === 'object' &&
               (block as { type?: string }).type === 'text' &&
-              typeof (block as { text?: unknown }).text === 'string'
+              typeof (block as { text?: any }).text === 'string'
             ) {
               return (block as { text: string }).text;
             }
@@ -1318,8 +1312,8 @@ function buildProviderCall(input: ProviderTestRequest): ProviderCallShape {
           stream: false,
         },
         extractText: (data) => {
-          const message = (data as { message?: { content?: unknown } }).message;
-          if (message && typeof (message as { content?: unknown }).content === 'string') {
+          const message = (data as { message?: { content?: any } }).message;
+          if (message && typeof (message as { content?: any }).content === 'string') {
             return (message as { content: string }).content;
           }
           return '';
@@ -1334,27 +1328,27 @@ function buildProviderCall(input: ProviderTestRequest): ProviderCallShape {
 // Sibling of the proxy's `extractOpenAIText` (which reads streaming
 // `delta.content`). We need the non-streaming `message.content` shape
 // here. Kept module-local so the chat path doesn't change.
-function extractOpenAIMessageText(data: unknown): string {
-  const choices = (data as { choices?: unknown }).choices;
+function extractOpenAIMessageText(data: any): string {
+  const choices = (data as { choices?: any }).choices;
   if (!Array.isArray(choices) || choices.length === 0) return '';
   const first = choices[0] as
-    | { message?: { content?: unknown }; text?: unknown }
+    | { message?: { content?: any }; text?: any }
     | undefined;
   if (typeof first?.message?.content === 'string') return first.message.content;
   if (typeof first?.text === 'string') return first.text;
   return '';
 }
 
-function extractOpenAIResponsesText(data: unknown): string {
-  const outputText = (data as { output_text?: unknown }).output_text;
+function extractOpenAIResponsesText(data: any): string {
+  const outputText = (data as { output_text?: any }).output_text;
   if (typeof outputText === 'string') return outputText;
-  const output = (data as { output?: unknown }).output;
+  const output = (data as { output?: any }).output;
   if (!Array.isArray(output)) return '';
   for (const item of output) {
-    const content = (item as { content?: unknown } | undefined)?.content;
+    const content = (item as { content?: any } | undefined)?.content;
     if (!Array.isArray(content)) continue;
     for (const block of content) {
-      const text = (block as { text?: unknown } | undefined)?.text;
+      const text = (block as { text?: any } | undefined)?.text;
       if (typeof text === 'string') return text;
     }
   }
@@ -1382,7 +1376,7 @@ export async function testProviderConnection(
   let call: ProviderCallShape;
   try {
     call = buildProviderCall(normalizedInput);
-  } catch (err) {
+  } catch (err: any) {
     return {
       ok: false,
       kind: 'unknown',
@@ -1466,12 +1460,12 @@ export async function testProviderConnection(
       }
     }
     if (response.ok) {
-      let data: unknown;
+      let data: any;
       let rawText = '';
       try {
         rawText = await response.text();
         data = rawText ? JSON.parse(rawText) : {};
-      } catch (parseErr) {
+      } catch (parseErr: any) {
         console.warn(
           `[test:provider] ${input.protocol} ${validated.parsed.hostname} model=${input.model} → parse failed: ${redactSecrets(rawText.slice(0, 200), [input.apiKey])}`,
         );
@@ -1595,7 +1589,7 @@ export async function testProviderConnection(
       status: response.status,
       detail,
     };
-  } catch (err) {
+  } catch (err: any) {
     const latencyMs = Date.now() - start;
     const kind = networkErrorToKind(err);
     const message = err instanceof Error ? err.message : String(err);
@@ -1625,7 +1619,7 @@ type AgentSinkResult =
   | { kind: 'streamError'; error: Error };
 
 interface AgentSink {
-  send: (event: string, payload: unknown) => void;
+  send: (event: string, payload: any) => void;
   result: Promise<AgentSinkResult>;
   streamError: Promise<Error>;
   getText: () => string;
@@ -1638,7 +1632,7 @@ interface AgentSink {
   dispose: () => void;
 }
 
-function isTerminalCompletionStopReason(value: unknown): boolean {
+function isTerminalCompletionStopReason(value: any): boolean {
   return typeof value === 'string' && value.length > 0 && value !== 'tool_use';
 }
 
@@ -1734,7 +1728,7 @@ export function createAgentSink(): AgentSink {
     }
   };
 
-  const send = (event: string, payload: unknown) => {
+  const send = (event: string, payload: any) => {
     const data = (payload ?? {}) as Record<string, unknown>;
     if (event === 'error') {
       const message =
@@ -1821,17 +1815,17 @@ function extractOpenCodeTextFromRawStdout(stdout: string): string {
     const trimmed = line.trim();
     if (!trimmed) continue;
     try {
-      const parsed = JSON.parse(trimmed) as unknown;
+      const parsed = JSON.parse(trimmed) as any;
       if (
         parsed &&
         typeof parsed === 'object' &&
-        (parsed as { type?: unknown }).type === 'text'
+        (parsed as { type?: any }).type === 'text'
       ) {
-        const part = (parsed as { part?: unknown }).part;
+        const part = (parsed as { part?: any }).part;
         if (
           part &&
           typeof part === 'object' &&
-          typeof (part as { text?: unknown }).text === 'string'
+          typeof (part as { text?: any }).text === 'string'
         ) {
           text.push((part as { text: string }).text);
         }
@@ -1852,7 +1846,7 @@ function openCodeOutdatedCliDetail(output: string): string | null {
   const looksLikeOpenCodeHelp =
     /\bopencode\b/u.test(value) && /\b(?:usage|commands|options):/u.test(value);
   const looksLikeUnsupportedArgs =
-    /\b(?:unknown option|unknown argument|unexpected argument|unrecognized option|invalid option|incompatible opencode args)\b/u.test(value);
+    /\b(?: any option|unknown argument|unexpected argument|unrecognized option|invalid option|incompatible opencode args)\b/u.test(value);
 
   return looksLikeOpenCodeHelp || looksLikeUnsupportedArgs
     ? OPENCODE_OUTDATED_CLI_DETAIL
@@ -1892,7 +1886,7 @@ function attachAgentStreamHandlers(
   model: string | undefined,
   modelEnv: Record<string, string | undefined>,
   liveModelScope: string | null,
-  send: (event: string, payload: unknown) => void,
+  send: (event: string, payload: any) => void,
   appendRawStdout?: (chunk: string) => void,
 ): AgentSpawnHandle {
   let acpSession: {
@@ -1902,8 +1896,8 @@ function attachAgentStreamHandlers(
   child.stdout?.setEncoding('utf8');
   child.stderr?.setEncoding('utf8');
   if (def.streamFormat === 'claude-stream-json') {
-    const claude = createClaudeStreamHandler((ev: unknown) => {
-      const data = (ev ?? {}) as { type?: unknown; terminal?: unknown };
+    const claude = createClaudeStreamHandler((ev: any) => {
+      const data = (ev ?? {}) as { type?: any; terminal?: any };
       // Terminal result-frame errors are already classified by this sink's own
       // result-frame parse (#4501) with the accurate `output_parse` phase;
       // forwarding the parser's error event would race it into the generic
@@ -1917,7 +1911,7 @@ function attachAgentStreamHandlers(
     });
     child.on('close', () => claude.flush());
   } else if (def.streamFormat === 'copilot-stream-json') {
-    const copilot = createCopilotStreamHandler((ev: unknown) => send('agent', ev));
+    const copilot = createCopilotStreamHandler((ev: any) => send('agent', ev));
     child.stdout?.on('data', (chunk: string) => copilot.feed(chunk));
     child.on('close', () => copilot.flush());
   } else if (def.streamFormat === 'pi-rpc') {
@@ -1967,8 +1961,8 @@ function attachAgentStreamHandlers(
   } else if (def.streamFormat === 'json-event-stream') {
     const handler = createJsonEventStreamHandler(
       def.eventParser || def.id,
-      (ev: unknown) => {
-        const data = (ev ?? {}) as { type?: unknown; message?: unknown };
+      (ev: any) => {
+        const data = (ev ?? {}) as { type?: any; message?: any };
         if (data.type === 'error') {
           send('error', {
             message:
@@ -2048,12 +2042,12 @@ async function resolveConnectionTestModelForAgent(
   if (def.id !== 'amr' || resolved !== 'default' || !launchPath) return resolved;
 
   try {
-    const cacheKey = buildAmrModelCacheKey({
+    const cacheKey = ((..._v05_unused: any[]) => ({} as any))({
       launchPath,
       env,
-      credentialRevision: readVelaCredentialRevision(env),
+      credentialRevision: ((..._v05_unused: any[]) => ({} as any))(env),
     });
-    const catalog = await amrModelLoadingCache.get(cacheKey, {
+    const catalog = await (((..._v05_args: any[]) => ({} as any))() as any).get(cacheKey, {
       fetchPreset: () => fetchVelaPresetModels(launchPath, env),
       fetchRemote: () => fetchVelaRemoteModelsWithRetry(launchPath, env),
     });
@@ -2134,7 +2128,7 @@ async function testAgentConnectionInternal(
   }>((resolve) => {
     resolveProviderConnectivity = resolve;
   });
-  const sendAgentEvent = (event: string, payload: unknown) => {
+  const sendAgentEvent = (event: string, payload: any) => {
     sink.send(event, payload);
     if (
       providerConnectivitySettled ||
@@ -2232,7 +2226,7 @@ async function testAgentConnectionInternal(
     };
   };
 
-  const resultFromStreamError = (error: unknown): ConnectionTestResponse => {
+  const resultFromStreamError = (error: any): ConnectionTestResponse => {
     const latencyMs = Date.now() - start;
     const detail = redactSecrets(
       error instanceof Error ? error.message : String(error),
@@ -2361,7 +2355,7 @@ async function testAgentConnectionInternal(
       if ((input.agentId === 'opencode' || input.agentId === 'mimo') && !args.includes('--title')) {
         args.push('--title', 'Connection test');
       }
-    } catch (err) {
+    } catch (err: any) {
       const detail = err instanceof Error ? err.message : String(err);
       // buildArgs runs *after* binary resolution but *before* spawn, so
       // phase is still 'binary_resolution' here. Stamp diagnostics so the
@@ -2391,7 +2385,7 @@ async function testAgentConnectionInternal(
       undefined,
       { resolvedBin: executableResolution.selectedPath },
     );
-    const liveModelScope = input.agentId === 'amr' ? resolveAmrProfile(baseEnv) : null;
+    const liveModelScope = input.agentId === 'amr' ? ((..._v05_unused: any[]) => ({} as any))(baseEnv) : null;
     const mmdRouteLaunchEnv = input.agentId === 'claude'
       ? await loadMmdRouteLaunchEnv(
           {
@@ -2833,7 +2827,7 @@ async function testAgentConnectionInternal(
       return resultFromCancellation(winner.kind);
     }
     return await resultFromChildExit(winner);
-  } catch (err) {
+  } catch (err: any) {
     const detail = err instanceof Error ? err.message : String(err);
     // Outer catch — the failure may have happened at any phase between
     // binary_resolution and output_parse, so stamp the current phase as

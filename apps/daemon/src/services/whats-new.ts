@@ -55,15 +55,15 @@ export function whatsNewSourceUrl(env: NodeJS.ProcessEnv, channel: string): stri
   return WHATS_NEW_RELEASE_CHANNELS.has(channel) ? DEFAULT_WHATS_NEW_URL : null;
 }
 
-function isObject(value: unknown): value is Record<string, unknown> {
+function isObject(value: any): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function readNonEmptyString(value: unknown): string | null {
+function readNonEmptyString(value: any): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
 }
 
-function readHttpsUrl(value: unknown): string | null {
+function readHttpsUrl(value: any): string | null {
   const raw = readNonEmptyString(value);
   if (raw == null) return null;
   try {
@@ -73,7 +73,7 @@ function readHttpsUrl(value: unknown): string | null {
   }
 }
 
-function parseLocaleOverrides(value: unknown): Record<string, WhatsNewLocaleContent> | undefined {
+function parseLocaleOverrides(value: any): Record<string, WhatsNewLocaleContent> | undefined {
   if (!isObject(value)) return undefined;
   const locales: Record<string, WhatsNewLocaleContent> = {};
   for (const [locale, entry] of Object.entries(value)) {
@@ -98,7 +98,7 @@ function parseLocaleOverrides(value: unknown): Record<string, WhatsNewLocaleCont
  * or malformed resolves to `{ id: null, content: null }` rather than
  * propagating a shape error into the UI.
  */
-export function parseWhatsNewDocument(payload: unknown): { id: string | null; content: WhatsNewContent | null } {
+export function parseWhatsNewDocument(payload: any): { id: string | null; content: WhatsNewContent | null } {
   if (!isObject(payload)) return { id: null, content: null };
   const id = readNonEmptyString(payload.id);
   const title = readNonEmptyString(payload.title);
@@ -158,7 +158,7 @@ export function createWhatsNewService({
         if (!response.ok) {
           throw new Error(`whats-new document request failed with HTTP ${response.status}`);
         }
-        const payload = (await response.json()) as unknown;
+        const payload = (await response.json()) as any;
         const parsed = parseWhatsNewDocument(payload);
         const result: WhatsNewReadResult = {
           id: parsed.id,

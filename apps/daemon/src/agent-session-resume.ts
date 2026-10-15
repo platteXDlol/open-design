@@ -57,11 +57,11 @@ export interface AgentResumeContext {
 export function createPhysicalAgentSessionUsageTracker(
   retainedInputTokens: number | null = null,
 ): {
-  observe(event: string, data: unknown): void;
+  observe(event: string, data: any): void;
   inputTokens(): number | null;
 } {
-  const usageEvents: Array<{ event: string; data: unknown }> = [];
-  const bounded = (value: unknown): number | null =>
+  const usageEvents: Array<{ event: string; data: any }> = [];
+  const bounded = (value: any): number | null =>
     typeof value === 'number' && Number.isSafeInteger(value) &&
       value >= 0 && value <= 1_000_000_000
       ? value
@@ -379,10 +379,10 @@ function hasClaudeResumeFailureResultEvent(text: string): boolean {
     const trimmed = line.trim();
     if (!trimmed.startsWith('{') || !trimmed.includes('"result"')) continue;
     let event: {
-      type?: unknown;
-      is_error?: unknown;
-      num_turns?: unknown;
-      duration_api_ms?: unknown;
+      type?: any;
+      is_error?: any;
+      num_turns?: any;
+      duration_api_ms?: any;
     };
     try {
       event = JSON.parse(trimmed);

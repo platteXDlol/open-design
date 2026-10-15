@@ -75,7 +75,7 @@ export function resolveCraftRequirements({
  *   body is the concatenated markdown (each file preceded by a level-3
  *   section header). sections lists which slugs actually resolved.
  */
-export async function loadCraftSections(craftDir: string, requested: unknown[]) {
+export async function loadCraftSections(craftDir: string, requested: any[]) {
   if (!craftDir || !Array.isArray(requested) || requested.length === 0) {
     return { body: "", sections: [] };
   }

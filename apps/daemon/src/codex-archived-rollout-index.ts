@@ -36,7 +36,7 @@ export async function findIndexedCodexArchivedRolloutPath(
     // schema from turning this lookup into a scan of unrelated thread rows.
     const row = db.prepare(`SELECT rollout_path FROM threads
       INDEXED BY sqlite_autoindex_threads_1 WHERE id = ? AND archived = 1 LIMIT 1`)
-      .get(sessionId) as { rollout_path?: unknown } | undefined;
+      .get(sessionId) as { rollout_path?: any } | undefined;
     const filePath = row?.rollout_path;
     if (typeof filePath !== 'string' || !path.isAbsolute(filePath)) return null;
     const name = path.basename(filePath);

@@ -330,64 +330,64 @@ const DOCUMENTED_COMPOSIO_TOOLKITS: ComposioToolkitCatalogEntry[] = [
 const STATIC_COMPOSIO_CATALOG: ConnectorCatalogDefinition[] = buildStaticComposioCatalog();
 
 interface ComposioConnectedAccountResponse {
-  id?: unknown;
-  nanoid?: unknown;
-  connected_account_id?: unknown;
-  connectedAccountId?: unknown;
-  status?: unknown;
-  redirect_url?: unknown;
-  redirectUrl?: unknown;
-  user_id?: unknown;
-  userId?: unknown;
-  account_id?: unknown;
-  accountId?: unknown;
-  account_label?: unknown;
-  accountLabel?: unknown;
-  name?: unknown;
-  email?: unknown;
-  auth_config?: { id?: unknown };
-  toolkit?: { slug?: unknown };
-  metadata?: unknown;
+  id?: any;
+  nanoid?: any;
+  connected_account_id?: any;
+  connectedAccountId?: any;
+  status?: any;
+  redirect_url?: any;
+  redirectUrl?: any;
+  user_id?: any;
+  userId?: any;
+  account_id?: any;
+  accountId?: any;
+  account_label?: any;
+  accountLabel?: any;
+  name?: any;
+  email?: any;
+  auth_config?: { id?: any };
+  toolkit?: { slug?: any };
+  metadata?: any;
 }
 
 interface ComposioAuthConfigResponse {
-  id?: unknown;
-  status?: unknown;
-  toolkit?: { slug?: unknown };
-  toolkit_slug?: unknown;
-  toolkitSlug?: unknown;
-  auth_config?: { id?: unknown };
+  id?: any;
+  status?: any;
+  toolkit?: { slug?: any };
+  toolkit_slug?: any;
+  toolkitSlug?: any;
+  auth_config?: { id?: any };
 }
 
 interface ComposioToolkitResponse {
-  slug?: unknown;
-  name?: unknown;
-  logo?: unknown;
-  description?: unknown;
-  categories?: unknown;
+  slug?: any;
+  name?: any;
+  logo?: any;
+  description?: any;
+  categories?: any;
   meta?: {
-    description?: unknown;
-    categories?: unknown;
-    tools_count?: unknown;
-    toolsCount?: unknown;
+    description?: any;
+    categories?: any;
+    tools_count?: any;
+    toolsCount?: any;
   };
 }
 
 interface ComposioToolResponse {
-  slug?: unknown;
-  name?: unknown;
-  description?: unknown;
-  human_description?: unknown;
-  humanDescription?: unknown;
-  input_parameters?: unknown;
-  inputParameters?: unknown;
-  tags?: unknown;
-  scopes?: unknown;
-  oauth_scopes?: unknown;
-  oauthScopes?: unknown;
-  auth_scopes?: unknown;
-  authScopes?: unknown;
-  toolkit?: { slug?: unknown };
+  slug?: any;
+  name?: any;
+  description?: any;
+  human_description?: any;
+  humanDescription?: any;
+  input_parameters?: any;
+  inputParameters?: any;
+  tags?: any;
+  scopes?: any;
+  oauth_scopes?: any;
+  oauthScopes?: any;
+  auth_scopes?: any;
+  authScopes?: any;
+  toolkit?: { slug?: any };
 }
 
 interface ComposioToolsPage {
@@ -397,13 +397,13 @@ interface ComposioToolsPage {
 }
 
 interface ComposioToolExecuteResponse {
-  data?: unknown;
-  error?: unknown;
-  successful?: unknown;
-  session_info?: unknown;
-  sessionInfo?: unknown;
-  log_id?: unknown;
-  logId?: unknown;
+  data?: any;
+  error?: any;
+  successful?: any;
+  session_info?: any;
+  sessionInfo?: any;
+  log_id?: any;
+  logId?: any;
 }
 
 export interface ComposioConnectionStart {
@@ -618,7 +618,7 @@ export class ComposioConnectorProvider {
         provider: 'composio',
         definitions: this.persistedDefinitions,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.warn('[connectors] Failed to persist Composio catalog cache:', error);
     }
   }
@@ -657,7 +657,7 @@ export class ComposioConnectorProvider {
     let response: ComposioConnectedAccountResponse;
     try {
       response = await this.createConnectedAccountLink(authConfig.authConfigId, state, callbackUrlWithState, signal);
-    } catch (error) {
+    } catch (error: any) {
       if (!authConfig.fromCache) throw error;
       deleteComposioAuthConfigId(definition.id);
       authConfig = await this.getOrCreateManagedAuthConfigId(definition, signal, { ignoreCache: true });
@@ -693,7 +693,7 @@ export class ComposioConnectorProvider {
     try {
       const resolution = await this.getOrCreateManagedAuthConfigId(definition, signal);
       return { status: 'ready', authConfigId: resolution.authConfigId };
-    } catch (error) {
+    } catch (error: any) {
       const message = error instanceof Error ? error.message : String(error);
       const customMessage = getCustomAuthRequiredMessage(error, definition);
       if (customMessage) {
@@ -887,7 +887,7 @@ export class ComposioConnectorProvider {
         }),
         ...(signal === undefined ? {} : { signal }),
       });
-    } catch (error) {
+    } catch (error: any) {
       const customMessage = getCustomAuthRequiredMessage(error, definition);
       if (!customMessage) throw error;
       this.unsupportedManagedAuthConfigs.set(definition.id, customMessage);
@@ -978,7 +978,7 @@ export class ComposioConnectorProvider {
       : '/api/v3/auth_configs';
     const response = await this.request(path, { method: 'GET', ...(signal === undefined ? {} : { signal }) });
     if (!response.ok) return [];
-    const payload = await response.json() as { items?: unknown; data?: unknown };
+    const payload = await response.json() as { items?: any; data?: any };
     const items = Array.isArray(payload.items) ? payload.items : Array.isArray(payload.data) ? payload.data : [];
     return items.filter((item): item is ComposioAuthConfigResponse => Boolean(item && typeof item === 'object' && !Array.isArray(item)));
   }
@@ -994,7 +994,7 @@ export class ComposioConnectorProvider {
   private async listToolkits(signal?: AbortSignal): Promise<ComposioToolkitResponse[]> {
     const response = await this.request('/api/v3.1/toolkits?limit=1000', { method: 'GET', ...(signal === undefined ? {} : { signal }) });
     if (!response.ok) return [];
-    const payload = await response.json() as { items?: unknown; data?: unknown };
+    const payload = await response.json() as { items?: any; data?: any };
     const items = Array.isArray(payload.items) ? payload.items : Array.isArray(payload.data) ? payload.data : [];
     return items.filter((item): item is ComposioToolkitResponse => Boolean(item && typeof item === 'object' && !Array.isArray(item)));
   }
@@ -1015,7 +1015,7 @@ export class ComposioConnectorProvider {
       const message = await getComposioErrorMessage(response);
       throw new ConnectorServiceError('CONNECTOR_EXECUTION_FAILED', message ?? `Composio tools request failed with HTTP ${response.status}`, response.status === 401 ? 401 : 502, { httpStatus: response.status });
     }
-    const payload = await response.json() as { items?: unknown; data?: unknown; next_cursor?: unknown; nextCursor?: unknown; total_items?: unknown; totalItems?: unknown };
+    const payload = await response.json() as { items?: any; data?: any; next_cursor?: any; nextCursor?: any; total_items?: any; totalItems?: any };
     const items = Array.isArray(payload.items) ? payload.items : Array.isArray(payload.data) ? payload.data : [];
     const nextCursor = getString(payload.next_cursor) ?? getString(payload.nextCursor);
     const totalItems = getNonNegativeInteger(payload.total_items) ?? getNonNegativeInteger(payload.totalItems);
@@ -1144,7 +1144,7 @@ export class ComposioConnectorProvider {
       const message = await getComposioErrorMessage(response);
       throw new ConnectorServiceError('CONNECTOR_EXECUTION_FAILED', message ?? `Composio request failed with HTTP ${response.status}`, response.status === 401 ? 401 : 502, { httpStatus: response.status });
     }
-    const value = await response.json() as unknown;
+    const value = await response.json() as any;
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
       throw new ConnectorServiceError('CONNECTOR_EXECUTION_FAILED', 'Composio returned an invalid response', 502);
     }
@@ -1266,7 +1266,7 @@ function cloneConnectorDefinition(definition: ConnectorCatalogDefinition): Conne
   };
 }
 
-function normalizePersistedConnectorDefinition(value: unknown): ConnectorCatalogDefinition | undefined {
+function normalizePersistedConnectorDefinition(value: any): ConnectorCatalogDefinition | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
   const record = value as Record<string, unknown>;
   if (typeof record.id !== 'string' || typeof record.name !== 'string' || typeof record.provider !== 'string' || typeof record.category !== 'string') return undefined;
@@ -1297,7 +1297,7 @@ function normalizePersistedConnectorDefinition(value: unknown): ConnectorCatalog
   return definition;
 }
 
-function normalizePersistedConnectorToolDefinition(value: unknown): ConnectorCatalogToolDefinition | undefined {
+function normalizePersistedConnectorToolDefinition(value: any): ConnectorCatalogToolDefinition | undefined {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
   const record = value as Record<string, unknown>;
   if (typeof record.name !== 'string' || typeof record.title !== 'string') return undefined;
@@ -1320,7 +1320,7 @@ function normalizePersistedConnectorToolDefinition(value: unknown): ConnectorCat
       ? {
         curation: {
           ...(((record.curation as Record<string, unknown>).useCases && Array.isArray((record.curation as Record<string, unknown>).useCases))
-            ? { useCases: ((record.curation as Record<string, unknown>).useCases as unknown[]).filter((item): item is 'personal_daily_digest' => item === 'personal_daily_digest') }
+            ? { useCases: ((record.curation as Record<string, unknown>).useCases as any[]).filter((item): item is 'personal_daily_digest' => item === 'personal_daily_digest') }
             : {}),
           ...(typeof (record.curation as Record<string, unknown>).reason === 'string' ? { reason: (record.curation as Record<string, unknown>).reason as string } : {}),
         },
@@ -1333,7 +1333,7 @@ function normalizePersistedConnectorToolDefinition(value: unknown): ConnectorCat
 
 function readPersistedComposioCatalogCache(filePath: string): PersistedComposioCatalogCache | undefined {
   try {
-    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as unknown;
+    const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8')) as any;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return undefined;
     const record = parsed as Record<string, unknown>;
     if (record.schemaVersion !== 1 || record.provider !== 'composio' || typeof record.fetchedAt !== 'string' || !Array.isArray(record.definitions)) return undefined;
@@ -1343,7 +1343,7 @@ function readPersistedComposioCatalogCache(filePath: string): PersistedComposioC
       fetchedAt: record.fetchedAt,
       definitions: record.definitions.map(normalizePersistedConnectorDefinition).filter((definition): definition is ConnectorCatalogDefinition => definition !== undefined),
     };
-  } catch (error) {
+  } catch (error: any) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') return undefined;
     return undefined;
   }
@@ -1357,15 +1357,15 @@ function writePersistedComposioCatalogCache(filePath: string, cache: PersistedCo
   fs.chmodSync(filePath, 0o600);
 }
 
-function getString(value: unknown): string | undefined {
+function getString(value: any): string | undefined {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
 }
 
-function getNonNegativeInteger(value: unknown): number | undefined {
+function getNonNegativeInteger(value: any): number | undefined {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : undefined;
 }
 
-function getStringArray(value: unknown): string[] {
+function getStringArray(value: any): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).map((item) => item.trim());
 }
@@ -1481,7 +1481,7 @@ function titleFromSlug(value: string): string {
     .replace(/\w\S*/g, (word) => `${word.charAt(0).toUpperCase()}${word.slice(1).toLowerCase()}`);
 }
 
-function firstCategoryName(value: unknown): string | undefined {
+function firstCategoryName(value: any): string | undefined {
   if (!Array.isArray(value)) return undefined;
   for (const item of value) {
     if (typeof item === 'string' && item.trim()) return item.trim();
@@ -1498,7 +1498,7 @@ function isCustomAuthRequiredMessage(message: string): boolean {
   return /default auth config not found/i.test(message) || /does not have managed credentials/i.test(message);
 }
 
-function getCustomAuthRequiredMessage(error: unknown, definition: ConnectorCatalogDefinition): string | undefined {
+function getCustomAuthRequiredMessage(error: any, definition: ConnectorCatalogDefinition): string | undefined {
   if (error instanceof ConnectorServiceError && error.code === 'CONNECTOR_AUTH_CONFIG_REQUIRED') return error.message;
   const upstreamMessage = error instanceof Error ? error.message : String(error);
   if (!isCustomAuthRequiredMessage(upstreamMessage)) return undefined;
@@ -1507,7 +1507,7 @@ function getCustomAuthRequiredMessage(error: unknown, definition: ConnectorCatal
 
 async function getComposioErrorMessage(response: Response): Promise<string | undefined> {
   try {
-    const payload = await response.json() as unknown;
+    const payload = await response.json() as any;
     if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return undefined;
     const record = payload as Record<string, unknown>;
     const error = record.error && typeof record.error === 'object' && !Array.isArray(record.error)
@@ -1523,7 +1523,7 @@ async function getComposioErrorMessage(response: Response): Promise<string | und
   }
 }
 
-function toBoundedJsonValue(value: unknown): BoundedJsonValue {
+function toBoundedJsonValue(value: any): BoundedJsonValue {
   if (value === null || typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') return value;
   if (Array.isArray(value)) return value.map((item) => toBoundedJsonValue(item));
   if (value && typeof value === 'object') {
@@ -1534,7 +1534,7 @@ function toBoundedJsonValue(value: unknown): BoundedJsonValue {
   return null;
 }
 
-function toBoundedJsonObject(value: unknown): BoundedJsonObject | undefined {
+function toBoundedJsonObject(value: any): BoundedJsonObject | undefined {
   const bounded = toBoundedJsonValue(value);
   return bounded && typeof bounded === 'object' && !Array.isArray(bounded) ? bounded : undefined;
 }

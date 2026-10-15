@@ -269,7 +269,7 @@ export interface NormalizedVideoResponse {
 }
 
 /** Best-effort normalization of an async-submit / poll response across families. */
-export function normalizeVideoResponse(raw: unknown): NormalizedVideoResponse {
+export function normalizeVideoResponse(raw: any): NormalizedVideoResponse {
   const d = (raw ?? {}) as Record<string, any>;
   const id = d.id || d.task_id || d.data?.id || d.data?.task_id;
   const status = d.status || d.data?.status;

@@ -859,7 +859,7 @@ export function assertOdNextBundleTextContributorCoverage(
 export function assertSingleOdNextPromptBundleRoot(exactText: string): void {
   try {
     parseOdNextPromptBundleV2(exactText);
-  } catch (error) {
+  } catch (error: any) {
     throw new Error(
       'OD Next initial exact text must be one canonical open_design_prompt_bundle root with no outer bytes',
       { cause: error },

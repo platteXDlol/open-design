@@ -39,7 +39,7 @@ export async function searchResearch(
   const depth: ResearchDepth = 'shallow';
   const requested = Array.isArray(input.providers) ? input.providers : [];
   const providers = requested.filter(
-    (p: unknown): p is string => typeof p === 'string' && p.length > 0,
+    (p: any): p is string => typeof p === 'string' && p.length > 0,
   );
   const provider = providers[0] ?? 'tavily';
   const maxSources = clampMaxSources(input.maxSources);
@@ -76,7 +76,7 @@ export async function searchResearch(
     });
     answer = out.answer;
     sources = out.sources;
-  } catch (err) {
+  } catch (err: any) {
     const message =
       err instanceof TavilyError
         ? err.message
@@ -106,7 +106,7 @@ function synthesizeFallbackSummary(sources: ResearchSource[]): string {
   return `(No provider summary; top snippets follow.)\n${lead}`;
 }
 
-function clampMaxSources(value: unknown): number {
+function clampMaxSources(value: any): number {
   if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
     return DEFAULT_MAX_SOURCES;
   }

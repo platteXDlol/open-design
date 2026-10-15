@@ -15,7 +15,7 @@ export interface LiveMediaTask {
   surface?: string | undefined;
   model?: string | undefined;
   progress: string[];
-  file: unknown | null;
+  file: any | null;
   error: MediaTaskRow['error'];
   startedAt: number;
   endedAt: number | null;
@@ -40,7 +40,7 @@ export interface MediaTaskSnapshot {
   endedAt: number | null;
   progress: string[];
   nextSince: number;
-  file?: unknown | null;
+  file?: any | null;
   error?: MediaTaskRow['error'];
 }
 

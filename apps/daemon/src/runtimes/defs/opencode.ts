@@ -48,7 +48,7 @@ function parseVerboseModelMetadata(
     buffer += `${lines[index]}\n`;
     if (!lines[index]!.trimEnd().endsWith('}')) continue;
     try {
-      const parsed = JSON.parse(buffer) as unknown;
+      const parsed = JSON.parse(buffer) as any;
       return {
         value: parsed && typeof parsed === 'object' && !Array.isArray(parsed)
           ? parsed as Record<string, unknown>

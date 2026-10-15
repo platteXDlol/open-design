@@ -12,11 +12,11 @@ import path from 'node:path';
  * without trusting the caller's type discipline.
  */
 export interface AcpMcpServerInput {
-  type?: unknown;
-  name?: unknown;
-  command?: unknown;
-  args?: unknown;
-  env?: unknown;
+  type?: any;
+  name?: any;
+  command?: any;
+  args?: any;
+  env?: any;
 }
 /**
  * Options accepted by `buildAcpSessionNewParams` controlling optional MCP

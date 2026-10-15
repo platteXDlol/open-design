@@ -107,15 +107,15 @@ type ClaudeStreamJsonBookkeepingRun = {
 
 export function applyClaudeStreamJsonRunBookkeeping(
   run: ClaudeStreamJsonBookkeepingRun,
-  ev: unknown,
+  ev: any,
 ) {
   if (!ev || typeof ev !== 'object') return;
   const event = ev as {
-    type?: unknown;
-    name?: unknown;
-    id?: unknown;
-    stopReason?: unknown;
-    isError?: unknown;
+    type?: any;
+    name?: any;
+    id?: any;
+    stopReason?: any;
+    isError?: any;
   };
 
   const terminalTurn =

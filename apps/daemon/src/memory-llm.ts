@@ -307,7 +307,7 @@ async function providerFromMediaMemoryFallbacks(projectRoot, envOverrideModel) {
           credentialSource: 'media-config',
         };
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn(
         `[memory-llm] media-config lookup failed (${fallback.mediaProviderId})`,
         err?.message ?? err,
@@ -329,7 +329,7 @@ async function hasUnsupportedMediaProviderConfig(projectRoot) {
       (id) => id === 'openai' || MEDIA_MEMORY_PROVIDER_IDS.has(id),
     );
     return !hasTextCapable;
-  } catch (err) {
+  } catch (err: any) {
     console.warn(
       '[memory-llm] failed to inspect media-config support',
       err?.message ?? err,
@@ -389,7 +389,7 @@ async function pickProvider(projectRoot, dataDir, chatAgentId, chatProvider, cha
     try {
       const cfg = await readMemoryConfig(dataDir);
       if (cfg?.extraction?.provider) override = cfg.extraction;
-    } catch (err) {
+    } catch (err: any) {
       console.warn(
         '[memory-llm] failed to read memory config override',
         err?.message ?? err,
@@ -493,7 +493,7 @@ async function pickProvider(projectRoot, dataDir, chatAgentId, chatProvider, cha
           const provider = providerFromOpenAiMediaConfig(cred, envOverrideModel);
           if (provider) return provider;
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn(
           '[memory-llm] media-config lookup failed (chat-constrained)',
           err?.message ?? err,
@@ -595,7 +595,7 @@ async function pickProvider(projectRoot, dataDir, chatAgentId, chatProvider, cha
       const cred = await resolveProviderConfig(projectRoot, 'openai');
       const provider = providerFromOpenAiMediaConfig(cred, envOverrideModel);
       if (provider) return provider;
-    } catch (err) {
+    } catch (err: any) {
       console.warn(
         '[memory-llm] failed to read media-config for fallback',
         err?.message ?? err,
@@ -732,7 +732,7 @@ async function callAnthropic(provider, system, user) {
       }),
       signal: withTimeout(FETCH_TIMEOUT_MS),
     });
-  } catch (err) {
+  } catch (err: any) {
     throw new Error(describeFetchError(err));
   }
   if (!resp.ok) {
@@ -774,7 +774,7 @@ async function callOpenAI(provider, system, user) {
         signal: withTimeout(FETCH_TIMEOUT_MS),
       },
     );
-  } catch (err) {
+  } catch (err: any) {
     throw new Error(describeFetchError(err));
   }
   if (!resp.ok) {
@@ -961,7 +961,7 @@ async function callLocalCli(provider, system, user, options) {
         let text = '';
         try {
           text = parseStdout(stdout);
-        } catch (err) {
+        } catch (err: any) {
           finish(err);
           return;
         }
@@ -1196,7 +1196,7 @@ async function collectProposedEntries(dataDir, input, options) {
       // openai-shaped callOpenAI helper with a different base URL.
       raw = await callOpenAI(provider, systemPrompt, userPayload);
     }
-  } catch (err) {
+  } catch (err: any) {
     // err.message is already pre-formatted by describeFetchError() when
     // the call layer caught a network error. For HTTP-level failures
     // (`anthropic 401: …`) the message is already user-facing too.
@@ -1217,7 +1217,7 @@ async function collectProposedEntries(dataDir, input, options) {
         }
       });
     }
-  } catch (err) {
+  } catch (err: any) {
     markFailed(attemptId, err);
     return { status: 'failed', attemptId, proposed: [], existingEntries };
   }
@@ -1343,7 +1343,7 @@ export async function extractWithLLM(dataDir, input, options) {
         type: entry.type,
         updatedAt: entry.updatedAt,
       });
-    } catch (err) {
+    } catch (err: any) {
       console.warn('[memory-llm] write failed', err?.message ?? err);
     }
   }

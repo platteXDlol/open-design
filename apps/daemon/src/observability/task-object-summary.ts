@@ -1,7 +1,7 @@
 /** Derive Task object state from every physical Run, including late upload receipts. */
 export function taskObjectMetadata(runs: Record<string, unknown>[]) {
-  const record = (value: unknown): Record<string, unknown> => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
-  const list = (run: Record<string, unknown>, key: string) => Array.isArray(run[key]) ? (run[key] as unknown[]).map(record) : [];
+  const record = (value: any): Record<string, unknown> => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  const list = (run: Record<string, unknown>, key: string) => Array.isArray(run[key]) ? (run[key] as any[]).map(record) : [];
   const artifacts = runs.flatMap(run => list(run, 'artifact_manifest'));
   const entries = runs.flatMap(run => ['artifact_manifest', 'attachment_manifest', 'input_text_snapshot_manifest'].flatMap(key => list(run, key)));
   const summaries = runs.map(run => record(run.trace_object_summary));

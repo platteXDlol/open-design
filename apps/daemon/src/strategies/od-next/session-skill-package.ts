@@ -18,9 +18,9 @@ export type ListSessionSkillCatalog = () => Promise<readonly SkillInfo[]>;
 
 export interface OdNextSessionSkillSelection {
   /** `ChatRequest.skillId`, falling back to the project row's persisted Skill. */
-  skillId?: unknown;
+  skillId?: any;
   /** `ChatRequest.skillIds` — the composer's per-turn @-mentions. */
-  skillIds?: unknown;
+  skillIds?: any;
 }
 
 /**
@@ -61,7 +61,7 @@ export async function captureOdNextSessionSkillPackage(input: {
   if (skills.length === 0 && sources.length === 0) return createEmptyFrozenSkillPackage();
   try {
     return await captureFrozenSkillPackageFromSelections({ skills, sources });
-  } catch (error) {
+  } catch (error: any) {
     warn(`selected Skills could not be frozen: ${describe(error)}`);
   }
   // Retry without the named Skills so a selection this daemon cannot freeze
@@ -70,7 +70,7 @@ export async function captureOdNextSessionSkillPackage(input: {
   if (skills.length > 0 && sources.length > 0) {
     try {
       return await captureFrozenSkillPackageFromSelections({ sources });
-    } catch (error) {
+    } catch (error: any) {
       warn(`example card could not be frozen either: ${describe(error)}`);
     }
   }
@@ -88,7 +88,7 @@ async function resolveSessionSelectedSkills(
   let requested: string[];
   try {
     requested = normalizeSelectedSkillIds(selection);
-  } catch (error) {
+  } catch (error: any) {
     warn(`selected Skill ids were rejected; running without them: ${describe(error)}`);
     return [];
   }
@@ -100,7 +100,7 @@ async function resolveSessionSelectedSkills(
   let catalog: readonly SkillInfo[];
   try {
     catalog = await listSkillCatalog();
-  } catch (error) {
+  } catch (error: any) {
     warn(`Skill catalogue could not be listed; running without selected Skills: ${describe(error)}`);
     return [];
   }
@@ -116,7 +116,7 @@ async function resolveSessionSelectedSkills(
   return resolved;
 }
 
-function describe(error: unknown): string {
+function describe(error: any): string {
   return error instanceof Error ? error.message : String(error);
 }
 

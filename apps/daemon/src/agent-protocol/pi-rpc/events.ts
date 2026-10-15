@@ -146,7 +146,7 @@ export function mapPiRpcEvent(
     const text =
       Array.isArray(content)
         ? content
-            .map((c: unknown) => {
+            .map((c: any) => {
               const item = getRecord(c);
               return item?.type === 'text' ? String(item.text ?? '') : JSON.stringify(c);
             })

@@ -210,14 +210,14 @@ async function readClientCache(dataDir: string): Promise<ClientCacheFile> {
     const parsed = JSON.parse(raw);
     if (!parsed || !Array.isArray(parsed.clients)) return { clients: [] };
     return { clients: parsed.clients.filter(isRegisteredClient) };
-  } catch (err: unknown) {
+  } catch (err: any) {
     const e = err as { code?: string };
     if (e.code === 'ENOENT') return { clients: [] };
     throw err;
   }
 }
 
-function isRegisteredClient(v: unknown): v is RegisteredClient {
+function isRegisteredClient(v: any): v is RegisteredClient {
   if (!v || typeof v !== 'object') return false;
   const r = v as Record<string, unknown>;
   return (

@@ -29,7 +29,7 @@ interface PromptTemplate {
   source: { repo: string; license: string; author?: string; url?: string };
 }
 
-function isRecord(value: unknown): value is JsonRecord {
+function isRecord(value: any): value is JsonRecord {
   return Boolean(value) && typeof value === 'object';
 }
 
@@ -54,7 +54,7 @@ export async function listPromptTemplates(root: string): Promise<PromptTemplate[
         const parsed = JSON.parse(raw);
         const validated = validateTemplate(parsed, surface, entry.name);
         if (validated) out.push(validated);
-      } catch (err) {
+      } catch (err: any) {
         console.warn(`prompt-templates: failed ${filePath}`, err);
       }
     }
@@ -90,7 +90,7 @@ function isPromptTemplateSurface(surface: string): surface is PromptTemplateSurf
   return (SUPPORTED_SURFACES as readonly string[]).includes(surface);
 }
 
-function validateTemplate(raw: unknown, expectedSurface: PromptTemplateSurface, fileName: string): PromptTemplate | null {
+function validateTemplate(raw: any, expectedSurface: PromptTemplateSurface, fileName: string): PromptTemplate | null {
   if (!isRecord(raw)) return null;
   if (typeof raw.id !== 'string' || !raw.id) {
     console.warn(`prompt-templates: ${fileName} missing id`);

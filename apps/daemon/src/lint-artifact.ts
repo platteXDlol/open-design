@@ -117,7 +117,7 @@ const DISPLAY_SANS_RE =
  * @param {unknown} rawHtml
  * @returns {LintFinding[]}
  */
-export function lintArtifact(rawHtml: unknown): LintFinding[] {
+export function lintArtifact(rawHtml: any): LintFinding[] {
   const out: LintFinding[] = [];
   if (typeof rawHtml !== 'string' || rawHtml.length === 0) return out;
 

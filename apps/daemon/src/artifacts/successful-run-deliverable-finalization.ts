@@ -80,7 +80,7 @@ export async function finalizeSuccessfulRunDeliverable(input: {
   let syntax: DeliverableSyntaxFinalizationOutcome;
   try {
     syntax = await finalizeDeliverableSyntax(syntaxInput);
-  } catch (error) {
+  } catch (error: any) {
     if (!(error instanceof DeliverableSyntaxInternalError)) throw error;
     // The product's non-blocking delivery policy must not hide an engine defect.
     // Never log the cause: it may contain generated source or local paths.

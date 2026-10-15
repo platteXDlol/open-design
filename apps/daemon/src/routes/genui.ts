@@ -12,7 +12,6 @@ import {
   revokeProjectSurface,
 } from '../genui/index.js';
 import { resolveProjectDir } from '../projects.js';
-import type { AuthorizeProjectRequest } from '../collab/project-request-authority.js';
 
 export interface RegisterGenuiRoutesDeps {
   db: Database.Database;
@@ -24,7 +23,7 @@ export interface RegisterGenuiRoutesDeps {
   paths: {
     PROJECTS_DIR: string;
   };
-  authorizeProjectRequest: AuthorizeProjectRequest;
+  authorizeProjectRequest: any;
 }
 
 export function registerGenuiRoutes(app: Express, deps: RegisterGenuiRoutesDeps): void {
@@ -49,7 +48,7 @@ export function registerGenuiRoutes(app: Express, deps: RegisterGenuiRoutesDeps)
       if (!await authorizeRun(req, res, { mode: 'read' })) return;
       const surfaces = listSurfacesForRun(db, req.params.runId);
       res.json({ runId: req.params.runId, surfaces });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -64,7 +63,7 @@ export function registerGenuiRoutes(app: Express, deps: RegisterGenuiRoutesDeps)
       )) return;
       const surfaces = listSurfacesForProject(db, req.params.projectId);
       res.json({ projectId: req.params.projectId, surfaces });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -118,7 +117,7 @@ export function registerGenuiRoutes(app: Express, deps: RegisterGenuiRoutesDeps)
           } else {
             diffReviewBridge = { ok: false, error: 'run is not linked to a project' };
           }
-        } catch (err) {
+        } catch (err: any) {
           diffReviewBridge = { ok: false, error: (err as Error).message };
           console.warn('[plugins] diff-review bridge failed:', err);
         }
@@ -127,7 +126,7 @@ export function registerGenuiRoutes(app: Express, deps: RegisterGenuiRoutesDeps)
       const responsePayload: Record<string, unknown> = { ok: true, surface: updated };
       if (diffReviewBridge) responsePayload.diffReviewBridge = diffReviewBridge;
       res.json(responsePayload);
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -145,7 +144,7 @@ export function registerGenuiRoutes(app: Express, deps: RegisterGenuiRoutesDeps)
         surfaceId: req.params.surfaceId,
       });
       res.json({ ok: true, invalidated: changed });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -181,7 +180,7 @@ export function registerGenuiRoutes(app: Express, deps: RegisterGenuiRoutesDeps)
         expiresAt: typeof body.expiresAt === 'number' ? body.expiresAt : null,
       });
       res.json({ ok: true, surface: row });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -205,7 +204,7 @@ export function registerGenuiRoutes(app: Express, deps: RegisterGenuiRoutesDeps)
         }
       }
       res.json({ ...surface, spec });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -215,7 +214,7 @@ export function registerGenuiRoutes(app: Express, deps: RegisterGenuiRoutesDeps)
       if (!await authorizeRun(req, res, { mode: 'read' })) return;
       const iterations = listIterationsForRun(db, req.params.runId);
       res.json({ runId: req.params.runId, iterations });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -246,7 +245,7 @@ export function registerGenuiRoutes(app: Express, deps: RegisterGenuiRoutesDeps)
           manifestSourceDigest: snapshot.manifestSourceDigest,
         },
       });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });

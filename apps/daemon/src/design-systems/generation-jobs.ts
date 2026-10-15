@@ -223,7 +223,7 @@ export function createDesignSystemGenerationJobStore(options: StoreOptions) {
         setStepMessage(job, 'prepare-review', 'Review workspace is ready');
       });
       completeJob(job, 'succeeded', 'Design system ready for review');
-    } catch (err) {
+    } catch (err: any) {
       failJob(job, err instanceof Error ? err.message : String(err));
     }
   }
@@ -271,7 +271,7 @@ export function createDesignSystemGenerationJobStore(options: StoreOptions) {
         setStepMessage(job, 'prepare-review', 'Updated review is ready');
       });
       completeJob(job, 'succeeded', 'Revision ready for review');
-    } catch (err) {
+    } catch (err: any) {
       failJob(job, err instanceof Error ? err.message : String(err));
     }
   }
@@ -323,7 +323,7 @@ export function createDesignSystemGenerationJobStore(options: StoreOptions) {
         setStepMessage(job, 'prepare-review', 'Token contract rebuild is ready for review');
       });
       completeJob(job, 'succeeded', 'Token contract rebuild ready for review');
-    } catch (err) {
+    } catch (err: any) {
       failJob(job, err instanceof Error ? err.message : String(err));
     }
   }
@@ -349,7 +349,7 @@ async function runStep(
       (job.steps.filter((candidate) => candidate.status === 'succeeded').length / job.steps.length) * 100,
     );
     touch(job);
-  } catch (err) {
+  } catch (err: any) {
     step.status = 'failed';
     step.completedAt = new Date().toISOString();
     step.message = err instanceof Error ? err.message : String(err);
@@ -411,7 +411,7 @@ async function safeCollectSourceContext(
 ): Promise<DesignSystemSourceContext> {
   try {
     return await collectSourceContext(input);
-  } catch (err) {
+  } catch (err: any) {
     return {
       github: [],
       notes: `Source context fetch failed: ${err instanceof Error ? err.message : String(err)}`,

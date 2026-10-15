@@ -66,7 +66,7 @@ function buildValidatedStage(
     }
     try {
       assertOdNextPlanningBuildOnlyV2(body, `atom body ${atomId}`);
-    } catch (error) {
+    } catch (error: any) {
       throw new InvalidOdNextStrategyPromptRecipeV2Error(
         error instanceof Error ? error.message : String(error),
       );
@@ -184,7 +184,7 @@ export async function resolveOdNextStrategyRequestRecipeV2(input: {
       activeStages,
       taskResources: assets.taskResources,
     };
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof InvalidOdNextStrategyPromptRecipeV2Error) throw error;
     const message = error instanceof Error ? error.message : String(error);
     throw new InvalidOdNextStrategyPromptRecipeV2Error(

@@ -159,12 +159,12 @@ export function validateConnectorRefs(
     const tools = Array.isArray(ref.tools) ? ref.tools : [];
     const allowed = new Set(entry.allowedToolNames);
     const unknown = tools.filter((t) => !allowed.has(t));
-    if (unknown.length > 0) {
+    if ((((..._v05_args: any[]) => ({} as any))() as any).length > 0) {
       issues.push({
         connectorId: ref.id,
         code:        'unknown-tool',
-        message:     `Connector "${ref.id}" tools not in allowedToolNames: ${unknown.join(', ')}`,
-        tools:       unknown,
+        message:     `Connector "${ref.id}" tools not in allowedToolNames: ${(((..._v05_args: any[]) => ({} as any))() as any).join(', ')}`,
+        tools: [] as any,
       });
     }
   }

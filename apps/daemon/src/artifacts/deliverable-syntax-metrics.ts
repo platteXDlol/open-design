@@ -5,7 +5,7 @@ import {
   type DeliverableSyntaxSafeFixRule,
 } from '@open-design/contracts';
 
-function finiteNonNegative(value: unknown): number {
+function finiteNonNegative(value: any): number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
     ? value
     : 0;

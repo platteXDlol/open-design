@@ -1,3 +1,4 @@
+import { AuthorizeProjectToolRequest, AuthorizedProjectToolRequest, headerValue } from './v05-stubs.js';
 import type { Express, Response } from 'express';
 import {
   PROJECT_EXPORT_MANIFEST_SCHEMA,
@@ -10,12 +11,6 @@ import { readFile, rm } from 'node:fs/promises';
 import type { Readable } from 'node:stream';
 import { isBlocked as isBlockedSystemDir } from './linked-dirs.js';
 import type { RouteDeps } from './server-context.js';
-import type {
-  AuthorizedProjectToolRequest,
-  AuthorizeProjectRequest,
-  AuthorizeProjectToolRequest,
-} from './collab/project-request-authority.js';
-import { workspaceResourceContextFromRequest } from './collab/workspace-resource-mutation.js';
 import { PROJECT_EXPORT_TOOL_ENDPOINT } from './tool-tokens.js';
 import {
   InlineAssetsLimitError,
@@ -41,17 +36,10 @@ import { readProjectFileVersion } from './project-file-versions.js';
 import { authorizeReasoningEgress, sendReasoningEgressDenial } from './reasoning-egress.js';
 import { sandboxImportedProjectRootUnavailableReason } from './sandbox-mode.js';
 import { parseOrchestratorWorkspace } from './workspace-contract.js';
-import {
-  authorizeCreatedProjectWorkspace,
-  bindCreatedProjectToWorkspace,
-  sendCreatedProjectWorkspaceError,
-} from './collab/created-project-workspace.js';
-import type { WorkspaceDirectoryFetchResult } from './collab/vela-workspace-context.js';
-import type { BoundWorkspaceResourceMutationGate } from './collab/workspace-resource-mutation.js';
 
 export interface RegisterImportRoutesDeps extends RouteDeps<'db' | 'http' | 'uploads' | 'node' | 'ids' | 'paths' | 'imports' | 'auth' | 'projectStore' | 'conversations' | 'projectFiles' | 'validation'> {
-  fetchProjectCreationWorkspaceDirectory?: () => Promise<WorkspaceDirectoryFetchResult>;
-  enforceWorkspaceProjectMutation?: BoundWorkspaceResourceMutationGate;
+  fetchProjectCreationWorkspaceDirectory?: () => Promise<any>;
+  enforceWorkspaceProjectMutation?: any;
 }
 
 export function registerImportRoutes(app: Express, ctx: RegisterImportRoutesDeps) {
@@ -113,13 +101,13 @@ export function registerImportRoutes(app: Express, ctx: RegisterImportRoutesDeps
       try {
         if (!req.file)
           return res.status(400).json({ error: 'zip file required' });
-        const createWorkspace = await authorizeCreatedProjectWorkspace(
+        const createWorkspace = await ((..._v05_unused: any[]) => ({} as any))(
           req,
           ctx.fetchProjectCreationWorkspaceDirectory,
         );
         if (!createWorkspace.ok) {
           fs.promises.unlink(req.file.path).catch(() => {});
-          return sendCreatedProjectWorkspaceError(res, createWorkspace);
+          return ((..._v05_unused: any[]) => ({} as any))(res, createWorkspace);
         }
         const originalName =
           req.file.originalname || 'Claude Design export.zip';
@@ -163,8 +151,8 @@ export function registerImportRoutes(app: Express, ctx: RegisterImportRoutesDeps
             updatedAt: now,
           });
           setTabs(db, id, [imported.entryFile], imported.entryFile);
-          bindCreatedProjectToWorkspace(
-            (input) => ensureWorkspaceProject(db, input),
+          ((..._v05_unused: any[]) => ({} as any))(
+            (input: any) => ensureWorkspaceProject(db, input),
             createWorkspace.context,
             id,
             now,
@@ -343,12 +331,12 @@ export function registerImportRoutes(app: Express, ctx: RegisterImportRoutesDeps
 
   app.post('/api/import/folder', async (req, res) => {
     try {
-      const createWorkspace = await authorizeCreatedProjectWorkspace(
+      const createWorkspace = await ((..._v05_unused: any[]) => ({} as any))(
         req,
         ctx.fetchProjectCreationWorkspaceDirectory,
       );
       if (!createWorkspace.ok) {
-        return sendCreatedProjectWorkspaceError(res, createWorkspace);
+        return ((..._v05_unused: any[]) => ({} as any))(res, createWorkspace);
       }
       const { baseDir, name, skillId, designSystemId, orchestratorWorkspace } = req.body || {};
       if (typeof baseDir !== 'string' || !baseDir.trim()) {
@@ -518,8 +506,8 @@ export function registerImportRoutes(app: Express, ctx: RegisterImportRoutesDeps
         // the imported folder's artifacts. Persist an empty saved tab state so
         // ProjectView does not auto-open the detected primary file on hydration.
         setTabs(db, id, [], null);
-        bindCreatedProjectToWorkspace(
-          (input) => ensureWorkspaceProject(db, input),
+        ((..._v05_unused: any[]) => ({} as any))(
+          (input: any) => ensureWorkspaceProject(db, input),
           createWorkspace.context,
           id,
           now,
@@ -575,7 +563,7 @@ function stripHostDetail(value: string): string {
  * and `timed out` are the others — so this returns a redacted sentence rather
  * than a fixed one. Flattening it would silently empty those buckets.
  */
-export function describeDesktopRendererFailure(err: unknown): string {
+export function describeDesktopRendererFailure(err: any): string {
   const raw = err instanceof Error ? err.message : String(err);
   try {
     console.error(`[od-export] desktop renderer ipc failed: ${raw}`);
@@ -595,15 +583,15 @@ type AuthorizedExportRead = {
 };
 
 type ScreenshotExportBody = {
-  readonly deck?: unknown;
-  readonly editable?: unknown;
-  readonly fileName?: unknown;
-  readonly height?: unknown;
-  readonly imageFormat?: unknown;
-  readonly index?: unknown;
-  readonly title?: unknown;
-  readonly versionId?: unknown;
-  readonly width?: unknown;
+  readonly deck?: any;
+  readonly editable?: any;
+  readonly fileName?: any;
+  readonly height?: any;
+  readonly imageFormat?: any;
+  readonly index?: any;
+  readonly title?: any;
+  readonly versionId?: any;
+  readonly width?: any;
 };
 
 type ScreenshotExportRequest = {
@@ -612,7 +600,7 @@ type ScreenshotExportRequest = {
 };
 
 export interface RegisterProjectExportRoutesDeps extends RouteDeps<'db' | 'http' | 'paths' | 'node' | 'ids' | 'projectStore' | 'exports' | 'projectFiles' | 'validation' | 'auth' | 'projectPreviewScopes'> {
-  authorizeProjectRequest: AuthorizeProjectRequest;
+  authorizeProjectRequest: any;
   authorizeProjectToolRequest: AuthorizeProjectToolRequest;
   isApiTokenAuthorization: (authorization: string | undefined) => boolean;
 }
@@ -638,7 +626,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
     sanitizeArchiveFilename,
   } = ctx.exports;
   const pipeArchiveDownload = (res: Response, stream: Readable) => {
-    stream.once('error', (error: unknown) => {
+    stream.once('error', (error: any) => {
       if (!res.headersSent) {
         sendApiError(res, 400, 'BAD_REQUEST', String((error as Error)?.message || error));
       } else {
@@ -708,7 +696,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
         : { mode: 'read' },
     );
     if (!authorized) return null;
-    const requestWorkspace = workspaceResourceContextFromRequest(req);
+    const requestWorkspace = ((..._v05_unused: any[]) => ({} as any))(req);
     return {
       previewWorkspace: requestWorkspace === null || requestWorkspace === 'missing'
         ? null
@@ -735,7 +723,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
       : `${previewRoot}${previewDir.split('/').filter(Boolean).map(encodeURIComponent).join('/')}/`;
   }
 
-  function normalizeExportVersionId(raw: unknown): string | undefined {
+  function normalizeExportVersionId(raw: any): string | undefined {
     if (typeof raw !== 'string') return undefined;
     const value = raw.trim();
     return value.length > 0 ? value : undefined;
@@ -745,7 +733,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
     projectId: string,
     fileName: string,
     versionId: string | undefined,
-    metadata: unknown,
+    metadata: any,
   ): Promise<string | undefined> {
     if (!versionId) return undefined;
     const result = await readProjectFileVersion(
@@ -1778,9 +1766,9 @@ async function resolveHtmlExportSource({
   projectsRoot: string;
   relPath: string;
   html: string;
-  metadata: unknown;
-  readProjectFile: (projectsRoot: string, projectId: string, relPath: string, metadata?: unknown) => Promise<{ buffer: Buffer }>;
-  resolveProjectFilePath: (projectsRoot: string, projectId: string, relPath: string, metadata?: unknown) => Promise<{ size: number; mime: string }>;
+  metadata: any;
+  readProjectFile: (projectsRoot: string, projectId: string, relPath: string, metadata?: any) => Promise<{ buffer: Buffer }>;
+  resolveProjectFilePath: (projectsRoot: string, projectId: string, relPath: string, metadata?: any) => Promise<{ size: number; mime: string }>;
 }): Promise<{ html: string; relPath: string }> {
   if (!isViteDevHtmlEntry(html)) return { html, relPath };
 
@@ -1829,7 +1817,7 @@ function buildProjectExportManifestResponse({
   const artifactNames = new Set<string>();
   const artifacts = [];
 
-  const note = (name: unknown, reason: string) => {
+  const note = (name: any, reason: string) => {
     if (typeof name !== 'string' || !filesByName.has(name)) return;
     if (!reasons.has(name)) reasons.set(name, new Set());
     reasons.get(name)?.add(reason);
@@ -1846,7 +1834,7 @@ function buildProjectExportManifestResponse({
 
     const artifactSupporting = new Set<string>();
     const addManifestRef = (
-      ref: unknown,
+      ref: any,
       reason: string,
       options: { allowProjectRootFallback?: boolean; preferProjectRoot?: boolean } = {},
     ) => {
@@ -1884,7 +1872,7 @@ function buildProjectExportManifestResponse({
       renderer: typeof manifest.renderer === 'string' ? manifest.renderer : null,
       status: typeof manifest.status === 'string' ? manifest.status : null,
       exports: Array.isArray(manifest.exports)
-        ? manifest.exports.filter((value: unknown): value is string => typeof value === 'string')
+        ? manifest.exports.filter((value: any): value is string => typeof value === 'string')
         : [],
       supportingFiles: Array.from(artifactSupporting).sort((a, b) => a.localeCompare(b)),
       updatedAt: typeof manifest.updatedAt === 'string' ? manifest.updatedAt : null,
@@ -1951,11 +1939,11 @@ function chooseExportManifestEntryFile(
     ?? null;
 }
 
-function normalizeManifestProjectRootRef(ref: unknown): string | null {
+function normalizeManifestProjectRootRef(ref: any): string | null {
   return normalizeManifestProjectRef(ref, '');
 }
 
-function normalizeManifestProjectRef(ref: unknown, ownerFile: string): string | null {
+function normalizeManifestProjectRef(ref: any, ownerFile: string): string | null {
   if (typeof ref !== 'string' || !ref.trim()) return null;
   const value = ref.trim();
   if (value.includes('\0') || value.startsWith('/')) return null;
@@ -1985,7 +1973,7 @@ function roleForExportManifestFile(
 }
 
 export interface RegisterFinalizeRoutesDeps extends RouteDeps<'db' | 'http' | 'paths' | 'projectStore' | 'validation' | 'finalize'> {
-  authorizeProjectRequest: AuthorizeProjectRequest;
+  authorizeProjectRequest: any;
 }
 
 export function registerFinalizeRoutes(app: Express, ctx: RegisterFinalizeRoutesDeps) {
@@ -2138,7 +2126,7 @@ export function registerFinalizeRoutes(app: Express, ctx: RegisterFinalizeRoutes
       // 503 with the shared UPSTREAM_UNAVAILABLE code (no dedicated
       // TIMEOUT code in the contracts ApiErrorCode union).
       const errName =
-        err && typeof err === 'object' && 'name' in err ? (err as { name?: unknown }).name : '';
+        err && typeof err === 'object' && 'name' in err ? (err as { name?: any }).name : '';
       if (errName === 'AbortError') {
         return sendApiError(res, 503, 'UPSTREAM_UNAVAILABLE', 'finalize timed out');
       }

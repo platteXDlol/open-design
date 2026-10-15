@@ -451,7 +451,7 @@ function buildToolInputs(
   return inputs;
 }
 
-function shouldTryNextConnectorTool(err: unknown): boolean {
+function shouldTryNextConnectorTool(err: any): boolean {
   const message = err instanceof Error ? err.message : String(err);
   return /\btool\b.+\bnot found\b/i.test(message)
     || /\bconnector tool\b.+\bnot found\b/i.test(message);
@@ -483,7 +483,7 @@ function errorDetailMessage(value: BoundedJsonValue | undefined): string | null 
   }
 }
 
-function connectorErrorMessage(err: unknown): string {
+function connectorErrorMessage(err: any): string {
   const message = err instanceof Error ? err.message : String(err);
   if (!(err instanceof ConnectorServiceError)) return message;
   const detailMessage = errorDetailMessage(err.details?.error);
@@ -1181,7 +1181,7 @@ async function readConnectorMemoryContext(
           }
           completed = true;
           break;
-        } catch (err) {
+        } catch (err: any) {
           lastError = connectorErrorMessage(err);
           if (shouldTryNextConnectorTool(err)) break;
         }

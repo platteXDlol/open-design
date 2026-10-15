@@ -17,11 +17,11 @@ import type { DesktopRenderSlidesInput } from '@open-design/sidecar-proto';
 type PptxInstance = InstanceType<typeof import('pptxgenjs').default>;
 export type PptxConstructor = { new (): PptxInstance };
 
-export function resolvePptxConstructor(mod: unknown): PptxConstructor {
+export function resolvePptxConstructor(mod: any): PptxConstructor {
   if (typeof mod === 'function') return mod as PptxConstructor;
-  const candidate = (mod as { default?: unknown } | null | undefined)?.default;
+  const candidate = (mod as { default?: any } | null | undefined)?.default;
   if (typeof candidate === 'function') return candidate as PptxConstructor;
-  const nested = (candidate as { default?: unknown } | null | undefined)?.default;
+  const nested = (candidate as { default?: any } | null | undefined)?.default;
   if (typeof nested === 'function') return nested as PptxConstructor;
   throw new Error(
     'unable to resolve the PptxGenJS constructor from the pptxgenjs module shape '

@@ -74,7 +74,7 @@ function loadManifest(dir: string): Record<string, BakeEntry> {
     const previews = parsed.previews ?? {};
     cache = { dir, mtimeMs, previews };
     return previews;
-  } catch (err) {
+  } catch (err: any) {
     // A malformed/unreadable manifest would otherwise silently disable every
     // baked preview with no trace; surface it so it's diagnosable.
     console.warn(`[plugin-preview-bakes] failed to load ${manifestPath}: ${String(err)}`);
@@ -108,7 +108,7 @@ export function bakedPreviewBlock(id: string, dir: string): BakedPreviewBlock | 
 // baked clip via `inferPluginPreview(record, { preferBaked: true })`, while the
 // detail modal keeps reading the real `od.preview` and renders the live,
 // interactive page. Records are shallow-cloned so registry rows stay pure.
-export function applyBakedPreviews<T extends { id: string; manifest?: unknown }>(
+export function applyBakedPreviews<T extends { id: string; manifest?: any }>(
   records: T[],
   dir: string,
 ): T[] {

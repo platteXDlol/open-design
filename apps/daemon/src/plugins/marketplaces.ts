@@ -158,7 +158,7 @@ export function resolveMarketplaceFetchUrl(url: string): string {
   return registryId ? marketplaceManifestUrlForRegistry(registryId) : trimmed;
 }
 
-function normalizeMarketplaceTrust(value: unknown): MarketplaceTrustTier {
+function normalizeMarketplaceTrust(value: any): MarketplaceTrustTier {
   return value === 'official' || value === 'trusted' ? value : 'restricted';
 }
 
@@ -178,7 +178,7 @@ export async function addMarketplace(
   let resp;
   try {
     resp = await fetcher(url);
-  } catch (err) {
+  } catch (err: any) {
     return {
       ok: false,
       status: 502,
@@ -368,7 +368,7 @@ export async function refreshMarketplace(
   let resp;
   try {
     resp = await useFetcher(url);
-  } catch (err) {
+  } catch (err: any) {
     return { ok: false, status: 502, message: `Fetch failed: ${(err as Error).message ?? String(err)}` };
   }
   if (!resp.ok) return { ok: false, status: 502, message: `Marketplace fetch returned ${resp.status}` };
@@ -419,7 +419,7 @@ function safeParseManifest(raw: string): MarketplaceManifest {
       ? legacy['metadata'] as Record<string, unknown>
       : {};
     const plugins = Array.isArray(legacy?.['plugins'])
-      ? (legacy['plugins'] as unknown[]).flatMap((entry) => {
+      ? (legacy['plugins'] as any[]).flatMap((entry) => {
           if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return [];
           const obj = entry as Record<string, unknown>;
           const name = typeof obj['name'] === 'string' ? obj['name'] : '';

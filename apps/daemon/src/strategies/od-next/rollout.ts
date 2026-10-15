@@ -59,7 +59,7 @@ function envMode(value: string | undefined): OdNextRolloutMode | null {
   return trimmed === 'observe' || trimmed === 'active' ? trimmed : 'off';
 }
 
-function configuredMode(value: unknown): OdNextRolloutMode | null {
+function configuredMode(value: any): OdNextRolloutMode | null {
   return value === 'off' || value === 'observe' || value === 'active' ? value : null;
 }
 
@@ -135,7 +135,7 @@ export function readOdNextRolloutPolicy(
 }
 
 export function odNextTaskTypeForProjectScenarioBinding(
-  binding: { provenance?: unknown; taskProfile?: unknown } | null | undefined,
+  binding: { provenance?: any; taskProfile?: any } | null | undefined,
 ): OdNextRolloutTaskType | null {
   if (binding?.provenance !== 'automatic_default') return null;
   return binding.taskProfile === 'prototype'

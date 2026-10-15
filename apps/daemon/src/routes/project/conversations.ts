@@ -4,8 +4,6 @@ import { readAnalyticsContext } from '../../analytics.js';
 import { nextForkedConversationTitle } from '../../conversation-fork-title.js';
 import { backfillBrandExtractionTranscriptForProject } from '../../brands/index.js';
 import type { RouteDeps } from '../../server-context.js';
-import type { BoundWorkspaceResourceMutationGate } from '../../collab/workspace-resource-mutation.js';
-import type { AuthorizeProjectRequest } from '../../collab/project-request-authority.js';
 import { TERMINAL_RUN_STATUSES } from '../../runtimes/runs.js';
 import { strategyTaskTurnsForRunIds } from '../../strategies/task-store.js';
 
@@ -28,8 +26,8 @@ export interface RegisterProjectConversationRoutesDeps extends RouteDeps<'db' | 
    * cross-check) rather than re-deriving a weaker one here. See
    * `RegisterProjectCommentRoutesDeps` in `./comments.js`.
    */
-  enforceWorkspaceProjectMutation?: BoundWorkspaceResourceMutationGate;
-  authorizeProjectRequest?: AuthorizeProjectRequest;
+  enforceWorkspaceProjectMutation?: any;
+  authorizeProjectRequest?: any;
   /**
    * Passed alongside `enforceWorkspaceProjectMutation` above — the gate calls
    * this to write the 401/403 response body when it denies a mutation. Kept
@@ -40,11 +38,11 @@ export interface RegisterProjectConversationRoutesDeps extends RouteDeps<'db' | 
   sendApiError?: (res: any, status: number, code: string, message: string) => unknown;
 }
 
-function normalizeChatSessionMode(value: unknown): ChatSessionMode {
+function normalizeChatSessionMode(value: any): ChatSessionMode {
   return value === 'chat' || value === 'plan' ? value : 'design';
 }
 
-function isChatSessionMode(value: unknown): value is ChatSessionMode {
+function isChatSessionMode(value: any): value is ChatSessionMode {
   return value === 'chat' || value === 'design' || value === 'plan';
 }
 
@@ -62,7 +60,7 @@ function isChatSessionMode(value: unknown): value is ChatSessionMode {
  * 只带**终态**:`queued` / `running` 说的是「源会话此刻还在跑」,那是活的运行状态,
  * 复制过来会让新会话里那一条永远转圈(原注释担心的正是这个),所以仍然不带。
  */
-function settledForkVerdict(status: unknown): string | undefined {
+function settledForkVerdict(status: any): string | undefined {
   return typeof status === 'string' && TERMINAL_RUN_STATUSES.has(status) ? status : undefined;
 }
 
@@ -89,7 +87,7 @@ function settledForkVerdict(status: unknown): string | undefined {
  * therefore the same key — on the same row.
  */
 function payloadCarriesAnotherRowsRunStream(
-  incomingEvents: unknown,
+  incomingEvents: any,
   siblingRunDoneKeys: ReadonlySet<string>,
 ): boolean {
   if (!Array.isArray(incomingEvents) || siblingRunDoneKeys.size === 0) return false;
@@ -122,7 +120,7 @@ export function registerProjectConversationRoutes(app: Express, ctx: RegisterPro
   // Production registration always injects the shared project authority gate.
   // The fallback preserves narrow unit fixtures whose in-memory projects have
   // no Workspace binding and do not construct the full server authority graph.
-  const authorizeProjectRequest: AuthorizeProjectRequest =
+  const authorizeProjectRequest: any =
     ctx.authorizeProjectRequest ?? (async () => true);
   const getRoutableConversation = (projectId: string, conversationId: string) => {
     if (isProjectCommentAnchorConversationId(conversationId)) return null;
@@ -659,16 +657,16 @@ export function registerProjectConversationRoutes(app: Express, ctx: RegisterPro
     };
   };
 
-  const parseRunEventCursor = (value: unknown): number | null => {
+  const parseRunEventCursor = (value: any): number | null => {
     if (typeof value !== 'string' && typeof value !== 'number') return null;
     const cursor = Number(value);
     return Number.isFinite(cursor) && cursor >= 0 ? cursor : null;
   };
 
   const mergeLastRunEventId = (
-    stored: unknown,
-    incoming: unknown,
-  ): unknown => {
+    stored: any,
+    incoming: any,
+  ): any => {
     if (incoming === null || incoming === undefined || incoming === '') return stored;
     if (stored === null || stored === undefined || stored === '') return incoming;
     const storedCursor = parseRunEventCursor(stored);

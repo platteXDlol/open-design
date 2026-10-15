@@ -302,13 +302,13 @@ export interface LocalMcpBriefStore {
   collect(input: UnknownRecord): LocalMcpBriefForm;
   confirm(input: UnknownRecord): LocalMcpBriefConfirmation;
   attributionForDraft(
-    briefDraftId: unknown,
+    briefDraftId: any,
   ): {
     pluginWorkflowId: string;
     externalPluginContext: ExternalPluginContext;
   } | null;
   briefStateForWorkflow(
-    pluginWorkflowId: unknown,
+    pluginWorkflowId: any,
   ): 'confirmed' | 'skipped' | 'not_applicable';
 }
 
@@ -436,7 +436,7 @@ export function createLocalMcpBriefStore(
       const draft = drafts.get(briefDraftId);
       if (!draft) {
         throw new Error(
-          'The OpenDesign brief has expired or is unknown. Call collect_brief again.',
+          'The OpenDesign brief has expired or is ((..._v05_args: any[]) => ({} as any)). Call collect_brief again.',
         );
       }
       if (draft.nonce !== nonce) {
@@ -502,7 +502,7 @@ export function createLocalMcpBriefStore(
   };
 }
 
-function readArtifactType(value: unknown): OpenDesignBriefArtifactType {
+function readArtifactType(value: any): OpenDesignBriefArtifactType {
   if (
     typeof value !== 'string'
     || !Object.hasOwn(openDesignBriefCatalog, value)
@@ -514,7 +514,7 @@ function readArtifactType(value: unknown): OpenDesignBriefArtifactType {
   return value as OpenDesignBriefArtifactType;
 }
 
-export function readBriefLocale(value: unknown): LocalMcpBriefLocale {
+export function readBriefLocale(value: any): LocalMcpBriefLocale {
   if (typeof value !== 'string' || value.trim().length === 0) return 'en';
   const normalized = value.trim().replaceAll('_', '-').toLowerCase();
   if (normalized === 'zh' || normalized === 'zh-cn' || normalized.startsWith('zh-hans')) {
@@ -633,7 +633,7 @@ export function localMcpBriefResponseCopy(locale: LocalMcpBriefLocale) {
   };
 }
 
-function readProjectTitle(value: unknown): string {
+function readProjectTitle(value: any): string {
   if (value === undefined) return 'Untitled OpenDesign artifact';
   const title = readRequiredString(value, 'projectTitle').trim();
   if (title.length > 256) {
@@ -642,14 +642,14 @@ function readProjectTitle(value: unknown): string {
   return title;
 }
 
-function readRequiredString(value: unknown, field: string): string {
+function readRequiredString(value: any, field: string): string {
   if (typeof value !== 'string' || value.length === 0) {
     throw new Error(`${field} must be a non-empty string`);
   }
   return value;
 }
 
-function readAnswerRecord(value: unknown, field: string): UnknownRecord {
+function readAnswerRecord(value: any, field: string): UnknownRecord {
   if (value === undefined) return {};
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error(`${field} must be an object`);

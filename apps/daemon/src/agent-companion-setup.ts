@@ -92,8 +92,8 @@ async function materializeDevelopmentBundle(
     );
   }
   const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8')) as {
-    name?: unknown;
-    version?: unknown;
+    name?: any;
+    version?: any;
   };
   if (packageJson.name !== DSH_RUNTIME_PACKAGE_NAME || typeof packageJson.version !== 'string') {
     throw new AgentCompanionSetupError('BUNDLED_COMPANION_INVALID', 'Invalid connection package metadata.');
@@ -163,9 +163,9 @@ async function stageVerifiedBundleInProfile(
   return `${relativeDirectory}/${file}`;
 }
 
-function commandFailureDetail(error: unknown): string | null {
+function commandFailureDetail(error: any): string | null {
   if (!error || typeof error !== 'object') return null;
-  const candidate = error as { code?: unknown; signal?: unknown; stderr?: unknown };
+  const candidate = error as { code?: any; signal?: any; stderr?: any };
   let stderr = '';
   if (typeof candidate.stderr === 'string') {
     stderr = candidate.stderr.trim();
@@ -232,7 +232,7 @@ async function installDeepSeekHarnessCompanionOnce(options: {
       ['plugin', '--profile', 'open-design', 'add', packageSpec],
       { env: childEnv, timeout: 120_000, maxBuffer: 2 * 1024 * 1024 },
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error(
       '[od] DeepSeek Harness connection component install failed',
       commandFailureDetail(error) ?? 'no command diagnostics were available',

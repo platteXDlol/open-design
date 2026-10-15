@@ -77,7 +77,7 @@ export class LocalProjectStorage implements ProjectStorage {
     const abs = this.resolvePath(projectId, relpath);
     try {
       return await fsp.readFile(abs);
-    } catch (err) {
+    } catch (err: any) {
       const e = err as NodeJS.ErrnoException;
       if (e.code === 'ENOENT') throw new StorageError('NOT_FOUND', `${projectId}/${relpath} not found`);
       throw new StorageError('IO', `read failed: ${e.message ?? String(e)}`);
@@ -105,7 +105,7 @@ export class LocalProjectStorage implements ProjectStorage {
       let entries;
       try {
         entries = await fsp.readdir(dir, { withFileTypes: true });
-      } catch (err) {
+      } catch (err: any) {
         if ((err as NodeJS.ErrnoException).code === 'ENOENT') return [];
         throw new StorageError('IO', `list failed: ${(err as Error).message}`);
       }
@@ -128,7 +128,7 @@ export class LocalProjectStorage implements ProjectStorage {
     const abs = this.resolvePath(projectId, relpath);
     try {
       await fsp.rm(abs, { force: true });
-    } catch (err) {
+    } catch (err: any) {
       throw new StorageError('IO', `delete failed: ${(err as Error).message}`);
     }
   }

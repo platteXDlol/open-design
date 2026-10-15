@@ -66,13 +66,13 @@ type LauncherInstallDescriptor = {
 async function readJsonFile<T>(filePath: string): Promise<T | null> {
   try {
     return JSON.parse(await readFile(filePath, "utf8")) as T;
-  } catch (error) {
+  } catch (error: any) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT" || error instanceof SyntaxError) return null;
     throw error;
   }
 }
 
-async function writeJsonFile(filePath: string, value: unknown): Promise<void> {
+async function writeJsonFile(filePath: string, value: any): Promise<void> {
   await mkdir(dirname(filePath), { recursive: true });
   const temporaryPath = `${filePath}.${process.pid}.${randomUUID()}.tmp`;
   await writeFile(temporaryPath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
@@ -385,8 +385,8 @@ async function waitForOuterConfirm(
   prepared: PreparedLegacyPayloadDesktopHandoff,
   options: {
     confirmTimeoutMs: number;
-    requestDesktop: (message: "shutdown" | "status") => Promise<unknown>;
-    sleep: (durationMs: number) => Promise<unknown>;
+    requestDesktop: (message: "shutdown" | "status") => Promise<any>;
+    sleep: (durationMs: number) => Promise<any>;
   },
 ): Promise<"confirmed" | "outer-not-confirmed" | "payload-desktop-active"> {
   const deadline = Date.now() + options.confirmTimeoutMs;
@@ -422,8 +422,8 @@ export async function executeLegacyPayloadDesktopHandoff(
     confirmTimeoutMs?: number;
     env?: NodeJS.ProcessEnv;
     now?: () => Date;
-    requestDesktop?: (message: "shutdown" | "status") => Promise<unknown>;
-    sleep?: (durationMs: number) => Promise<unknown>;
+    requestDesktop?: (message: "shutdown" | "status") => Promise<any>;
+    sleep?: (durationMs: number) => Promise<any>;
     spawn?: typeof spawnSidecar;
     writeJsonFile?: typeof writeJsonFile;
   } = {},

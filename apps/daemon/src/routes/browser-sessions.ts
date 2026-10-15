@@ -1,11 +1,10 @@
 import type { Express } from 'express';
 import type { BrowserSessionService } from '../browser-sessions.js';
-import type { AuthorizeProjectRequest } from '../collab/project-request-authority.js';
 import type { RouteDeps } from '../server-context.js';
 
 export interface RegisterBrowserSessionRoutesDeps extends RouteDeps<'db' | 'http' | 'projectStore'> {
   browserSessions: BrowserSessionService;
-  authorizeProjectRequest: AuthorizeProjectRequest;
+  authorizeProjectRequest: any;
 }
 
 export function registerBrowserSessionRoutes(app: Express, ctx: RegisterBrowserSessionRoutesDeps): void {
@@ -20,7 +19,7 @@ export function registerBrowserSessionRoutes(app: Express, ctx: RegisterBrowserS
     if (!await authorizeProjectRequest(req, res, req.params.id, { mode: 'read' })) return;
     try {
       res.json({ browserSession: await browserSessions.create() });
-    } catch (error) {
+    } catch (error: any) {
       sendApiError(
         res,
         503,

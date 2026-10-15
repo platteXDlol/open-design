@@ -208,12 +208,12 @@ export function verifySqliteIntegrity(opts: VerifyDbOptions): DbIntegrityReport 
       // SQLite returns the string under either `integrity_check`,
       // `quick_check`, or just the first column. Normalise to the
       // first string-valued field.
-      const message = (row[pragma] ?? Object.values(row)[0]) as unknown;
+      const message = (row[pragma] ?? Object.values(row)[0]) as any;
       if (typeof message !== 'string') continue;
       if (message.toLowerCase() === 'ok') continue;
       issues.push({ kind: 'integrity', message });
     }
-  } catch (err) {
+  } catch (err: any) {
     issues.push({ kind: 'integrity', message: `pragma ${pragma} threw: ${(err as Error).message}` });
   }
 
@@ -230,7 +230,7 @@ export function verifySqliteIntegrity(opts: VerifyDbOptions): DbIntegrityReport 
         message: `FK violation in ${tbl} (rowid=${rowid}) referencing ${parent} (fkid=${fkid})`,
       });
     }
-  } catch (err) {
+  } catch (err: any) {
     issues.push({ kind: 'foreign_key', message: `pragma foreign_key_check threw: ${(err as Error).message}` });
   }
 

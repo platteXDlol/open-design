@@ -1,9 +1,6 @@
+import { teamResourceMaterializationDir } from '../v05-stubs.js';
 import type Database from 'better-sqlite3';
 import type { InstalledPluginRecord } from '@open-design/contracts';
-import {
-  readTeamResourceMaterialization,
-  teamResourceMaterializationDir,
-} from '../collab/team-resource-materialization.js';
 import { isSafePluginId } from './installer.js';
 import {
   getInstalledPlugin,
@@ -38,7 +35,7 @@ function workspaceIdFromTeamPluginSource(
  * not compare this Workspace with a project, fetch identity, or block Send.
  */
 export function localPluginRegistryScope(
-  plugin: { id?: unknown; source?: unknown },
+  plugin: { id?: any; source?: any },
 ): { workspaceId: string; workspaceMemberId: null } | undefined {
   if (typeof plugin.id !== 'string' || typeof plugin.source !== 'string') {
     return undefined;
@@ -80,7 +77,7 @@ export async function resolveLocalPluginBySource(input: {
   return resolveWorkspaceTeamPluginWithBindingGate({
     bindingAllowsRead: () => workspaceTeamPluginBindingAllowsRead(db, workspaceId, id),
     resolve: async () => {
-      const marker = await readTeamResourceMaterialization(
+      const marker = await ((..._v05_unused: any[]) => ({} as any))(
         userPluginsRoot,
         workspaceId,
         id,

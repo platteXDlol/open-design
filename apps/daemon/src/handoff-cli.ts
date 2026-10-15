@@ -22,7 +22,7 @@ interface HandoffCliResult {
  * (or `{}` under --json) and still exit 0, breaking the fail-fast contract
  * scripts depend on.
  */
-function isHandoffResponse(value: unknown): value is HandoffResponse {
+function isHandoffResponse(value: any): value is HandoffResponse {
   if (!value || typeof value !== 'object') return false;
   const v = value as Record<string, unknown>;
   return (
@@ -45,11 +45,11 @@ transcript via the local daemon. Prints the prompt to stdout; --json emits
 the full response (prompt + model + token usage).
 `;
 
-function writeJson(value: unknown, stream: NodeJS.WriteStream = process.stdout): void {
+function writeJson(value: any, stream: NodeJS.WriteStream = process.stdout): void {
   stream.write(`${JSON.stringify(value)}\n`);
 }
 
-function fail(message: string, code?: unknown, status?: number): HandoffCliResult {
+function fail(message: string, code?: any, status?: number): HandoffCliResult {
   writeJson(
     {
       ok: false,
@@ -192,7 +192,7 @@ export async function runProjectHandoff(args: string[]): Promise<HandoffCliResul
       process.stdout.write(`${payload.prompt}\n`);
     }
     return { exitCode: 0 };
-  } catch (error) {
+  } catch (error: any) {
     const message = error instanceof Error ? error.message : String(error);
     return fail(message);
   }

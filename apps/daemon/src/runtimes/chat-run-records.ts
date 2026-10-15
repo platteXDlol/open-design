@@ -52,13 +52,13 @@ export interface ProjectRecord {
   appliedPluginSnapshotId?: string | null;
 }
 
-export function toJsonRecord(value: unknown): JsonRecord {
+export function toJsonRecord(value: any): JsonRecord {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value as JsonRecord
     : {};
 }
 
-export function toProjectRecord(value: unknown): ProjectRecord | null {
+export function toProjectRecord(value: any): ProjectRecord | null {
   if (!value || typeof value !== 'object') return null;
   const record = value as JsonRecord;
   return typeof record.id === 'string'
@@ -119,7 +119,7 @@ export async function validateChatProjectDeliverable(input: {
 
 /** The run facts `runTouchedArtifactPaths` reads. */
 export interface RunForTouchedArtifactPaths {
-  artifactOutcome?: { diff?: { touchedPaths?: unknown } } | undefined;
+  artifactOutcome?: { diff?: { touchedPaths?: any } } | undefined;
 }
 
 export function runTouchedArtifactPaths(
@@ -127,7 +127,7 @@ export function runTouchedArtifactPaths(
 ): string[] | undefined {
   const diff = (
     run.artifactOutcome as
-      | { diff?: { touchedPaths?: unknown } }
+      | { diff?: { touchedPaths?: any } }
       | undefined
   )?.diff;
   return Array.isArray(diff?.touchedPaths)
@@ -143,12 +143,12 @@ export interface RunEventRecord
     RunEventForFailureClassification {
   id: number;
   event: string;
-  data: unknown;
+  data: any;
   timestamp?: number;
 }
 
 export interface SseClient {
-  send(event: string, data: unknown, id?: number): void;
+  send(event: string, data: any, id?: number): void;
   end(): void;
   cleanup?(): void;
 }

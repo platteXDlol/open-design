@@ -151,7 +151,7 @@ function stagesSummary(stages: ReadonlyArray<{ id: string }> | undefined): strin
   return stages.map((s) => s.id).join(' \u2192 ');
 }
 
-function diffScalar(out: PluginDiffEntry[], field: string, a: unknown, b: unknown): void {
+function diffScalar(out: PluginDiffEntry[], field: string, a: any, b: any): void {
   const aPresent = a !== undefined && a !== null;
   const bPresent = b !== undefined && b !== null;
   if (!aPresent && !bPresent) return;
@@ -186,7 +186,7 @@ function diffArray(out: PluginDiffEntry[], field: string, a: ReadonlyArray<strin
   });
 }
 
-function toComparable(value: unknown): string {
+function toComparable(value: any): string {
   if (value === undefined || value === null) return '';
   if (typeof value === 'string') return value;
   if (typeof value === 'number') return String(value);

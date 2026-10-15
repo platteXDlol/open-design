@@ -20,8 +20,8 @@ export interface DetectSkillPluginCandidateInput {
   runId?: string | null;
   conversationId?: string | null;
   assistantMessageId?: string | null;
-  message?: unknown;
-  attachments?: unknown;
+  message?: any;
+  attachments?: any;
   projectRoot: string;
   now?: number;
 }
@@ -223,15 +223,15 @@ function rowToCandidate(row: DbRow): SkillPluginCandidate {
   };
 }
 
-function nullableString(value: unknown): string | null {
+function nullableString(value: any): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
-function nullableNumber(value: unknown): number | null {
+function nullableNumber(value: any): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
-function parseJsonArray(value: unknown): SkillPluginCandidateSourceRef[] {
+function parseJsonArray(value: any): SkillPluginCandidateSourceRef[] {
   try {
     const parsed = typeof value === 'string' ? JSON.parse(value) : [];
     return Array.isArray(parsed) ? parsed : [];
@@ -240,7 +240,7 @@ function parseJsonArray(value: unknown): SkillPluginCandidateSourceRef[] {
   }
 }
 
-function parseJsonObject(value: unknown, fallback: Record<string, unknown>): Record<string, unknown> {
+function parseJsonObject(value: any, fallback: Record<string, unknown>): Record<string, unknown> {
   try {
     const parsed = typeof value === 'string' ? JSON.parse(value) : null;
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : fallback;

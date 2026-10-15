@@ -12,7 +12,7 @@ import {
 
 type JsonObject = Record<string, unknown>;
 
-function objectValue(value: unknown, label: string): JsonObject {
+function objectValue(value: any, label: string): JsonObject {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error(`${label} must be an object`);
   }
@@ -76,13 +76,13 @@ function assertRequestFrame(value: JsonObject): void {
   stringField(value, 'request_id');
 }
 
-function assertWireError(value: unknown): void {
+function assertWireError(value: any): void {
   const error = objectValue(value, 'error');
   stringField(error, 'code');
   stringField(error, 'message');
 }
 
-export function parseDshProfileRuntimeFrame(value: unknown): DshProfileRuntimeFrame {
+export function parseDshProfileRuntimeFrame(value: any): DshProfileRuntimeFrame {
   const frame = objectValue(value, 'frame');
   assertVersion(frame);
   const type = stringField(frame, 'type');
@@ -149,7 +149,7 @@ export function parseDshProfileRuntimeFrame(value: unknown): DshProfileRuntimeFr
   return frame as DshProfileRuntimeFrame;
 }
 
-export function parseDshProfileHostCommand(value: unknown): DshProfileHostCommand {
+export function parseDshProfileHostCommand(value: any): DshProfileHostCommand {
   const command = objectValue(value, 'command');
   assertVersion(command);
   const type = stringField(command, 'type');

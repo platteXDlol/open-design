@@ -24,7 +24,7 @@ const EXCLUDED_FILE_NAMES = new Set([
 ]);
 
 interface PluginExampleOutputLike {
-  path?: unknown;
+  path?: any;
 }
 
 interface DuplicateEntry {
@@ -139,7 +139,7 @@ async function resolveDuplicateEntry(
 function collectPluginPreviewCandidates(plugin: InstalledPluginRecord): string[] {
   const candidates: string[] = [];
   const seen = new Set<string>();
-  const push = (rel: unknown) => {
+  const push = (rel: any) => {
     if (typeof rel !== 'string') return;
     const normalized = normalizeRelativePath(rel);
     if (!normalized || !/\.html?$/i.test(normalized) || seen.has(normalized)) return;

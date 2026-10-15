@@ -16,7 +16,7 @@ export class AutomationWorkspaceScopeError extends Error {
 }
 
 export function normalizePersistedAutomationWorkspaceScope(
-  value: unknown,
+  value: any,
 ): PersistedAutomationWorkspaceScope | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const raw = value as Record<string, unknown>;

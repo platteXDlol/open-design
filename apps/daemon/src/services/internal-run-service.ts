@@ -62,7 +62,7 @@ export interface InternalRunRegistry<
   prepareRestart(run: TRun): TRun | null;
   get(id: string): TRun | null;
   drop(run: TRun): void;
-  start(run: TRun, starter: () => Promise<unknown>): TRun;
+  start(run: TRun, starter: () => Promise<any>): TRun;
   isTerminal(status: TRun['status']): boolean;
 }
 
@@ -106,7 +106,7 @@ export interface InternalRunCreationService<
   start(
     run: TRun,
     analytics: RunAnalyticsFacts,
-    starter: (run: TRun) => Promise<unknown>,
+    starter: (run: TRun) => Promise<any>,
   ): TRun;
 }
 
@@ -170,7 +170,7 @@ export function createInternalRunCreationService<
           : {}),
         isRunActive,
       });
-    } catch (error) {
+    } catch (error: any) {
       // The registry create is optimistic. A failed ownership transaction must
       // not leave a physical Run that can be listed, streamed, or reconciled.
       deps.runs.drop(run);

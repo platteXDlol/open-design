@@ -15,12 +15,12 @@ export interface SkillCatalogScope {
 
 /** The project-row shape this resolver reads; deliberately structural. */
 export interface SkillCatalogWorkspaceBinding {
-  workspaceId?: unknown;
-  createdByWorkspaceMemberId?: unknown;
+  workspaceId?: any;
+  createdByWorkspaceMemberId?: any;
 }
 
-function stagedLocalCatalogScope(value: unknown): SkillCatalogScope | null {
-  const scope = value as { workspaceId?: unknown; workspaceMemberId?: unknown } | undefined;
+function stagedLocalCatalogScope(value: any): SkillCatalogScope | null {
+  const scope = value as { workspaceId?: any; workspaceMemberId?: any } | undefined;
   const workspaceId = typeof scope?.workspaceId === 'string' ? scope.workspaceId.trim() : '';
   const workspaceMemberId = typeof scope?.workspaceMemberId === 'string'
     ? scope.workspaceMemberId.trim()
@@ -50,7 +50,7 @@ export function resolveSkillCatalogScope(input: {
   workspaceBinding?: SkillCatalogWorkspaceBinding | null | undefined;
 }): SkillCatalogScope | null {
   const staged = stagedLocalCatalogScope(
-    (input.metadata as { localCatalogScopes?: { skill?: unknown } } | null | undefined)
+    (input.metadata as { localCatalogScopes?: { skill?: any } } | null | undefined)
       ?.localCatalogScopes?.skill,
   );
   if (staged) return staged;

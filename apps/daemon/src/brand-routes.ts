@@ -26,9 +26,6 @@ import {
   listProjectsAwaitingInput,
   type insertProject,
 } from './db.js';
-import type { CreatedProjectWorkspaceResolver } from './collab/created-project-workspace.js';
-import type { AuthorizeProjectRequest } from './collab/project-request-authority.js';
-import type { WorkspaceResourceContext } from './collab/workspace-resource-mutation.js';
 import type { DesignSystemSummary, UserDesignSystemInput } from './design-systems/index.js';
 import { resolveProjectDir } from './projects.js';
 import {
@@ -62,7 +59,7 @@ export interface BrandRoutesDeps {
   createWorkspaceOwnedDesignSystem?: (
     root: string,
     input: UserDesignSystemInput,
-    context: WorkspaceResourceContext | null,
+    context: any | null,
   ) => Promise<DesignSystemSummary>;
   /** Roll back both the filesystem record and its generic envelope. */
   deleteWorkspaceOwnedDesignSystem?: (
@@ -86,7 +83,7 @@ export interface BrandRoutesDeps {
     options?: { beforeDelete?: () => Promise<boolean> },
   ) => Promise<boolean>;
   /** Exact read gate for logo bytes served from the backing project. */
-  authorizeProjectRequest?: AuthorizeProjectRequest;
+  authorizeProjectRequest?: any;
   /** `<dataDir>/projects` — backing brand-extraction projects. */
   projectsRoot: string;
   /**
@@ -95,7 +92,7 @@ export interface BrandRoutesDeps {
    * refusing — see `createdProjectWorkspaceHome` in
    * `collab/created-project-workspace.ts`.
    */
-  resolveCreatedProjectHome?: CreatedProjectWorkspaceResolver;
+  resolveCreatedProjectHome?: any;
   /** Skills root — the agent-driven kit page is rendered from the bundled
    *  `brand-extract` template under here. */
   skillsRoot: string;
@@ -134,7 +131,7 @@ const PROGRAMMATIC_ABORT_SETTLE_GRACE_MS = 250;
 
 type ActiveProgrammaticBrandExtraction = {
   controller: AbortController;
-  settled: Promise<unknown>;
+  settled: Promise<any>;
 };
 
 type ProgrammaticExtractionAbortResult = 'none' | 'settled' | 'timeout';
@@ -142,7 +139,7 @@ type ProgrammaticExtractionAbortResult = 'none' | 'settled' | 'timeout';
 export function registerBrandRoutes(app: Application, deps: BrandRoutesDeps): void {
   const { brandsRoot, userDesignSystemsRoot, projectsRoot, skillsRoot, dataDir, db, randomId } = deps;
   const activeProgrammaticBrandExtractions = new Map<string, ActiveProgrammaticBrandExtraction>();
-  const sendWorkspaceScopeError = (res: Response, error: unknown): boolean => {
+  const sendWorkspaceScopeError = (res: Response, error: any): boolean => {
     if (
       !error
       || typeof error !== 'object'
@@ -189,7 +186,7 @@ export function registerBrandRoutes(app: Application, deps: BrandRoutesDeps): vo
    * unavailable identity fails before extraction creates any local state.
    */
   function bindBrandProjectIntoRequestWorkspace(
-    ctx: Awaited<ReturnType<CreatedProjectWorkspaceResolver>>,
+    ctx: Awaited<ReturnType<any>>,
     projectId: string,
     now: number,
   ): void {
@@ -212,7 +209,7 @@ export function registerBrandRoutes(app: Application, deps: BrandRoutesDeps): vo
   function trackProgrammaticBrandExtraction(
     brandId: string,
     controller: AbortController,
-    backgroundExtraction: Promise<unknown> | null,
+    backgroundExtraction: Promise<any> | null,
   ): void {
     if (!backgroundExtraction) return;
     const active: ActiveProgrammaticBrandExtraction = {
@@ -319,7 +316,7 @@ export function registerBrandRoutes(app: Application, deps: BrandRoutesDeps): vo
           reconcileBrandSummaryStatus(brandsRoot, summary, statusContext),
         ),
       });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -343,7 +340,7 @@ export function registerBrandRoutes(app: Application, deps: BrandRoutesDeps): vo
         ? await deps.resolveCreatedProjectHome(req)
         : null;
       const programmaticAbortController = new AbortController();
-      const backgroundExtractionRef: { current: Promise<unknown> | null } = { current: null };
+      const backgroundExtractionRef: { current: Promise<any> | null } = { current: null };
       const startOptions: Parameters<typeof startBrandExtraction>[0] = {
         brandsRoot,
         projectsRoot,
@@ -384,7 +381,7 @@ export function registerBrandRoutes(app: Application, deps: BrandRoutesDeps): vo
       const backgroundExtraction = backgroundExtractionRef.current;
       trackProgrammaticBrandExtraction(result.id, programmaticAbortController, backgroundExtraction);
       res.json(result);
-    } catch (err) {
+    } catch (err: any) {
       if (sendWorkspaceScopeError(res, err)) return;
       const message = err instanceof Error ? err.message : String(err);
       // A bad URL is the only expected throw; everything else is a 500.
@@ -403,7 +400,7 @@ export function registerBrandRoutes(app: Application, deps: BrandRoutesDeps): vo
         settleTimeoutMs: PROGRAMMATIC_ABORT_SETTLE_GRACE_MS,
       });
       const programmaticAbortController = new AbortController();
-      const backgroundExtractionRef: { current: Promise<unknown> | null } = { current: null };
+      const backgroundExtractionRef: { current: Promise<any> | null } = { current: null };
       const transcriptAgent = await deps.resolveTranscriptAgent?.().catch(() => null);
       const result = await continueBrandExtraction({
         id,
@@ -425,7 +422,7 @@ export function registerBrandRoutes(app: Application, deps: BrandRoutesDeps): vo
       });
       trackProgrammaticBrandExtraction(id, programmaticAbortController, backgroundExtractionRef.current);
       res.json(result);
-    } catch (err) {
+    } catch (err: any) {
       const message = err instanceof Error ? err.message : String(err);
       res.status(/not found/i.test(message) ? 404 : 500).json({ error: message });
     }
@@ -484,7 +481,7 @@ export function registerBrandRoutes(app: Application, deps: BrandRoutesDeps): vo
       }
       const next = readBrandDetail(brandsRoot, id)?.meta ?? currentMeta;
       res.json({ ok: true, status: next.status });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -513,7 +510,7 @@ export function registerBrandRoutes(app: Application, deps: BrandRoutesDeps): vo
       if (locale) renderOptions.locale = locale;
       const result = await renderBrandPreviewIntoProject(renderOptions);
       res.json(result);
-    } catch (err) {
+    } catch (err: any) {
       const message = err instanceof Error ? err.message : String(err);
       const status = /not found/i.test(message) ? 404 : 500;
       res.status(status).json({ error: message });
@@ -549,7 +546,7 @@ export function registerBrandRoutes(app: Application, deps: BrandRoutesDeps): vo
       if (randomId) finalizeOptions.randomId = randomId;
       const result = await finalizeBrand(finalizeOptions);
       res.json(result);
-    } catch (err) {
+    } catch (err: any) {
       if (sendWorkspaceScopeError(res, err)) return;
       const message = err instanceof Error ? err.message : String(err);
       const status = /not found/i.test(message) ? 404 : 422;
@@ -601,7 +598,7 @@ export function registerBrandRoutes(app: Application, deps: BrandRoutesDeps): vo
         return;
       }
       res.json(result);
-    } catch (err) {
+    } catch (err: any) {
       if (isProgrammaticExtractionAbortError(err)) {
         res.status(409).json({ error: PROGRAMMATIC_CANCEL_ERROR });
         return;
@@ -620,7 +617,7 @@ export function registerBrandRoutes(app: Application, deps: BrandRoutesDeps): vo
         return;
       }
       res.json(reconcileBrandDetailStatus(brandsRoot, detail, createBrandStatusContext(deps)));
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -660,7 +657,7 @@ export function registerBrandRoutes(app: Application, deps: BrandRoutesDeps): vo
           : deps.deleteWorkspaceOwnedDesignSystem,
       );
       res.json({ ok: true });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -708,7 +705,7 @@ export function registerBrandRoutes(app: Application, deps: BrandRoutesDeps): vo
           res.status(404).json({ error: 'logo not found' });
         }
       });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });

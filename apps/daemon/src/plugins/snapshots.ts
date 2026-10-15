@@ -453,7 +453,7 @@ export class InvalidAppliedStrategySnapshotError extends Error {
 }
 
 function parseStrategyBinding(
-  value: unknown,
+  value: any,
   pluginId: string,
   pluginVersion: string,
 ): AppliedStrategyBindingV2 | undefined {
@@ -461,7 +461,7 @@ function parseStrategyBinding(
   if (typeof value !== 'string') {
     throw new InvalidAppliedStrategySnapshotError('Applied strategy binding must be JSON text.');
   }
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(value);
   } catch {
@@ -471,7 +471,7 @@ function parseStrategyBinding(
 }
 
 function validateStrategyBinding(
-  value: unknown,
+  value: any,
   pluginId: string,
   pluginVersion: string,
 ): AppliedStrategyBindingV2 {
@@ -498,7 +498,7 @@ function validateStrategyBinding(
   return binding.data;
 }
 
-function parseJsonOr<T>(value: unknown, fallback: T): T {
+function parseJsonOr<T>(value: any, fallback: T): T {
   if (typeof value !== 'string' || value.length === 0) return fallback;
   try {
     return JSON.parse(value) as T;
@@ -507,7 +507,7 @@ function parseJsonOr<T>(value: unknown, fallback: T): T {
   }
 }
 
-function parseJsonOrUndefined<T>(value: unknown): T | undefined {
+function parseJsonOrUndefined<T>(value: any): T | undefined {
   if (typeof value !== 'string' || value.length === 0) return undefined;
   try {
     return JSON.parse(value) as T;

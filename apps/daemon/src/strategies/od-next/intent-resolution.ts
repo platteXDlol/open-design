@@ -21,7 +21,7 @@ export interface IntentResolutionResult {
   };
 }
 
-function decodeResult(value: unknown): IntentResolutionResult {
+function decodeResult(value: any): IntentResolutionResult {
   const result = OdNextIntentResolutionResultSchema.parse(value);
   const p = result.parsed;
   const e = result.completionEvidence;

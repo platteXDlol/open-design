@@ -124,7 +124,7 @@ export async function runStageWithRegistry(
         real.set(key, prev === undefined ? v : mergePessimistic(prev, v));
       }
       if (out.note) notes.push(`[${worker.id}] ${out.note}`);
-    } catch (err) {
+    } catch (err: any) {
       notes.push(`[${worker.id}] worker error: ${(err as Error).message ?? String(err)}`);
     }
   }
@@ -152,7 +152,7 @@ function tokensUsedFromRunEvents(
 // Pessimistic merge between multiple workers contributing to the
 // same signal key. Cross-worker false-wins / lowest-number-wins
 // so a single failing gate still surfaces as a failed convergence.
-function mergePessimistic(prev: unknown, next: unknown): unknown {
+function mergePessimistic(prev: any, next: any): any {
   if (typeof prev === 'boolean' && typeof next === 'boolean') return prev && next;
   if (typeof prev === 'number' && typeof next === 'number') return Math.min(prev, next);
   return next;

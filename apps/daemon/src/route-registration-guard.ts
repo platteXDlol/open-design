@@ -14,7 +14,7 @@ const guardedRouteKeys = new Set([
 
 const guardedMethods = ['get', 'post', 'put', 'patch', 'delete', 'options', 'all', 'use'] as const;
 
-export function guardedRouteKey(method: string, path: unknown): string | null {
+export function guardedRouteKey(method: string, path: any): string | null {
   if (typeof path !== 'string') return null;
   const key = `${method.toUpperCase()} ${path}`;
   return guardedRouteKeys.has(key) ? key : null;
@@ -23,11 +23,11 @@ export function guardedRouteKey(method: string, path: unknown): string | null {
 export function installRouteRegistrationGuard(app: Express): void {
   const seen = new Set<string>();
   const inventory: RouteRegistration[] = [];
-  (app as unknown as { [routeInventorySymbol]: RouteRegistration[] })[routeInventorySymbol] = inventory;
+  (app as any as { [routeInventorySymbol]: RouteRegistration[] })[routeInventorySymbol] = inventory;
 
   for (const method of guardedMethods) {
-    const original = (app as any)[method].bind(app) as (...args: unknown[]) => unknown;
-    (app as any)[method] = (path: unknown, ...handlers: unknown[]) => {
+    const original = (app as any)[method].bind(app) as (...args: any[]) => unknown;
+    (app as any)[method] = (path: any, ...handlers: any[]) => {
       if (typeof path === 'string') {
         inventory.push({ method: method.toUpperCase(), path });
       }
@@ -45,6 +45,6 @@ export function installRouteRegistrationGuard(app: Express): void {
 
 export function getRouteRegistrationInventory(app: Express): RouteRegistration[] {
   return [
-    ...((app as unknown as { [routeInventorySymbol]?: RouteRegistration[] })[routeInventorySymbol] ?? []),
+    ...((app as any as { [routeInventorySymbol]?: RouteRegistration[] })[routeInventorySymbol] ?? []),
   ];
 }

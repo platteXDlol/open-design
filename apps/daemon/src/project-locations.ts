@@ -88,7 +88,7 @@ export async function writeProjectManifest(projectDir: string, manifest: Project
 export async function readProjectManifest(projectDir: string): Promise<ProjectManifest | null> {
   try {
     const raw = await readFile(manifestPath(projectDir), 'utf8');
-    const parsed: unknown = JSON.parse(raw);
+    const parsed: any = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
     const obj = parsed as Record<string, unknown>;
     if (obj.schemaVersion !== 1) return null;
@@ -105,7 +105,7 @@ export async function readProjectManifest(projectDir: string): Promise<ProjectMa
       skillId: typeof obj.skillId === 'string' ? obj.skillId : null,
       designSystemId: typeof obj.designSystemId === 'string' ? obj.designSystemId : null,
     };
-  } catch (err: unknown) {
+  } catch (err: any) {
     const e = err as { code?: string; name?: string };
     if (e.code === 'ENOENT' || e.name === 'SyntaxError') return null;
     throw err;

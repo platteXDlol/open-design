@@ -1,11 +1,8 @@
+import { headerValue } from '../v05-stubs.js';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type Database from 'better-sqlite3';
-import {
-  readTeamResourceMaterialization,
-  teamResourceWorkspaceRoot,
-} from '../collab/team-resource-materialization.js';
 import {
   getWorkspaceProjectByProjectId,
   getWorkspaceResourceByResourceId,
@@ -181,12 +178,12 @@ export function createDesignSystemServerServices({
   designSystems: {
     listDesignSystems: (root: string, options?: DesignSystemListOptions) => Promise<DesignSystemSummary[]>;
     readDesignSystem: (root: string, id: string, options?: Pick<DesignSystemListOptions, 'idPrefix' | 'workspaceId'>) => Promise<string | null | undefined>;
-    readDesignSystemPackageInfo: (root: string, id: string, options?: Pick<DesignSystemListOptions, 'idPrefix' | 'workspaceId'>) => Promise<unknown>;
+    readDesignSystemPackageInfo: (root: string, id: string, options?: Pick<DesignSystemListOptions, 'idPrefix' | 'workspaceId'>) => Promise<any>;
     readDesignSystemStaticFile: (root: string, id: string, filePath: string, options?: Pick<DesignSystemListOptions, 'idPrefix' | 'workspaceId'>) => Promise<DesignSystemStaticFile | null | undefined>;
     listUserDesignSystemFiles: (root: string, id: string) => Promise<Array<{ kind?: string; path: string }> | null | undefined>;
     readUserDesignSystemFile: (root: string, id: string, filePath: string) => Promise<{ path: string; content: string } | null | undefined>;
     readUserDesignSystemFileBytes: (root: string, id: string, filePath: string) => Promise<{ path: string; bytes: Buffer } | null | undefined>;
-    linkUserDesignSystemProject: (root: string, id: string, projectId: string) => Promise<unknown>;
+    linkUserDesignSystemProject: (root: string, id: string, projectId: string) => Promise<any>;
     // Physically copies real asset bytes (sourced from a workspace project's
     // editing mirror) into the canonical assets/ dir and un-fingerprints them
     // so the generator never overwrites them again (spec 04 §9.3).
@@ -206,7 +203,7 @@ export function createDesignSystemServerServices({
     insertProject: (db: Database.Database, project: ProjectInsert) => ProjectRecord | null | undefined;
     updateProject: (db: Database.Database, id: string, patch: ProjectPatch) => ProjectRecord | null | undefined;
     readProjectFile: (projectsDir: string, projectId: string, filePath: string, metadata?: JsonRecord) => Promise<{ buffer: Buffer }>;
-    writeProjectFile: (projectsDir: string, projectId: string, filePath: string, content: Buffer, options?: JsonRecord, metadata?: JsonRecord) => Promise<unknown>;
+    writeProjectFile: (projectsDir: string, projectId: string, filePath: string, content: Buffer, options?: JsonRecord, metadata?: JsonRecord) => Promise<any>;
     listFiles: (projectsDir: string, projectId: string, options?: { metadata?: JsonRecord }) => Promise<unknown[]>;
     resolveProjectDir: (projectsDir: string, projectId: string, metadata?: JsonRecord) => string;
     isSafeId: (id: string) => boolean;
@@ -261,7 +258,7 @@ export function createDesignSystemServerServices({
     const workspaceId = options.workspaceId?.trim();
     const userSkillsRoot = roots.SKILL_ROOTS[0];
     if (!workspaceId || !userSkillsRoot) return personalAndBuiltIn;
-    const workspaceRoot = teamResourceWorkspaceRoot(userSkillsRoot, workspaceId);
+    const workspaceRoot = ((..._v05_unused: any[]) => ({} as any))(userSkillsRoot, workspaceId);
     let directories: fs.Dirent[] = [];
     try {
       directories = await fs.promises.readdir(workspaceRoot, { withFileTypes: true });
@@ -279,7 +276,7 @@ export function createDesignSystemServerServices({
           const candidates = [entry.name, `user:${entry.name}`];
           let marker = null;
           for (const candidate of candidates) {
-            marker = await readTeamResourceMaterialization(
+            marker = await ((..._v05_unused: any[]) => ({} as any))(
               userSkillsRoot,
               workspaceId,
               candidate,
@@ -383,7 +380,7 @@ export function createDesignSystemServerServices({
     if (workspaceId) {
       try {
         const team = await designSystems.listDesignSystems(
-          teamResourceWorkspaceRoot(paths.USER_DESIGN_SYSTEMS_DIR, workspaceId),
+          ((..._v05_unused: any[]) => ({} as any))(paths.USER_DESIGN_SYSTEMS_DIR, workspaceId),
           {
             idPrefix: 'user:',
             source: 'user',
@@ -465,7 +462,7 @@ export function createDesignSystemServerServices({
     const workspaceId = options.workspaceId?.trim();
     if (workspaceId && typeof id === 'string' && id.startsWith('user:')) {
       const scoped = await designSystems.readDesignSystem(
-        teamResourceWorkspaceRoot(paths.USER_DESIGN_SYSTEMS_DIR, workspaceId),
+        ((..._v05_unused: any[]) => ({} as any))(paths.USER_DESIGN_SYSTEMS_DIR, workspaceId),
         id,
         { idPrefix: 'user:', workspaceId },
       );
@@ -491,7 +488,7 @@ export function createDesignSystemServerServices({
     const workspaceId = options.workspaceId?.trim();
     if (workspaceId && typeof id === 'string' && id.startsWith('user:')) {
       const scoped = await designSystems.readDesignSystemPackageInfo(
-        teamResourceWorkspaceRoot(paths.USER_DESIGN_SYSTEMS_DIR, workspaceId),
+        ((..._v05_unused: any[]) => ({} as any))(paths.USER_DESIGN_SYSTEMS_DIR, workspaceId),
         id,
         { idPrefix: 'user:', workspaceId },
       );
@@ -518,7 +515,7 @@ export function createDesignSystemServerServices({
     const workspaceId = options.workspaceId?.trim();
     if (workspaceId && typeof id === 'string' && id.startsWith('user:')) {
       const scoped = await designSystems.readDesignSystemStaticFile(
-        teamResourceWorkspaceRoot(paths.USER_DESIGN_SYSTEMS_DIR, workspaceId),
+        ((..._v05_unused: any[]) => ({} as any))(paths.USER_DESIGN_SYSTEMS_DIR, workspaceId),
         id,
         filePath,
         { idPrefix: 'user:', workspaceId },
@@ -547,7 +544,7 @@ export function createDesignSystemServerServices({
   }
 
   async function validateProjectDesignSystemId(
-    id: unknown,
+    id: any,
     options: {
       workspaceId?: string | null;
       workspaceMemberId?: string | null;
@@ -586,7 +583,7 @@ export function createDesignSystemServerServices({
   }
 
   async function validateProjectSkillId(
-    id: unknown,
+    id: any,
     options: { workspaceId?: string | null } = {},
   ) {
     // Same invariant as Design Systems and exact-source plugins: project
@@ -688,7 +685,7 @@ export function createDesignSystemServerServices({
     if (!summary) return null;
 
     const sourceRoot = summary.teamSynced === true
-      ? teamResourceWorkspaceRoot(paths.USER_DESIGN_SYSTEMS_DIR, workspaceId)
+      ? ((..._v05_unused: any[]) => ({} as any))(paths.USER_DESIGN_SYSTEMS_DIR, workspaceId)
       : paths.USER_DESIGN_SYSTEMS_DIR;
     let projectId = summary.teamSynced === true
       ? workspaceScopedDesignSystemProjectId(id, workspaceId)
@@ -774,7 +771,7 @@ export function createDesignSystemServerServices({
         try {
           const existingFile = await projects.readProjectFile(paths.PROJECTS_DIR, projectId, file.path, project.metadata);
           if (!isReplaceableDesignSystemWorkspaceFile(file.path, existingFile)) continue;
-        } catch (err: unknown) {
+        } catch (err: any) {
           if (!isNodeErrorCode(err, 'ENOENT')) throw err;
         }
       }
@@ -823,7 +820,7 @@ export function createDesignSystemServerServices({
           try {
             const stats = await fs.promises.stat(path.join(dir, ...replacementPath.split('/')));
             return stats.isFile();
-          } catch (err: unknown) {
+          } catch (err: any) {
             if (!isNodeErrorCode(err, 'ENOENT') && !isNodeErrorCode(err, 'ENOTDIR')) throw err;
             return false;
           }
@@ -887,7 +884,7 @@ export function createDesignSystemServerServices({
       project.metadata ? { metadata: project.metadata } : {},
     );
     const assetPaths = projectFiles
-      .map((file) => (file && typeof file === 'object' ? (file as { path?: unknown }).path : undefined))
+      .map((file) => (file && typeof file === 'object' ? (file as { path?: any }).path : undefined))
       .filter(
         (candidate): candidate is string =>
           typeof candidate === 'string' && (candidate === 'assets' || candidate.startsWith('assets/')),
@@ -956,7 +953,7 @@ export function createDesignSystemServerServices({
   };
 }
 
-function isNodeErrorCode(error: unknown, code: string): boolean {
+function isNodeErrorCode(error: any, code: string): boolean {
   return (
     error !== null &&
     typeof error === 'object' &&

@@ -102,8 +102,8 @@ export function resolveOdNextRequestUserPrompt({
   currentPrompt,
   hasCurrentPrompt,
 }: {
-  message: unknown;
-  currentPrompt: unknown;
+  message: any;
+  currentPrompt: any;
   hasCurrentPrompt: boolean;
 }): string {
   if (hasCurrentPrompt) {
@@ -946,7 +946,7 @@ export function resolveSafePromptImagePaths(
     let stat;
     try {
       stat = statSync(resolved);
-    } catch (err) {
+    } catch (err: any) {
       failedImages.push({
         path: inputPath,
         error: err instanceof Error ? err.message : String(err),

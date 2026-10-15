@@ -216,21 +216,21 @@ export async function synthesizeHandoffPrompt(
     let response: Response;
     try {
       response = await callAnthropicWithRetry(callParams);
-    } catch (err: unknown) {
+    } catch (err: any) {
       if (err instanceof FinalizeUpstreamError) throw err;
       const errName =
         err && typeof err === 'object' && 'name' in err
-          ? (err as { name?: unknown }).name
+          ? (err as { name?: any }).name
           : '';
       if (errName === 'AbortError') throw err;
       const message = err instanceof Error ? err.message : String(err);
       throw new FinalizeUpstreamError(502, '', `upstream network error: ${message}`);
     }
 
-    let payload: unknown;
+    let payload: any;
     try {
       payload = await response.json();
-    } catch (err: unknown) {
+    } catch (err: any) {
       // A timeout (or caller cancellation) that lands mid-body aborts the
       // shared signal, which rejects this read with an AbortError. Re-throw
       // it as-is — mirroring the call-phase catch above — so the route maps
@@ -238,7 +238,7 @@ export async function synthesizeHandoffPrompt(
       // misleading `502` "non-JSON body".
       const errName =
         err && typeof err === 'object' && 'name' in err
-          ? (err as { name?: unknown }).name
+          ? (err as { name?: any }).name
           : '';
       if (errName === 'AbortError') throw err;
       const message = err instanceof Error ? err.message : String(err);

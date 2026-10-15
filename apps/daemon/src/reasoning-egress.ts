@@ -11,7 +11,7 @@ export type ReasoningEgressRouteKind =
   | 'finalize';
 
 export interface ReasoningEgressRequest {
-  policy: unknown;
+  policy: any;
   routeKind: ReasoningEgressRouteKind;
   provider: string;
   resolvedBaseUrl?: string;
@@ -47,11 +47,11 @@ export interface ReasoningEgressPolicyDenial {
   };
 }
 
-function isReasoningPolicy(value: unknown): value is Partial<ReasoningExecutionPolicy> {
+function isReasoningPolicy(value: any): value is Partial<ReasoningExecutionPolicy> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
-function policyMode(policy: unknown): ReasoningExecutionMode | 'invalid' {
+function policyMode(policy: any): ReasoningExecutionMode | 'invalid' {
   if (policy === undefined) return 'enabled';
   if (!isReasoningPolicy(policy)) return 'invalid';
   return policy.mode === 'enabled' || policy.mode === 'disabled' || policy.mode === 'allowlist'
@@ -123,10 +123,10 @@ function routeIsDeniedByFlag(policy: Partial<ReasoningExecutionPolicy>, routeKin
 }
 
 function allowedBaseUrlSet(policy: Partial<ReasoningExecutionPolicy>): Set<string> {
-  const values: unknown[] = Array.isArray(policy.allowedBaseUrls) ? policy.allowedBaseUrls : [];
+  const values: any[] = Array.isArray(policy.allowedBaseUrls) ? policy.allowedBaseUrls : [];
   return new Set(
     values
-      .filter((value: unknown): value is string => typeof value === 'string')
+      .filter((value: any): value is string => typeof value === 'string')
       .map(normalizeReasoningBaseUrl)
       .filter((value: string | null): value is string => Boolean(value)),
   );
@@ -142,10 +142,10 @@ function normalizeReasoningModelId(provider: string, model: string): string {
 }
 
 function allowedModelSet(policy: Partial<ReasoningExecutionPolicy>, provider: string): Set<string> {
-  const values: unknown[] = Array.isArray(policy.allowedModels) ? policy.allowedModels : [];
+  const values: any[] = Array.isArray(policy.allowedModels) ? policy.allowedModels : [];
   return new Set(
     values
-      .filter((value: unknown): value is string => typeof value === 'string')
+      .filter((value: any): value is string => typeof value === 'string')
       .map((value: string) => normalizeReasoningModelId(provider, value))
       .filter(Boolean),
   );

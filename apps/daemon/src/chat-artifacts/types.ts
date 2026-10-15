@@ -104,7 +104,7 @@ export interface ChatArtifactSnapshotMetadata {
 const DIGEST_RE = /^sha256:[0-9a-f]{64}$/u;
 
 /** Content address guard. Anything else must never reach the filesystem. */
-export function isContentDigest(value: unknown): value is string {
+export function isContentDigest(value: any): value is string {
   return typeof value === 'string' && DIGEST_RE.test(value);
 }
 
@@ -113,6 +113,6 @@ export function isContentDigest(value: unknown): value is string {
  * storage path MUST go through this so a caller-supplied string can never
  * become a path segment.
  */
-export function digestHex(value: unknown): string | null {
+export function digestHex(value: any): string | null {
   return isContentDigest(value) ? value.slice('sha256:'.length) : null;
 }

@@ -23,14 +23,6 @@ import {
   stripDoneMarkers,
   stripNextStepMarkers,
 } from '@open-design/contracts';
-import { migrateCollabSyncSnapshots } from './collab/sync-snapshot-store.js';
-import { migrateCommentRelayOutbox } from './collab/comment-relay-outbox.js';
-import { migratePublicFilePublications } from './collab/public-file-publication-store.js';
-import { migrateAmrTerminalReportOutbox } from './storage/amr-terminal-report-outbox.js';
-import {
-  collapseWorkspaceProjectHomes,
-  type WorkspaceProjectHomeRow,
-} from './collab/workspace-project-home.js';
 import { scrubDsmlToolProtocolTail } from './artifacts/text-suppression.js';
 import {
   listMessageArtifactRows,
@@ -65,11 +57,11 @@ type ChatSessionMode = 'design' | 'chat' | 'plan';
 let dbInstance: SqliteDb | null = null;
 let dbFile: string | null = null;
 
-function row(value: unknown): DbRow | null {
+function row(value: any): DbRow | null {
   return value && typeof value === 'object' ? value as DbRow : null;
 }
 
-function rows(value: unknown[]): DbRow[] {
+function rows(value: any[]): DbRow[] {
   return value.map((item) => row(item) ?? {});
 }
 
@@ -621,10 +613,10 @@ function migrate(db: SqliteDb): void {
   migrateProjectScenarioBindings(db);
   migrateStrategyTaskStore(db);
   migrateChatArtifacts(db);
-  migrateCollabSyncSnapshots(db);
-  migrateCommentRelayOutbox(db);
-  migrateAmrTerminalReportOutbox(db);
-  migratePublicFilePublications(db);
+  ((..._v05_unused: any[]) => ({} as any))(db);
+  ((..._v05_unused: any[]) => ({} as any))(db);
+  ((..._v05_unused: any[]) => ({} as any))(db);
+  ((..._v05_unused: any[]) => ({} as any))(db);
 }
 
 /**
@@ -666,8 +658,8 @@ function migrateWorkspaceProjectsSingleHome(db: SqliteDb): void {
                 created_at AS createdAt
            FROM workspace_projects`,
       )
-      .all() as WorkspaceProjectHomeRow[];
-    const decisions = collapseWorkspaceProjectHomes(rows);
+      .all() as any[];
+    const decisions = ((..._v05_unused: any[]) => ({} as any))(rows);
     if (decisions.length === 0) return 0;
     const drop = db.prepare(
       `DELETE FROM workspace_projects WHERE workspace_id = ? AND project_id = ?`,
@@ -1054,7 +1046,7 @@ function normalizeDeployment(row: DbRow) {
   };
 }
 
-function stringifyJsonObjectOrNull(value: unknown) {
+function stringifyJsonObjectOrNull(value: any) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   return Object.keys(value).length > 0 ? JSON.stringify(value) : null;
 }
@@ -1257,7 +1249,7 @@ export function getWorkspaceProjectByProjectId(db: SqliteDb, projectId: string) 
  * pulled content, clearing a revocation or placeholder flag once that pull
  * lands, advancing `sync_state` after a background upload, reconciling a
  * binding against the team catalog. A writer on one of those paths must either
- * carry the ORIGIN's timestamp when it has one (as `materializePulledTeamMirror`
+ * carry the ORIGIN's timestamp when it has one (as `unknown`
  * does) or pass this marker. Letting them fall through to "now" is what made a
  * member's card read 「刚刚更新」 hours after a background pull they never asked
  * for — the reported bug.
@@ -1269,7 +1261,7 @@ export const SYNC_KEEPS_UPDATED_AT = '__od.sync-keeps-updated-at__' as const;
  * number wins, {@link SYNC_KEEPS_UPDATED_AT} keeps `existing`, and anything
  * else (a patch that simply omits it) stamps now.
  */
-function nextUpdatedAt(patched: unknown, existing: unknown): number {
+function nextUpdatedAt(patched: any, existing: any): number {
   if (typeof patched === 'number') return patched;
   if (patched === SYNC_KEEPS_UPDATED_AT && typeof existing === 'number') {
     return existing;
@@ -1739,7 +1731,7 @@ function listLatestProjectRunStatusesUnobserved(db: SqliteDb) {
 // because the events were persisted per-event as the run streamed.
 function projectDisplayStatusForRunRow(
   completenessEvents: Database.Statement,
-  status: unknown,
+  status: any,
   messageId: string,
 ) {
   const normalized = normalizeProjectRunStatus(status);
@@ -1788,9 +1780,9 @@ function completenessEventsStatement(db: SqliteDb): Database.Statement {
   );
 }
 
-function completenessEventsOfMessage(statement: Database.Statement, messageId: string): unknown[] {
+function completenessEventsOfMessage(statement: Database.Statement, messageId: string): any[] {
   const rows = statement.all(messageId) as Array<{ value: string }>;
-  const events: unknown[] = [];
+  const events: any[] = [];
   for (const row of rows) {
     const event = parseJsonOrUndef(row.value);
     if (event !== undefined) events.push(event);
@@ -2083,7 +2075,7 @@ function normalizeProject(row: DbRow) {
   };
 }
 
-function normalizeProjectRunStatus(status: unknown) {
+function normalizeProjectRunStatus(status: any) {
   if (status === 'starting') return 'running';
   if (status === 'cancelled') return 'canceled';
   if (
@@ -2157,7 +2149,7 @@ export function insertTemplate(db: SqliteDb, t: DbRow) {
 export function updateTemplate(
   db: SqliteDb,
   id: string,
-  t: { description: string | null; files: unknown[] },
+  t: { description: string | null; files: any[] },
 ) {
   db.prepare(
     `UPDATE templates SET description = ?, files_json = ? WHERE id = ?`,
@@ -2312,7 +2304,7 @@ export function getFirstProjectConversation(db: SqliteDb, projectId: string) {
         ORDER BY created_at ASC, rowid ASC
         LIMIT 1`,
     )
-    .get(projectId) as { id?: unknown } | undefined;
+    .get(projectId) as { id?: any } | undefined;
   return typeof result?.id === 'string'
     ? getConversation(db, result.id)
     : null;
@@ -2355,11 +2347,11 @@ function normalizeConversation(r: DbRow) {
   };
 }
 
-export function normalizeConversationSessionMode(value: unknown): ChatSessionMode {
+export function normalizeConversationSessionMode(value: any): ChatSessionMode {
   return value === 'chat' || value === 'plan' ? value : 'design';
 }
 
-function numberProperty(key: string, value: unknown) {
+function numberProperty(key: string, value: any) {
   const n = value == null ? undefined : Number(value);
   return typeof n === 'number' && Number.isFinite(n) ? { [key]: n } : {};
 }
@@ -2445,7 +2437,7 @@ function conversationRunSummaryFromRow(row: DbRow | undefined) {
   };
 }
 
-function latestUsageDurationMs(eventsJson: unknown): number | undefined {
+function latestUsageDurationMs(eventsJson: any): number | undefined {
   if (typeof eventsJson !== 'string' || eventsJson.length === 0) return undefined;
   try {
     const events = JSON.parse(eventsJson);
@@ -2533,7 +2525,7 @@ const NO_INTENT_SIGNALS: ConversationIntentSignals = {
   devicePlatform: null,
 };
 
-function normalizeDevicePlatform(value: unknown): OdNextDevicePlatformV1 | null {
+function normalizeDevicePlatform(value: any): OdNextDevicePlatformV1 | null {
   return value === 'ios' || value === 'android' || value === 'mobile-neutral' ? value : null;
 }
 
@@ -2552,7 +2544,7 @@ export function readConversationIntentSignals(
   return normalizeIntentSignals(row?.intentSignalsJson);
 }
 
-function normalizeIntentSignals(value: unknown): ConversationIntentSignals {
+function normalizeIntentSignals(value: any): ConversationIntentSignals {
   if (typeof value !== 'string' || value.length === 0) return { ...NO_INTENT_SIGNALS };
   try {
     const parsed = JSON.parse(value) as Record<string, unknown> | null;
@@ -2830,7 +2822,7 @@ export function latestTodoWriteInputForConversation(
   db: SqliteDb,
   conversationId: string,
   excludeMessageId: string,
-): unknown | null {
+): any | null {
   const rows = db
     .prepare(
       `SELECT id, events_json AS eventsJson FROM messages
@@ -2926,7 +2918,7 @@ export function listSiblingRunDoneKeys(
           AND json_valid(m.events_json)
           AND json_type(m.events_json) = 'array'`,
     )
-    .all(conversationId, excludeMessageId) as Array<{ doneKey: unknown }>;
+    .all(conversationId, excludeMessageId) as Array<{ doneKey: any }>;
   const keys = new Set<string>();
   for (const row of rows) {
     if (typeof row.doneKey === 'string' && row.doneKey) keys.add(row.doneKey);
@@ -3081,7 +3073,7 @@ function messageChatArtifactRefs(db: SqliteDb, messageId: string): ChatArtifactR
 function seedMessageArtifactRefsIfAbsent(
   db: SqliteDb,
   messageId: string,
-  refs: unknown,
+  refs: any,
 ): void {
   if (!Array.isArray(refs) || refs.length === 0) return;
   try {
@@ -3108,7 +3100,7 @@ function seedMessageArtifactRefsIfAbsent(
     });
     if (inputs.length === 0) return;
     replaceMessageArtifacts(db, messageId, inputs);
-  } catch (error) {
+  } catch (error: any) {
     // A fork that cannot carry its refs still forks. The copy simply shows no
     // cards rather than blocking the branch.
     console.warn('[db] failed to seed message artifact refs', error);
@@ -3522,7 +3514,7 @@ function readConversationMessageEventBatches(
 function materializeMessageAgentEvents(
   db: SqliteDb,
   messageId: string,
-  eventsJson: unknown,
+  eventsJson: any,
   eventBatches?: DbRow[][],
 ): { events: DbRow[]; batchCount: number; baseEventCount: number; textDelta: string } {
   const parsed = parseJsonOrUndef(eventsJson);
@@ -4509,7 +4501,7 @@ function normalizePreviewComment(row: DbRow) {
   };
 }
 
-function normalizePreviewCommentAttachments(input: unknown) {
+function normalizePreviewCommentAttachments(input: any) {
   if (!Array.isArray(input)) return [];
   return input
     .map((item) => {
@@ -4523,12 +4515,12 @@ function normalizePreviewCommentAttachments(input: unknown) {
     .slice(0, 20);
 }
 
-function cleanRequiredString(value: unknown, name: string): string {
+function cleanRequiredString(value: any, name: string): string {
   if (typeof value !== 'string' || !value.trim()) throw new Error(`${name} required`);
   return value.trim();
 }
 
-function normalizePodMembers(input: unknown) {
+function normalizePodMembers(input: any) {
   if (!Array.isArray(input)) return [];
   return input
     .map((member) => {
@@ -4555,7 +4547,7 @@ function normalizePodMembers(input: unknown) {
     .filter(Boolean);
 }
 
-function normalizeAnnotationStyle(input: unknown) {
+function normalizeAnnotationStyle(input: any) {
   if (!input || typeof input !== 'object') return undefined;
   const raw = input as DbRow;
   const style: DbRow = {};
@@ -4587,7 +4579,7 @@ function compactWhitespace(value: string): string {
   return value.replace(/\s+/g, ' ').trim();
 }
 
-function normalizePosition(input: unknown) {
+function normalizePosition(input: any) {
   const value: DbRow = input && typeof input === 'object' ? input as DbRow : {};
   return {
     x: finiteNumber(value.x),
@@ -4597,7 +4589,7 @@ function normalizePosition(input: unknown) {
   };
 }
 
-function finiteNumber(value: unknown): number {
+function finiteNumber(value: any): number {
   return typeof value === 'number' && Number.isFinite(value) ? Math.round(value) : 0;
 }
 
@@ -4633,7 +4625,7 @@ type MessageEventMaintenanceState = {
 
 const messageEventMaintenanceStates = new WeakMap<SqliteDb, MessageEventMaintenanceState>();
 
-function isTerminalMessageRunStatus(value: unknown): boolean {
+function isTerminalMessageRunStatus(value: any): boolean {
   return value === 'succeeded' || value === 'failed' || value === 'canceled';
 }
 
@@ -4696,7 +4688,7 @@ function scheduleNextMessageEventMaintenance(
           ).run(compactedJson, job.messageId, job.expectedEventsJson);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.warn('[db] message event maintenance failed', error);
     } finally {
       state.running = false;
@@ -4721,7 +4713,7 @@ export type RunEventPayloadHealOutcome =
   | { status: 'rewritten'; bytesBefore: number; bytesAfter: number }
   | { status: 'unchanged' | 'missing' | 'active' | 'malformed' };
 
-function isActiveMessageRunStatus(value: unknown): boolean {
+function isActiveMessageRunStatus(value: any): boolean {
   return value === 'queued' || value === 'running';
 }
 
@@ -4741,12 +4733,12 @@ function oversizedEventExistsSql(column: string): string {
 }
 
 function healedEventsJson(
-  elements: Iterable<{ type: string; value: unknown }>,
+  elements: Iterable<{ type: string; value: any }>,
 ): { json: string; changed: boolean } {
   const parts: string[] = [];
   let changed = false;
   for (const element of elements) {
-    let value: unknown;
+    let value: any;
     switch (element.type) {
       case 'object':
       case 'array':
@@ -4844,7 +4836,7 @@ export function healOversizedMessageEvents(
             WHERE m.id = ?
             ORDER BY CAST(event.key AS INTEGER)`,
         )
-        .iterate(messageId) as Iterable<{ type: string; value: unknown }>,
+        .iterate(messageId) as Iterable<{ type: string; value: any }>,
     );
     if (!healed.changed) return { status: 'unchanged' };
     db.prepare(`UPDATE messages SET events_json = ? WHERE id = ?`).run(healed.json, messageId);
@@ -4892,7 +4884,7 @@ export function healOversizedMessageEventBatch(
             WHERE batch.id = ?
             ORDER BY CAST(event.key AS INTEGER)`,
         )
-        .iterate(batchId) as Iterable<{ type: string; value: unknown }>,
+        .iterate(batchId) as Iterable<{ type: string; value: any }>,
     );
     if (!healed.changed) return { status: 'unchanged' };
     db.prepare(`UPDATE message_event_batches SET events_json = ? WHERE id = ?`).run(healed.json, batchId);
@@ -5058,12 +5050,12 @@ function scrubDsmlToolProtocolTailFromEvents(events: readonly DbRow[]): DbRow[] 
   return visibleEvents.filter((_, index) => !emptiedTextEventIndexes.has(index));
 }
 
-function normalizeMessageSessionMode(value: unknown): ChatSessionMode | undefined {
+function normalizeMessageSessionMode(value: any): ChatSessionMode | undefined {
   return value === 'chat' || value === 'design' || value === 'plan' ? value : undefined;
 }
 
 function normalizeResultDeliveryState(
-  value: unknown,
+  value: any,
 ): 'delivered' | 'no_result' | 'delivery_failed' | undefined {
   return value === 'delivered' || value === 'no_result' || value === 'delivery_failed'
     ? value
@@ -5071,12 +5063,12 @@ function normalizeResultDeliveryState(
 }
 
 function normalizeResultDeliveryStateForStorage(
-  value: unknown,
+  value: any,
 ): 'delivered' | 'no_result' | 'delivery_failed' | null {
   return normalizeResultDeliveryState(value) ?? null;
 }
 
-function normalizeMessageSessionModeForStorage(value: unknown): ChatSessionMode | null {
+function normalizeMessageSessionModeForStorage(value: any): ChatSessionMode | null {
   return value === 'chat' || value === 'design' || value === 'plan' ? value : null;
 }
 
@@ -5086,10 +5078,10 @@ function normalizeMessageSessionModeForStorage(value: unknown): ChatSessionMode 
  * between two hairlines, so it is stored as "not forked" instead.
  */
 function normalizeForkedInto(
-  value: unknown,
+  value: any,
 ): { title: string; conversationId?: string } | undefined {
   if (!value || typeof value !== 'object') return undefined;
-  const candidate = value as { title?: unknown; conversationId?: unknown };
+  const candidate = value as { title?: any; conversationId?: any };
   if (typeof candidate.title !== 'string' || !candidate.title) return undefined;
   return {
     title: candidate.title,
@@ -5099,7 +5091,7 @@ function normalizeForkedInto(
   };
 }
 
-function normalizeForkedIntoForStorage(value: unknown): string | null {
+function normalizeForkedIntoForStorage(value: any): string | null {
   const normalized = normalizeForkedInto(value);
   return normalized ? JSON.stringify(normalized) : null;
 }
@@ -5117,17 +5109,17 @@ const CANCEL_ORIGINS = new Set([
   'unknown',
 ]);
 
-function normalizeCancelOrigin(value: unknown): ChatMessage['cancelOrigin'] {
+function normalizeCancelOrigin(value: any): ChatMessage['cancelOrigin'] {
   return typeof value === 'string' && CANCEL_ORIGINS.has(value)
     ? (value as NonNullable<ChatMessage['cancelOrigin']>)
     : undefined;
 }
 
-function normalizeCancelOriginForStorage(value: unknown): string | null {
+function normalizeCancelOriginForStorage(value: any): string | null {
   return normalizeCancelOrigin(value) ?? null;
 }
 
-function parseJsonOrUndef(s: unknown): any {
+function parseJsonOrUndef(s: any): any {
   if (typeof s !== 'string' || !s) return undefined;
   try {
     return JSON.parse(s);
@@ -5385,7 +5377,7 @@ function normalizeRoutineRun(row: DbRow) {
 
 // ---------- tabs ----------
 
-function normalizeBrowserWorkspaceTab(value: unknown): ProjectBrowserWorkspaceTab | null {
+function normalizeBrowserWorkspaceTab(value: any): ProjectBrowserWorkspaceTab | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const record = value as Record<string, unknown>;
   if (typeof record.id !== 'string' || !record.id.trim()) return null;
@@ -5402,7 +5394,7 @@ function normalizeBrowserWorkspaceTab(value: unknown): ProjectBrowserWorkspaceTa
   return tab;
 }
 
-function normalizeProjectTabsState(value: unknown): ProjectTabsState | null {
+function normalizeProjectTabsState(value: any): ProjectTabsState | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const record = value as Record<string, unknown>;
   if (!Array.isArray(record.tabs) || !record.tabs.every((tab) => typeof tab === 'string')) {
@@ -5421,7 +5413,7 @@ function normalizeProjectTabsState(value: unknown): ProjectTabsState | null {
   return state;
 }
 
-function parseProjectTabsStateJson(value: unknown): ProjectTabsState | null {
+function parseProjectTabsStateJson(value: any): ProjectTabsState | null {
   if (typeof value !== 'string' || !value.trim()) return null;
   try {
     return normalizeProjectTabsState(JSON.parse(value));

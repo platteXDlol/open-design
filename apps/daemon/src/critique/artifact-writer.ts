@@ -115,7 +115,7 @@ export async function writeShipArtifact(
   await fs.writeFile(tmpPath, body, { encoding: 'utf8' });
   try {
     await fs.rename(tmpPath, absPath);
-  } catch (err) {
+  } catch (err: any) {
     // Best-effort cleanup of the tmp file; never let cleanup mask the
     // original rename error.
     await fs.unlink(tmpPath).catch(() => {});

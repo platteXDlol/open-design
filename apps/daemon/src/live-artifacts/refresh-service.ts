@@ -50,7 +50,7 @@ function durationMs(startedAt: Date, finishedAt: Date): number {
   return Math.max(0, finishedAt.getTime() - startedAt.getTime());
 }
 
-function toRefreshErrorRecord(error: unknown): LiveArtifactRefreshErrorRecord {
+function toRefreshErrorRecord(error: any): LiveArtifactRefreshErrorRecord {
   if (error instanceof Error) {
     return error.name === 'Error'
       ? { message: error.message }
@@ -116,7 +116,7 @@ export async function refreshLiveArtifact(options: RefreshLiveArtifactOptions): 
       startedAt: Date;
       finishedAt?: Date;
       source?: LiveArtifactRefreshSourceMetadata;
-      error?: unknown;
+      error?: any;
       metadata?: BoundedJsonObject;
     }): Promise<void> => {
       await appendLiveArtifactRefreshLogEntry({
@@ -192,7 +192,7 @@ export async function refreshLiveArtifact(options: RefreshLiveArtifactOptions): 
               const documentFinishedAt = nowDate();
               await appendLog({ step, status: 'succeeded', startedAt: documentStartedAt, finishedAt: documentFinishedAt, source: sourceMetadata });
               documentOutput = { output };
-            } catch (error) {
+            } catch (error: any) {
               const documentFinishedAt = nowDate();
               await appendLog({ step, status: 'failed', startedAt: documentStartedAt, finishedAt: documentFinishedAt, source: sourceMetadata, error });
               throw error;
@@ -232,7 +232,7 @@ export async function refreshLiveArtifact(options: RefreshLiveArtifactOptions): 
         artifact: committed.artifact,
         refresh: { id: refreshId, status: 'succeeded', refreshedSourceCount },
       };
-    } catch (error) {
+    } catch (error: any) {
       const refreshFinishedAt = nowDate();
       await appendLog({ step: 'refresh:failed', status: 'failed', startedAt: refreshStartedAt, finishedAt: refreshFinishedAt, error }).catch(() => {});
       await markLiveArtifactRefreshFailed({

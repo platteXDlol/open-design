@@ -453,7 +453,7 @@ class StandaloneBundler {
     let root;
     try {
       root = postcss.parse(css, { from: ownerPath });
-    } catch (error) {
+    } catch (error: any) {
       throw new StandaloneHtmlExportError(
         `Could not parse CSS in ${ownerPath}: ${error instanceof Error ? error.message : String(error)}`,
         'invalid-source',
@@ -551,7 +551,7 @@ class StandaloneBundler {
         sourceType: mode === 'classic' ? 'unambiguous' : 'module',
         plugins: ['dynamicImport', 'importAttributes', 'importMeta', 'topLevelAwait'],
       });
-    } catch (runtimeError) {
+    } catch (runtimeError: any) {
       try {
         parse(source, {
           sourceType: mode === 'classic' ? 'unambiguous' : 'module',
@@ -856,7 +856,7 @@ class StandaloneBundler {
       let buffer: Buffer;
       try {
         buffer = handle.buffer ?? await handle.read?.() ?? Buffer.alloc(0);
-      } catch (error) {
+      } catch (error: any) {
         throw new StandaloneHtmlExportError(
           `Could not read local dependency ${projectPath}: ${error instanceof Error ? error.message : String(error)}`,
           'missing-local-dependency',
@@ -1349,7 +1349,7 @@ function injectIntoHead(html: string, tag: string): string {
   return `${tag}${html}`;
 }
 
-function safeJsonForHtml(value: unknown): string {
+function safeJsonForHtml(value: any): string {
   return JSON.stringify(value).replace(/</gu, '\\u003c').replace(/<\/script/giu, '<\\/script');
 }
 

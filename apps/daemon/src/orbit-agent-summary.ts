@@ -4,11 +4,11 @@ const NO_LIVE_ARTIFACT_SUMMARY =
 const MAX_FINAL_EXPLANATION_CHARS = 2_000;
 
 interface RunEventRecord {
-  event?: unknown;
-  data?: unknown;
+  event?: any;
+  data?: any;
 }
 
-function asObject(value: unknown): Record<string, unknown> | null {
+function asObject(value: any): Record<string, unknown> | null {
   if (!value || typeof value !== 'object') return null;
   return value as Record<string, unknown>;
 }

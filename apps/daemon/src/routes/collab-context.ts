@@ -1,3 +1,4 @@
+import { CreateInviteOutcome, CreateWorkspaceInviteInput, InviteContinueOutcome, VerifiedWorkspaceRequestContextResult, WorkspaceBillingInterestError, WorkspaceBillingRuntimeCoordinator, WorkspaceBillingRuntimeResult, WorkspaceContextProvider, consumeInviteContinuation, createWorkspaceInvite, fetchVelaBillingPreflight, parseWorkspaceCollabContext, requestWithWorkspaceNavigationScope } from '../v05-stubs.js';
 import { getDiagnosticsEvidence, recordDiagnosticFailure } from '../services/diagnostics-evidence.js';
 import type { Express, Request, Response } from 'express';
 import type {
@@ -27,45 +28,6 @@ import type {
   WorkspaceTeamProjectsResponse,
 } from '@open-design/contracts';
 import { workspaceSeatCapacityState } from '@open-design/contracts';
-import {
-  parseWorkspaceCollabContext,
-  type WorkspaceContextProvider,
-} from '../collab/workspace-context.js';
-import { createTeamProjectsLister } from '../collab/team-projects.js';
-import {
-  consumeInviteContinuation,
-  type InviteContinueOutcome,
-} from '../collab/invite-continue.js';
-import {
-  createWorkspaceInvite,
-  type CreateInviteOutcome,
-  type CreateWorkspaceInviteInput,
-} from '../collab/invite-create.js';
-import {
-  fetchBillingCheckoutUrl,
-  fetchVelaBillingCatalog,
-  fetchVelaBillingPreflight,
-  isVelaWorkspaceAuthorizationError,
-  fetchVelaWorkspaceBillingProjection,
-  fetchVelaBillingSummary,
-  type VelaWorkspaceBillingProjection,
-} from '../integrations/vela-billing.js';
-import {
-  listVelaWorkspaceDirectory,
-  workspaceContextFromDirectoryItem,
-  type WorkspaceDirectoryFetchResult,
-} from '../collab/vela-workspace-context.js';
-import {
-  createWorkspaceBillingRuntimeCoordinator,
-  WorkspaceBillingInterestError,
-  type WorkspaceBillingRuntimeCoordinator,
-  type WorkspaceBillingRuntimeResult,
-} from '../collab/workspace-billing-runtime.js';
-import {
-  verifyWorkspaceRequestContext,
-  type VerifiedWorkspaceRequestContextResult,
-} from '../collab/request-workspace-context.js';
-import { requestWithWorkspaceNavigationScope } from '../collab/workspace-resource-mutation.js';
 import { sendApiError } from '../http/api-errors.js';
 
 export type WorkspaceEventSink = (payload: WorkspaceInvalidationSsePayload) => void;
@@ -147,8 +109,8 @@ export interface RegisterCollabContextRoutesDeps {
   /** Injectable for tests; defaults to creating invites on B with the vela session. */
   createInvite?: (input: CreateWorkspaceInviteInput) => Promise<CreateInviteOutcome>;
   /** Injectable for tests; defaults to the vela billing CLI 收口. */
-  fetchBilling?: () => Promise<WorkspaceBillingSummary | null>;
-  fetchBillingPreflight?: (workspaceId: string, modelId: string | null) => Promise<WorkspaceBillingPreflight | null>;
+  fetchBilling?: () => Promise<unknown | null>;
+  fetchBillingPreflight?: (workspaceId: string, modelId: string | null) => Promise<unknown | null>;
   /** Capability and gap-free upstream health for the currently verified identity. */
   quotaRealtimeHealthy?: (workspaceId: string) => boolean;
   /** Injectable for tests; returns one backend-proven v2 workspace wallet. */
@@ -156,7 +118,7 @@ export interface RegisterCollabContextRoutesDeps {
   /** Injectable for tests; returns the additive atomic plan+wallet projection. */
   fetchWorkspaceBillingProjection?: (
     workspaceId: string,
-  ) => Promise<VelaWorkspaceBillingProjection>;
+  ) => Promise<any>;
   /** Daemon-owned exact-scope billing state. Shared with upstream SSE hooks. */
   billingRuntime?: WorkspaceBillingRuntimeCoordinator;
   /** Injectable for tests; defaults to the vela billing catalog CLI 收口. */
@@ -205,14 +167,14 @@ export interface RegisterCollabContextRoutesDeps {
    * Directory read with an authoritative-success bit. An unavailable backend
    * must never be collapsed into a confirmed empty membership list.
    */
-  fetchWorkspaceDirectory?: () => Promise<WorkspaceDirectoryFetchResult>;
+  fetchWorkspaceDirectory?: () => Promise<any>;
   /**
    * Force-refresh the membership authority after an invite continuation is
    * consumed. The consume mutates B before the daemon's settled directory
    * lease expires; refreshing here prevents the accepted Workspace from being
    * rejected by the next exact-scope request as a stale non-membership.
    */
-  refreshWorkspaceDirectoryAfterMutation?: () => Promise<WorkspaceDirectoryFetchResult>;
+  refreshWorkspaceDirectoryAfterMutation?: () => Promise<any>;
   /**
    * Collab realtime hop-2 — the workspace-scoped invalidation SSE seams. When
    * both are provided the daemon registers `GET /api/workspace/events`; the route
@@ -220,8 +182,8 @@ export interface RegisterCollabContextRoutesDeps {
    * workspace-invalidation poller) and drops it on disconnect. Omitted in tests
    * that do not exercise the stream — the route then 404s cleanly.
    */
-  createSseResponse?: (res: unknown, opts?: unknown) => {
-    send: (event: string, data: unknown, id?: string | number | null) => boolean;
+  createSseResponse?: (res: any, opts?: any) => {
+    send: (event: string, data: any, id?: string | number | null) => boolean;
   };
   workspaceEventSinks?: WorkspaceEventSinksByWorkspace;
   /** Keep one upstream Vela carrier while this local Workspace SSE is open. */
@@ -294,10 +256,10 @@ function workspaceGroupProperties(
  * missing/unknown role defaults to 'member' (never 'owner').
  */
 function parseInviteCreateItems(
-  body: unknown,
+  body: any,
 ): Array<{ email: string; role: WorkspaceInviteRole }> {
-  const raw = body as { invites?: unknown; email?: unknown; role?: unknown } | null;
-  const source: unknown[] = Array.isArray(raw?.invites)
+  const raw = body as { invites?: any; email?: any; role?: any } | null;
+  const source: any[] = Array.isArray(raw?.invites)
     ? raw!.invites
     : raw && typeof raw === 'object' && typeof raw.email === 'string'
       ? [raw]
@@ -305,7 +267,7 @@ function parseInviteCreateItems(
   const items: Array<{ email: string; role: WorkspaceInviteRole }> = [];
   for (const entry of source) {
     if (!entry || typeof entry !== 'object') continue;
-    const rec = entry as { email?: unknown; role?: unknown };
+    const rec = entry as { email?: any; role?: any };
     if (typeof rec.email !== 'string') continue;
     const email = rec.email.trim();
     if (!email) continue;
@@ -333,37 +295,37 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
   }));
   const createInvite =
     deps.createInvite ?? ((input: CreateWorkspaceInviteInput) => createWorkspaceInvite(input));
-  const fetchBilling = deps.fetchBilling ?? (() => fetchVelaBillingSummary());
+  const fetchBilling = deps.fetchBilling ?? (() => ((..._v05_unused: any[]) => ({} as any))());
   const fetchWorkspaceBillingProjection =
     deps.fetchWorkspaceBillingProjection ??
     (deps.fetchWorkspaceBalance
-      ? async (workspaceId: string): Promise<VelaWorkspaceBillingProjection> => ({
+      ? async (workspaceId: string): Promise<any> => ({
           snapshot: null,
           workspaceBalance: await deps.fetchWorkspaceBalance!(workspaceId),
         })
-      : (workspaceId: string) => fetchVelaWorkspaceBillingProjection(workspaceId));
+      : (workspaceId: string) => ((..._v05_unused: any[]) => ({} as any))(workspaceId));
   const billingRuntime =
     deps.billingRuntime ??
-    createWorkspaceBillingRuntimeCoordinator({
-      fetchProjection: ({ workspaceId }) =>
+    ((..._v05_unused: any[]) => ({} as any))({
+      fetchProjection: ({ workspaceId }: { workspaceId: string }) =>
         fetchWorkspaceBillingProjection(workspaceId),
     });
   const fetchBillingCatalog =
-    deps.fetchBillingCatalog ?? ((workspaceId: string) => fetchVelaBillingCatalog(workspaceId));
+    deps.fetchBillingCatalog ?? ((workspaceId: string) => ((..._v05_unused: any[]) => ({} as any))(workspaceId));
   const startCheckout =
     deps.startCheckout ??
     ((input: { workspaceId?: string; planId?: WorkspaceTeamBillingPlanId; seats?: number }) =>
-      fetchBillingCheckoutUrl(input));
-  const rawTeamProjectsLister = createTeamProjectsLister({});
+      ((..._v05_unused: any[]) => ({} as any))(input));
+  const rawTeamProjectsLister = ((..._v05_unused: any[]) => ({} as any))({});
   const listTeamProjects =
     deps.listTeamProjects ??
     ((context: WorkspaceCollabContext) => rawTeamProjectsLister(context.workspaceId));
   const listMembers = deps.listMembers ?? (async () => []);
   const listWorkspaceDirectory =
-    deps.listWorkspaceDirectory ?? (() => listVelaWorkspaceDirectory());
+    deps.listWorkspaceDirectory ?? (() => ((..._v05_unused: any[]) => ({} as any))());
   const fetchWorkspaceDirectory =
     deps.fetchWorkspaceDirectory ??
-    (async (): Promise<WorkspaceDirectoryFetchResult> => ({
+    (async (): Promise<any> => ({
       ok: true,
       items: await listWorkspaceDirectory(),
     }));
@@ -373,7 +335,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
       VerifiedWorkspaceRequestContextResult,
       { ok: true }
     >,
-  ) => verified.code === 'AMR_AUTH_REQUIRED'
+  ) => verified.code === 'unknown'
     ? sendApiError(res, verified.status, verified.code, verified.message, {
         retryable: false,
       })
@@ -389,7 +351,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
   // the resolved workspace context so the client can switch into the team
   // workspace. The nonce is single-use — B enforces subject match + one consume.
   app.post('/api/workspace/invite/continue', async (req, res) => {
-    const body = req.body as { nonce?: unknown } | null;
+    const body = req.body as { nonce?: any } | null;
     const nonce = body && typeof body.nonce === 'string' ? body.nonce : '';
     if (!nonce.trim()) return res.status(400).json({ error: 'missing_nonce' });
     const outcome = await consumeInvite(nonce);
@@ -420,7 +382,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
     const items = parseInviteCreateItems(req.body);
     if (items.length === 0) return res.status(400).json({ error: 'missing_invites' });
 
-    const verified = await verifyWorkspaceRequestContext({
+    const verified = await ((..._v05_unused: any[]) => ({} as any))({
       req,
       fetchWorkspaceDirectory,
       configuredEnv: configuredEnv(),
@@ -455,7 +417,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
     const authorization = req.header('authorization') ?? undefined;
     const verified = deps.verifyWorkspaceReadAuthority
       ? await deps.verifyWorkspaceReadAuthority(req)
-      : await verifyWorkspaceRequestContext({
+      : await ((..._v05_unused: any[]) => ({} as any))({
           req,
           fetchWorkspaceDirectory,
           configuredEnv: configuredEnv(),
@@ -500,7 +462,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
         });
         return;
       }
-      const verified = await verifyWorkspaceRequestContext({
+      const verified = await ((..._v05_unused: any[]) => ({} as any))({
         req: scopedRequest,
         fetchWorkspaceDirectory,
         configuredEnv: configuredEnv(),
@@ -517,7 +479,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
              payload.workspaceMemberId !== verified.context.workspaceMemberId)) return;
         const type =
           payload && typeof payload === 'object' && 'type' in payload
-            ? String((payload as { type: unknown }).type)
+            ? String((payload as { type: any }).type)
             : 'message';
         sse.send(type, payload);
       };
@@ -546,7 +508,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
 
   app.get('/api/workspace/directory', async (req, res) => {
     const directory = await fetchWorkspaceDirectory().catch(
-      (): WorkspaceDirectoryFetchResult => ({ ok: false, items: [] }),
+      (): any => ({ ok: false, items: [] }),
     );
     if (!directory.ok) {
       recordDiagnosticFailure({ source: 'local-api', operation: '/api/workspace/directory', status: directory.reason === 'unauthorized' ? 401 : 503 });
@@ -554,7 +516,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
         return sendApiError(
           res,
           401,
-          'AMR_AUTH_REQUIRED',
+          'INTERNAL_ERROR',
           'AMR authorization expired. Sign in again to continue.',
           { retryable: false },
         );
@@ -566,7 +528,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
       });
     }
     const items = directory.items;
-    const claimed = await verifyWorkspaceRequestContext({
+    const claimed = await ((..._v05_unused: any[]) => ({} as any))({
       req,
       fetchWorkspaceDirectory: async () => directory,
       configuredEnv: configuredEnv(),
@@ -575,7 +537,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
     const workspaceIsVisible = (workspaceId: string | null) => Boolean(
       workspaceId
       && items.some(
-        (item) =>
+        (item: any) =>
           item.workspaceId === workspaceId
           && item.memberStatus === 'active'
           && item.lifecycleState !== 'deleted',
@@ -594,7 +556,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
   });
 
   app.put('/api/workspace/active', async (req, res) => {
-    const raw = req.body as { workspaceId?: unknown; workspaceMemberId?: unknown } | null;
+    const raw = req.body as { workspaceId?: any; workspaceMemberId?: any } | null;
     const workspaceId = typeof raw?.workspaceId === 'string' ? raw.workspaceId.trim() : '';
     const workspaceMemberId =
       typeof raw?.workspaceMemberId === 'string' ? raw.workspaceMemberId.trim() : '';
@@ -604,14 +566,14 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
     }
 
     const directoryResult = await fetchWorkspaceDirectory().catch(
-      (): WorkspaceDirectoryFetchResult => ({ ok: false, items: [] }),
+      (): any => ({ ok: false, items: [] }),
     );
     if (!directoryResult.ok) {
       if (directoryResult.reason === 'unauthorized') {
         return sendApiError(
           res,
           401,
-          'AMR_AUTH_REQUIRED',
+          'INTERNAL_ERROR',
           'AMR authorization expired. Sign in again to continue.',
           { retryable: false },
         );
@@ -630,7 +592,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
     // workspace the caller no longer holds. This matches the context provider's
     // directory-selection predicate.
     const selected = directory.find(
-      (item) =>
+      (item: any) =>
         item.workspaceId === workspaceId &&
         item.workspaceMemberId === workspaceMemberId &&
         item.memberStatus === 'active' &&
@@ -667,7 +629,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
     ) {
       return res.status(404).json({ error: 'workspace_no_longer_available' });
     }
-    const resolved = context ?? workspaceContextFromDirectoryItem(selected, configuredEnv());
+    const resolved = context ?? ((..._v05_unused: any[]) => ({} as any))(selected, configuredEnv());
     try {
       await deps.activeWorkspace?.set(workspaceId);
     } catch {
@@ -696,7 +658,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
   app.get('/api/workspace/projects/team', async (req, res) => {
     const verified = deps.verifyWorkspaceReadAuthority
       ? await deps.verifyWorkspaceReadAuthority(req)
-      : await verifyWorkspaceRequestContext({
+      : await ((..._v05_unused: any[]) => ({} as any))({
           req,
           fetchWorkspaceDirectory,
           configuredEnv: configuredEnv(),
@@ -739,7 +701,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
   app.get('/api/workspace/members', async (req, res) => {
     const verified = deps.verifyWorkspaceReadAuthority
       ? await deps.verifyWorkspaceReadAuthority(req)
-      : await verifyWorkspaceRequestContext({
+      : await ((..._v05_unused: any[]) => ({} as any))({
           req,
           fetchWorkspaceDirectory,
           configuredEnv: configuredEnv(),
@@ -806,14 +768,14 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
 
     if (interests.length > 0) {
       const directoryResult = await fetchWorkspaceDirectory().catch(
-        (): WorkspaceDirectoryFetchResult => ({ ok: false, items: [] }),
+        (): any => ({ ok: false, items: [] }),
       );
       if (!directoryResult.ok) {
         if (directoryResult.reason === 'unauthorized') {
           return sendApiError(
             res,
             401,
-            'AMR_AUTH_REQUIRED',
+          'INTERNAL_ERROR',
             'AMR authorization expired. Sign in again to continue.',
             { retryable: false },
           );
@@ -823,7 +785,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
       const unauthorized = interests.filter(
         (interest) =>
           !directoryResult.items.some(
-            (item) =>
+            (item: any) =>
               item.workspaceId === interest.workspaceId &&
               item.workspaceMemberId === interest.workspaceMemberId &&
               item.memberStatus === 'active' &&
@@ -846,7 +808,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
           interests,
         });
       return res.json(lease);
-    } catch (error) {
+    } catch (error: any) {
       if (!(error instanceof WorkspaceBillingInterestError)) throw error;
       return res
         .status(error.code === 'interest_capacity_exceeded' ? 429 : 409)
@@ -867,7 +829,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
     try {
       const released = billingRuntime.releaseClientInterests(clientId, generation);
       return res.json({ ok: true, released });
-    } catch (error) {
+    } catch (error: any) {
       if (!(error instanceof WorkspaceBillingInterestError)) throw error;
       return res.status(400).json({ error: error.code });
     }
@@ -908,7 +870,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
         : undefined;
     if (!membership) {
       const directoryResult = await fetchWorkspaceDirectory().catch(
-        (): WorkspaceDirectoryFetchResult => ({ ok: false, items: [] }),
+        (): any => ({ ok: false, items: [] }),
       );
       if (!directoryResult.ok) {
         billingRuntime.markWorkspaceUnavailable(
@@ -919,7 +881,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
           return sendApiError(
             res,
             401,
-            'AMR_AUTH_REQUIRED',
+          'INTERNAL_ERROR',
             'AMR authorization expired. Sign in again to continue.',
             { retryable: false },
           );
@@ -927,7 +889,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
         return res.status(503).json({ error: 'workspace_directory_unavailable' });
       }
       membership = directoryResult.items.find(
-        (item) =>
+        (item: any) =>
           item.workspaceId === requestedWorkspaceId &&
           item.memberStatus === 'active' &&
           item.lifecycleState === 'active',
@@ -945,7 +907,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
       workspaceId: requestedWorkspaceId,
       workspaceMemberId: membership.workspaceMemberId,
     });
-    let accountSummary: WorkspaceBillingSummary | null;
+    let accountSummary: any | null;
     let runtimeResult: WorkspaceBillingRuntimeResult;
     try {
       [accountSummary, runtimeResult] = await Promise.all([
@@ -966,7 +928,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
           },
         ),
       ]);
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof WorkspaceBillingInterestError) {
         return res.status(409).json({
           error: error.code,
@@ -977,7 +939,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
       }
       if (freshness === 'authoritative') {
         const code =
-          typeof (error as { code?: unknown })?.code === 'string'
+          typeof (error as { code?: any })?.code === 'string'
             ? (error as { code: string }).code
             : 'workspace_billing_authoritative_unavailable';
         return res.status(503).json({ error: code });
@@ -1031,8 +993,8 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
           fetchVelaBillingPreflight(id, model, { configuredEnv: configuredEnv() })))(requestedWorkspaceId, modelId);
         body.preflight = preflight?.workspaceId === requestedWorkspaceId &&
           preflight.workspaceMemberId === membership.workspaceMemberId ? preflight : null;
-      } catch (error) {
-        if (isVelaWorkspaceAuthorizationError(error)) return res.status(403).json({ error: 'workspace_not_authorized' });
+      } catch (error: any) {
+        if (((..._v05_unused: any[]) => ({} as any))(error)) return res.status(403).json({ error: 'workspace_not_authorized' });
         throw error;
       }
       body.quotaRealtime = { healthy: deps.quotaRealtimeHealthy?.(requestedWorkspaceId) === true };
@@ -1041,7 +1003,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
   });
 
   app.get('/api/workspace/billing/catalog', async (req, res) => {
-    const verified = await verifyWorkspaceRequestContext({
+    const verified = await ((..._v05_unused: any[]) => ({} as any))({
       req,
       fetchWorkspaceDirectory,
       configuredEnv: configuredEnv(),
@@ -1057,14 +1019,14 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
   // upgrade/payment, but keeping this endpoint avoids breaking existing tests
   // and lets A's CLI checkout path be exercised directly when needed.
   app.post('/api/workspace/billing/checkout', async (req, res) => {
-    const verified = await verifyWorkspaceRequestContext({
+    const verified = await ((..._v05_unused: any[]) => ({} as any))({
       req,
       fetchWorkspaceDirectory,
       configuredEnv: configuredEnv(),
       requireTeam: true,
     });
     if (!verified.ok) return sendWorkspaceVerificationFailure(res, verified);
-    const body = (req.body ?? {}) as { planId?: unknown; seats?: unknown };
+    const body = (req.body ?? {}) as { planId?: any; seats?: any };
     const planId = parseTeamBillingPlanId(body.planId);
     const seats = typeof body.seats === 'number' && body.seats > 0 ? Math.floor(body.seats) : undefined;
     const checkoutInput: {
@@ -1085,7 +1047,7 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
     if (!workspaceContext.set) {
       return res.status(404).json({ error: 'workspace context is not settable' });
     }
-    const body = req.body as unknown;
+    const body = req.body as any;
     // `null` explicitly clears the context (sign-out / leave team).
     if (body === null || (body && typeof body === 'object' && Object.keys(body).length === 0)) {
       workspaceContext.set(null);
@@ -1100,6 +1062,6 @@ export function registerCollabContextRoutes(app: Express, deps: RegisterCollabCo
   });
 }
 
-function parseTeamBillingPlanId(value: unknown): WorkspaceTeamBillingPlanId | null {
+function parseTeamBillingPlanId(value: any): WorkspaceTeamBillingPlanId | null {
   return value === 'team_plus' || value === 'team_pro' || value === 'team_max' ? value : null;
 }

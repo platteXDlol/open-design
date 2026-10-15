@@ -49,12 +49,12 @@ export const NO_RENDERER_CAPTURE_NOTE =
 export interface StoredChatScrollForensics {
   receivedAtIso: string;
   /** Opaque here on purpose — the renderer owns the shape. */
-  payload: unknown;
+  payload: any;
 }
 
 let stored: StoredChatScrollForensics | null = null;
 
-export function storeChatScrollForensics(payload: unknown): StoredChatScrollForensics {
+export function storeChatScrollForensics(payload: any): StoredChatScrollForensics {
   const record: StoredChatScrollForensics = {
     receivedAtIso: new Date().toISOString(),
     payload,
@@ -75,7 +75,7 @@ export interface ChatScrollForensicsSummary {
   captured: boolean;
   receivedAtIso: string | null;
   note: string;
-  evidence: unknown;
+  evidence: any;
 }
 
 /**

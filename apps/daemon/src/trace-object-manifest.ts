@@ -366,7 +366,7 @@ async function authorizeObjects(
     if (!response.ok) return null;
     const parsed = await response.json().catch(() => null);
     if (!parsed || typeof parsed !== 'object') return null;
-    const token = (parsed as { upload_token?: unknown }).upload_token;
+    const token = (parsed as { upload_token?: any }).upload_token;
     return typeof token === 'string' && token.length > 0 ? token : null;
   } catch {
     return null;
@@ -406,7 +406,7 @@ async function postObjects(
     if (
       !parsed ||
       typeof parsed !== 'object' ||
-      !Array.isArray((parsed as { objects?: unknown }).objects)
+      !Array.isArray((parsed as { objects?: any }).objects)
     ) {
       return objects.map((object) => ({
         storage_ref: object.storage_ref,

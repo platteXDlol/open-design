@@ -34,7 +34,7 @@ const SEED_FIELD_TYPES: Record<keyof BrandSeedOverrides, 'string' | 'number' | '
   motion: 'boolean',
 };
 
-export function sanitizeSeedOverrides(raw: unknown): BrandSeedOverrides | undefined {
+export function sanitizeSeedOverrides(raw: any): BrandSeedOverrides | undefined {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
   const input = raw as Record<string, unknown>;
   const out: Record<string, string | number | boolean> = {};

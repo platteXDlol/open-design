@@ -465,7 +465,7 @@ export const OPEN_DESIGN_BRIEF_APP_HTML = String.raw`<!doctype html>
             });
             payload = result && (result.structuredContent || (result.result && result.result.structuredContent) || result);
             if (!payload || !payload.briefConfirmationId) throw new Error(copy().invalidConfirmation);
-          } catch (error) {
+          } catch (error: any) {
             applyPhase(
               "ready",
               publicErrorMessage(error, copy().confirmFailed),

@@ -205,7 +205,7 @@ export async function captureChatArtifactSnapshotFromBytes(
       sourceMtime: input.sourceMtime ?? null,
       now,
     });
-  } catch (err) {
+  } catch (err: any) {
     await deps.blobs.discardTemp(tempKey);
     markSnapshotFailed(deps.db, snapshotId, 'internal_error');
     logCaptureFailure('bytes', input.projectRelativePath, err);
@@ -307,7 +307,7 @@ export async function captureChatArtifactSnapshotFromPath(
   let written: { digest: string; byteSize: number };
   try {
     written = await deps.blobs.writeTempFromPath(tempKey, input.absolutePath);
-  } catch (err) {
+  } catch (err: any) {
     await deps.blobs.discardTemp(tempKey);
     markSnapshotFailed(deps.db, snapshotId, 'source_unreadable');
     logCaptureFailure('path', input.projectRelativePath, err);
@@ -347,7 +347,7 @@ export async function captureChatArtifactSnapshotFromPath(
       sourceMtime: before.mtimeMs,
       now,
     });
-  } catch (err) {
+  } catch (err: any) {
     await deps.blobs.discardTemp(tempKey);
     markSnapshotFailed(deps.db, snapshotId, 'internal_error');
     logCaptureFailure('path', input.projectRelativePath, err);
@@ -487,7 +487,7 @@ function failure(
   return { snapshotId, workspaceArtifactId, state: 'failed', failureCode };
 }
 
-function logCaptureFailure(source: string, filePath: string, err: unknown): void {
+function logCaptureFailure(source: string, filePath: string, err: any): void {
   // Never log bytes or absolute paths — only the project-relative label.
   const message = err instanceof Error ? err.message : String(err);
   try {

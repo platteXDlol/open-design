@@ -25,11 +25,10 @@ import type {
   OpenProjectInEditorResponse,
 } from '@open-design/contracts';
 import type { RouteDeps } from '../server-context.js';
-import type { AuthorizeProjectRequest } from '../collab/project-request-authority.js';
 
 export interface RegisterHostToolsRoutesDeps
   extends RouteDeps<'db' | 'http' | 'paths' | 'projectStore' | 'projectFiles'> {
-  authorizeProjectRequest: AuthorizeProjectRequest;
+  authorizeProjectRequest: any;
 }
 
 export type RealPlatform = 'darwin' | 'win32' | 'linux';
@@ -277,11 +276,11 @@ export function applicableForPlatform(entry: CatalogueEntry, platform: Platform)
 
 function projectHostOpenDir(
   projectsRoot: string,
-  project: { id: string; metadata?: { baseDir?: unknown } | null },
+  project: { id: string; metadata?: { baseDir?: any } | null },
   resolveProjectDir: (
     projectsRoot: string,
     projectId: string,
-    metadata?: unknown,
+    metadata?: any,
     opts?: { allowUnavailableSandboxImportedProject?: boolean },
   ) => string,
 ): string {
@@ -323,7 +322,7 @@ export function registerHostToolsRoutes(app: Express, ctx: RegisterHostToolsRout
       );
       const body: HostEditorsResponse = { editors, platform };
       res.json(body);
-    } catch (err) {
+    } catch (err: any) {
       sendApiError(res, 500, 'INTERNAL_ERROR', String(err));
     }
   });
@@ -377,7 +376,7 @@ export function registerHostToolsRoutes(app: Express, ctx: RegisterHostToolsRout
         path: resolvedDir,
       };
       res.json(body);
-    } catch (err) {
+    } catch (err: any) {
       sendApiError(res, 500, 'INTERNAL_ERROR', String(err));
     }
   });

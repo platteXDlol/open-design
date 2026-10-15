@@ -31,7 +31,7 @@ export function isBlocked(realPath: string): boolean {
 }
 
 export function validateLinkedDirs(
-  dirs: unknown,
+  dirs: any,
 ): { dirs: string[]; error?: undefined } | { error: string; dirs?: undefined } {
   if (!Array.isArray(dirs)) return { error: 'linkedDirs must be an array' };
   const validated: string[] = [];

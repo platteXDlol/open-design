@@ -169,7 +169,7 @@ export async function freezeVideoFirstFrame(
   try {
     try {
       await extract({ absolutePath, outputPath, budgetMs });
-    } catch (err) {
+    } catch (err: any) {
       // `timeout` is worth telling apart from a decode that simply failed: one
       // is a capacity signal about this daemon, the other is about this file.
       const timedOut = err instanceof Error && /exceeded \d+ms/u.test(err.message);
@@ -204,7 +204,7 @@ export async function freezeVideoFirstFrame(
   }
 }
 
-function logVideoFrameFailure(absolutePath: string, err: unknown): void {
+function logVideoFrameFailure(absolutePath: string, err: any): void {
   const message = err instanceof Error ? err.message : String(err);
   try {
     // Basename only — never the absolute path, never bytes.

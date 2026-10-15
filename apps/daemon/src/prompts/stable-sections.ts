@@ -114,8 +114,8 @@ export type StableChangedSection = StableSectionName | 'unattributed';
  * JSON with object keys sorted at every level, so two structurally equal inputs
  * hash equal regardless of the order their keys were built in.
  */
-function stableStringify(value: unknown): string {
-  return JSON.stringify(value, (_key, val: unknown) => {
+function stableStringify(value: any): string {
+  return JSON.stringify(value, (_key, val: any) => {
     if (val === null || typeof val !== 'object' || Array.isArray(val)) return val;
     return Object.fromEntries(
       Object.entries(val as Record<string, unknown>).sort(([a], [b]) =>
@@ -130,7 +130,7 @@ function stableStringify(value: unknown): string {
  * digest of the same input shape, so a full sha256 would spend storage and
  * event payload on collision resistance nothing here needs.
  */
-function digest(value: unknown): string {
+function digest(value: any): string {
   return createHash('sha256').update(stableStringify(value), 'utf8').digest('hex').slice(0, 16);
 }
 
@@ -194,9 +194,9 @@ export function serializeStableSections(sections: StableSectionHashes): string {
  * than thrown on: a row written by a newer/older daemon must degrade to
  * `unattributed`, never break the turn.
  */
-export function parseStableSections(raw: unknown): StableSectionHashes | null {
+export function parseStableSections(raw: any): StableSectionHashes | null {
   if (typeof raw !== 'string' || raw.length === 0) return null;
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(raw);
   } catch {

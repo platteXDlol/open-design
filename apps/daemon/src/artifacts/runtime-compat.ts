@@ -27,7 +27,7 @@ const FRAMER_MOTION_GLOBAL_USAGE = /\bFramerMotion\b/u;
 const FRAMER_MOTION_ALIAS = '<script>window.FramerMotion = window.FramerMotion || window.Motion;</script>';
 const INTEGRITY_ATTR = /\s+integrity=(["'])[^"']*\1/iu;
 
-export function normalizeArtifactRuntimeImports(name: string, body: unknown): unknown {
+export function normalizeArtifactRuntimeImports(name: string, body: any): any {
   if (!HTML_EXTENSION.test(name)) return body;
   const text = stringifyTextBody(body);
   if (text === null) return body;
@@ -45,7 +45,7 @@ export function normalizeArtifactRuntimeImports(name: string, body: unknown): un
   return Buffer.isBuffer(body) || body instanceof Uint8Array ? Buffer.from(normalized, 'utf8') : normalized;
 }
 
-function stringifyTextBody(body: unknown): string | null {
+function stringifyTextBody(body: any): string | null {
   if (typeof body === 'string') return body;
   if (Buffer.isBuffer(body)) return body.toString('utf8');
   if (body instanceof Uint8Array) return Buffer.from(body).toString('utf8');

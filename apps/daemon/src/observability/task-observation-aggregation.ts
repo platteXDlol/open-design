@@ -123,7 +123,7 @@ const SAFE_RUNTIME_VERSION_ATTRIBUTE_KEYS = [
   'runtimeAdapterVersion',
 ] as const;
 
-function safeRuntimeVersion(value: unknown): string | undefined {
+function safeRuntimeVersion(value: any): string | undefined {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   return trimmed && trimmed.length <= 128 && !/[\u0000-\u001f\u007f]/u.test(trimmed)
@@ -178,7 +178,7 @@ export const TASK_OBSERVATION_SCHEMA_CAPABILITY_V1 = {
 
 export interface LegacyTaskObservationExportPlan {
   expectation: RunTelemetryExportExpectation;
-  batch: unknown[];
+  batch: any[];
 }
 
 export interface TaskObservationExportContextV1 {
@@ -802,7 +802,7 @@ export function safeTaskObservationUsageValueSources(
   return Object.keys(valueSources).length > 0 ? valueSources : undefined;
 }
 
-function safePromptInput(observation: NormalizedAgentObservationV1): unknown {
+function safePromptInput(observation: NormalizedAgentObservationV1): any {
   const boundary = promptBoundaryForObservation(observation);
   if (!boundary) return undefined;
   return boundary.availability === 'exact' || boundary.availability === 'partial'
@@ -1083,11 +1083,11 @@ export function safeTaskObservationQualityProjection(
 export function buildLegacyTaskObservationPayload(
   aggregate: StrategyTaskObservationAggregateV1,
   context?: TaskObservationExportContextV1,
-): unknown[] {
+): any[] {
   const traceId = aggregate.root.observationId;
   const deliverableSyntax = taskDeliverableSyntaxTelemetry(aggregate);
   const nowIso = new Date(aggregate.root.updatedAt).toISOString();
-  const events: unknown[] = [];
+  const events: any[] = [];
   const pushEvent = (type: string, body: Record<string, unknown>) => {
     const bodyId = String(body.id);
     events.push({

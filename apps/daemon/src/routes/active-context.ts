@@ -42,12 +42,12 @@ type GetActiveOutput =
 
 interface ActiveContextDomainDeps {
   store: ActiveContextStore;
-  db: unknown;
-  getProject: (db: unknown, projectId: string) => { name?: string | null } | null | undefined;
+  db: any;
+  getProject: (db: any, projectId: string) => { name?: string | null } | null | undefined;
   now: () => number;
 }
 
-function parsePostActive(raw: { body: unknown }): Result<PostActiveInput> {
+function parsePostActive(raw: { body: any }): Result<PostActiveInput> {
   const body = (raw.body ?? {}) as Record<string, unknown>;
   if (body.active === false) {
     return ok({ kind: 'clear' });

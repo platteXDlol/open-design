@@ -176,7 +176,7 @@ function storePath(dataDir: string): string {
   return path.join(dataDir, STORE_DIR, STORE_FILE);
 }
 
-function cleanId(value: unknown): string {
+function cleanId(value: any): string {
   if (typeof value !== 'string') return '';
   const id = value.trim();
   return SAFE_ID.test(id) ? id : '';
@@ -190,7 +190,7 @@ function requiredString(input: Record<string, unknown>, key: string): string {
   return value.trim();
 }
 
-function cleanStringArray(value: unknown): string[] {
+function cleanStringArray(value: any): string[] {
   if (!Array.isArray(value)) return [];
   const out: string[] = [];
   for (const item of value) {
@@ -202,7 +202,7 @@ function cleanStringArray(value: unknown): string[] {
 }
 
 function cleanEnumArray<T extends string>(
-  value: unknown,
+  value: any,
   allowed: ReadonlySet<T>,
   fallback: T[],
 ): T[] {
@@ -216,19 +216,19 @@ function cleanEnumArray<T extends string>(
   return out.length > 0 ? out : fallback;
 }
 
-function cleanReviewPolicy(value: unknown): AutomationReviewPolicy {
+function cleanReviewPolicy(value: any): AutomationReviewPolicy {
   return typeof value === 'string' && REVIEW_POLICIES.has(value as AutomationReviewPolicy)
     ? value as AutomationReviewPolicy
     : 'always';
 }
 
-function cleanCompressionMode(value: unknown): AutomationTokenCompressionMode {
+function cleanCompressionMode(value: any): AutomationTokenCompressionMode {
   return typeof value === 'string' && COMPRESSION_MODES.has(value as AutomationTokenCompressionMode)
     ? value as AutomationTokenCompressionMode
     : 'balanced';
 }
 
-export function normalizeAutomationTemplate(input: unknown): AutomationTemplate {
+export function normalizeAutomationTemplate(input: any): AutomationTemplate {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw new Error('automation template must be an object');
   }
@@ -274,14 +274,14 @@ export function normalizeAutomationTemplate(input: unknown): AutomationTemplate 
 }
 
 async function readUserAutomationTemplates(dataDir: string): Promise<AutomationTemplate[]> {
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(await fsp.readFile(storePath(dataDir), 'utf8'));
   } catch {
     return [];
   }
-  const rawTemplates = Array.isArray((parsed as { templates?: unknown }).templates)
-    ? (parsed as { templates: unknown[] }).templates
+  const rawTemplates = Array.isArray((parsed as { templates?: any }).templates)
+    ? (parsed as { templates: any[] }).templates
     : [];
   const out: AutomationTemplate[] = [];
   for (const raw of rawTemplates) {
@@ -321,7 +321,7 @@ export async function getAnyAutomationTemplate(
 
 export async function upsertUserAutomationTemplate(
   dataDir: string,
-  input: unknown,
+  input: any,
 ): Promise<AutomationTemplate> {
   const template = normalizeAutomationTemplate(input);
   if (BUILT_IN_AUTOMATION_TEMPLATES.some((builtIn) => builtIn.id === template.id)) {

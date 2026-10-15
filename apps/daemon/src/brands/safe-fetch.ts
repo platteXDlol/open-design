@@ -101,19 +101,19 @@ type DnsLookupCb = typeof dnsLookupCb;
 export function createValidatingLookup(lookupImpl: DnsLookupCb = dnsLookupCb): LookupFunction {
   const validatingLookup = (
     hostname: string,
-    options: unknown,
-    callback?: (err: Error | null, address?: unknown, family?: number) => void,
+    options: any,
+    callback?: (err: Error | null, address?: any, family?: number) => void,
   ): void => {
     const cb = (typeof options === 'function' ? options : callback) as (
       err: Error | null,
-      address?: unknown,
+      address?: any,
       family?: number,
     ) => void;
     const opts = (typeof options === 'function' ? {} : (options ?? {})) as Record<string, unknown>;
-    (lookupImpl as unknown as (
+    (lookupImpl as any as (
       h: string,
-      o: unknown,
-      c: (e: Error | null, a?: unknown, f?: number) => void,
+      o: any,
+      c: (e: Error | null, a?: any, f?: number) => void,
     ) => void)(hostname, opts, (err, address, family) => {
       if (err) return cb(err);
       const list = Array.isArray(address) ? address : [{ address, family }];
@@ -126,7 +126,7 @@ export function createValidatingLookup(lookupImpl: DnsLookupCb = dnsLookupCb): L
       return cb(null, address, family);
     });
   };
-  return validatingLookup as unknown as LookupFunction;
+  return validatingLookup as any as LookupFunction;
 }
 
 const MAX_BRAND_REDIRECTS = 5;
@@ -156,7 +156,7 @@ export async function fetchExternalBrandAsset(
     const res = await fetch(target, {
       ...init,
       redirect: 'manual',
-      dispatcher: brandAssetDispatcher as unknown as NonNullable<RequestInit['dispatcher']>,
+      dispatcher: brandAssetDispatcher as any as NonNullable<RequestInit['dispatcher']>,
     });
     const location =
       res.status >= 300 && res.status < 400 ? res.headers.get('location') : null;

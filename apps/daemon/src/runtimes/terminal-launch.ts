@@ -37,7 +37,7 @@ async function launchOnDarwin(command: string): Promise<TerminalLaunchResult> {
   try {
     await execFileAsync('osascript', ['-e', script], { timeout: 5_000 });
     return { ok: true, platform: 'darwin', via: 'osascript' };
-  } catch (err) {
+  } catch (err: any) {
     return {
       ok: false,
       platform: 'darwin',
@@ -75,7 +75,7 @@ async function launchOnLinux(command: string): Promise<TerminalLaunchResult> {
         child.once('error', reject);
       });
       return { ok: true, platform: 'linux', via: bin };
-    } catch (err) {
+    } catch (err: any) {
       errors.push(`${bin}: ${err instanceof Error ? err.message : String(err)}`);
     }
   }
@@ -100,7 +100,7 @@ async function launchOnWindows(command: string): Promise<TerminalLaunchResult> {
       { timeout: 5_000 },
     );
     return { ok: true, platform: 'win32', via: 'cmd /c start' };
-  } catch (err) {
+  } catch (err: any) {
     return {
       ok: false,
       platform: 'win32',

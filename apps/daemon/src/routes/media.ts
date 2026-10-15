@@ -1,3 +1,4 @@
+import { AuthorizeProjectToolRequest } from '../v05-stubs.js';
 import fs from 'node:fs';
 import type { Express } from 'express';
 import type {
@@ -14,10 +15,6 @@ import { formatMediaTaskDiagnostic } from '../media/diagnostics.js';
 import { findMediaModel } from '../media/models.js';
 import type { ImageGenerationRequestSummary } from '../media/image-generation-retry.js';
 import type { RouteDeps } from '../server-context.js';
-import type {
-  AuthorizeProjectRequest,
-  AuthorizeProjectToolRequest,
-} from '../collab/project-request-authority.js';
 import { proxyDispatcherRequestInit } from '../connectionTest.js';
 import {
   aihubmixCatalogUrl,
@@ -43,7 +40,7 @@ import { normalizePersistedAutomationWorkspaceScope } from '../automations/works
 const LONG_MEDIA_PROXY_TIMEOUT_MS = 10 * 60 * 1000;
 const MEDIA_FILE_MTIME_TOLERANCE_MS = 1;
 
-function finiteNumber(value: unknown): number | null {
+function finiteNumber(value: any): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
@@ -64,7 +61,7 @@ function finiteNumber(value: unknown): number | null {
  * the same lie as one card showing a stranger's.
  */
 function mediaTaskFileCandidates(
-  taskFile: unknown,
+  taskFile: any,
   projectFiles: readonly ProjectFile[],
   claimedNames: ReadonlySet<string>,
 ): ProjectFile[] {
@@ -91,7 +88,7 @@ function mediaTaskFileCandidates(
  * ChatPanel never previews an unrelated file.
  */
 export function resolveMediaTaskProjectFile(
-  taskFile: unknown,
+  taskFile: any,
   projectFiles: ProjectFile[],
   claimedNames: ReadonlySet<string> = new Set(),
 ): ProjectFile | null {
@@ -120,7 +117,7 @@ export function resolveMediaTaskProjectFile(
  * one.
  */
 export function resolveMovedMediaTaskFiles(
-  candidates: ReadonlyArray<{ taskId: string; file: unknown }>,
+  candidates: ReadonlyArray<{ taskId: string; file: any }>,
   projectFiles: readonly ProjectFile[],
   claimedNames: ReadonlySet<string> = new Set(),
 ): Map<string, ProjectFile> {
@@ -144,7 +141,7 @@ export function resolveMovedMediaTaskFiles(
 }
 
 function reconciledMediaTaskFile(
-  taskFile: unknown,
+  taskFile: any,
   projectFile: ProjectFile,
 ): Record<string, unknown> {
   const original = taskFile && typeof taskFile === 'object'
@@ -181,7 +178,7 @@ const aihubmixCatalogCache = new Map<string, { at: number; models: Array<{ id: s
 // routes/chat.ts) is the v0.3b scope.
 
 export interface RegisterMediaRoutesDeps extends RouteDeps<'db' | 'design' | 'http' | 'paths' | 'ids' | 'auth' | 'media' | 'appConfig' | 'orbit' | 'nativeDialogs' | 'projectStore' | 'projectFiles' | 'conversations' | 'research'> {
-  authorizeProjectRequest: AuthorizeProjectRequest;
+  authorizeProjectRequest: any;
   authorizeProjectToolRequest: AuthorizeProjectToolRequest;
 }
 
@@ -349,7 +346,7 @@ export function registerMediaRoutes(app: Express, ctx: RegisterMediaRoutesDeps) 
      * waiters already told, so this must never turn a recorded failure into an
      * unhandled rejection.
      */
-    const reportFailureToRun = (taskId: string, error: unknown): void => {
+    const reportFailureToRun = (taskId: string, error: any): void => {
       const runId = options.grant?.runId;
       if (!runId || !taskId) return;
       try {
@@ -360,7 +357,7 @@ export function registerMediaRoutes(app: Express, ctx: RegisterMediaRoutesDeps) 
           failedAt: Date.now(),
           error,
         });
-      } catch (err) {
+      } catch (err: any) {
         console.warn('[media] run failure association failed', err);
       }
     };
@@ -412,10 +409,10 @@ export function registerMediaRoutes(app: Express, ctx: RegisterMediaRoutesDeps) 
        * (`ensureProject(projectsRoot, projectId)` — no metadata), so this points
        * at the bytes that were actually written.
        */
-      const attachLateOutputToRunMessage = async (meta: unknown): Promise<void> => {
+      const attachLateOutputToRunMessage = async (meta: any): Promise<void> => {
         const runId = options.grant?.runId;
         const name =
-          meta && typeof meta === 'object' && typeof (meta as { name?: unknown }).name === 'string'
+          meta && typeof meta === 'object' && typeof (meta as { name?: any }).name === 'string'
             ? (meta as { name: string }).name
             : '';
         if (!runId || !name) return;
@@ -425,7 +422,7 @@ export function registerMediaRoutes(app: Express, ctx: RegisterMediaRoutesDeps) 
             projectRoot: resolveProjectDir(PROJECTS_DIR, projectId),
             projectRelativePath: name,
           });
-        } catch (err) {
+        } catch (err: any) {
           console.warn('[media] late produced-file association failed', err);
         }
       };
@@ -1316,7 +1313,7 @@ export function registerMediaRoutes(app: Express, ctx: RegisterMediaRoutesDeps) 
       let confirmedFile: Record<string, unknown> | null = null;
       if (resolvedFile) {
         confirmedFile = reconciledMediaTaskFile(t.file, resolvedFile);
-        if ((t.file as { name?: unknown } | null)?.name !== resolvedFile.name) {
+        if ((t.file as { name?: any } | null)?.name !== resolvedFile.name) {
           const liveTask = getLiveMediaTask(t.id);
           if (liveTask) {
             liveTask.file = confirmedFile;

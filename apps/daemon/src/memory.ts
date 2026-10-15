@@ -1111,7 +1111,7 @@ export async function extractFromMessage(dataDir, userMessage) {
       try {
         const profileEntry = await captureProfileFromForm(dataDir, parsedForm);
         if (profileEntry) changed.push(profileEntry);
-      } catch (err) {
+      } catch (err: any) {
         console.warn('[memory] profile capture failed', err);
       }
     }
@@ -1163,7 +1163,7 @@ export async function extractFromMessage(dataDir, userMessage) {
         type: entry.type,
         updatedAt: entry.updatedAt,
       });
-    } catch (err) {
+    } catch (err: any) {
       console.warn('[memory] auto-extract write failed', err);
     }
   }

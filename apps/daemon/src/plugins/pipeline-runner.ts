@@ -100,7 +100,7 @@ function raiseSurface(input: PipelineRunnerInput, surface: GenUISurfaceSpec): vo
       surface,
       ...(input.emitGenui ? { emit: input.emitGenui } : {}),
     });
-  } catch (err) {
+  } catch (err: any) {
     // Surface lookups should never crash the pipeline. The error path is
     // surfaced to the run as a normal SSE 'error' event by the caller.
     // eslint-disable-next-line no-console

@@ -10,7 +10,7 @@ import { waitForParentMonitorRelease } from "./parent-monitor-gate.js";
 
 async function main(): Promise<void> {
   let runtimeHandle: DaemonSidecarHandle | null = null;
-  const invoke = async (action: string, input: unknown) => {
+  const invoke = async (action: string, input: any) => {
     if (runtimeHandle == null) throw new Error("daemon sidecar is not running");
     return await runtimeHandle.invoke(action, input);
   };
@@ -34,7 +34,7 @@ async function main(): Promise<void> {
           source: client.stamp.source,
         }, {
           inheritedEnvironment: (baseEnv) => SidecarFactory.inheritedEnvironment(baseEnv),
-          invokeDesktop: async <TResult>(action: string, input: unknown, timeoutMs: number) =>
+          invokeDesktop: async <TResult>(action: string, input: any, timeoutMs: number) =>
             await client.invoke<TResult>(APP_KEYS.DESKTOP, action, input, { timeoutMs }),
           port: resources.port,
           statusDesktop: async (timeoutMs: number) =>
@@ -62,7 +62,7 @@ async function main(): Promise<void> {
     requestDesktopStatus: async () => await client.status(APP_KEYS.DESKTOP, { timeoutMs: 800 }),
     runtimeRoot: client.resources.runtimeRoot,
     source: client.stamp.source,
-  }).catch((error: unknown) => {
+  }).catch((error: any) => {
     console.warn("[packaged desktop handoff] prepare failed", error);
     return null;
   });
@@ -75,14 +75,14 @@ async function main(): Promise<void> {
         : await client.requestStop(APP_KEYS.DESKTOP, { timeoutMs: 800 }),
     }).then((result) => {
       console.info("[packaged desktop handoff]", result);
-    }).catch((error: unknown) => {
+    }).catch((error: any) => {
       console.warn("[packaged desktop handoff] execute failed", error);
     });
   }
   await client.waitUntilStopped();
 }
 
-void main().catch((error: unknown) => {
+void main().catch((error: any) => {
   console.error(error instanceof Error ? error.stack || error.message : String(error));
   process.exit(1);
 });

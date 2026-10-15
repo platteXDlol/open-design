@@ -170,7 +170,7 @@ export async function startCallbackListener(
 
     try {
       await input.onCallback(outcome);
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error('[xai-oauth] onCallback failed:', err);
     } finally {
       void stop();

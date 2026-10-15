@@ -37,21 +37,21 @@ type SkillPlatform = "desktop" | "mobile" | null;
 type JsonRecord = Record<string, unknown>;
 
 interface SkillFrontmatter extends JsonRecord {
-  name?: unknown;
-  zh_name?: unknown;
-  en_name?: unknown;
-  description?: unknown;
-  zh_description?: unknown;
-  en_description?: unknown;
-  triggers?: unknown;
+  name?: any;
+  zh_name?: any;
+  en_name?: any;
+  description?: any;
+  zh_description?: any;
+  en_description?: any;
+  triggers?: any;
   od?: JsonRecord & {
-    example_prompt?: unknown;
-    example_prompt_i18n?: unknown;
+    example_prompt?: any;
+    example_prompt_i18n?: any;
     craft?: JsonRecord;
     preview?: JsonRecord;
     design_system?: JsonRecord;
     critique?: JsonRecord;
-    category?: unknown;
+    category?: any;
   };
 }
 
@@ -67,7 +67,7 @@ export interface SkillInfo {
   displayName?: Record<string, string>;
   description: string;
   descriptionI18n?: Record<string, string>;
-  triggers: unknown[];
+  triggers: any[];
   mode: SkillMode;
   surface: SkillSurface;
   source: SkillSource;
@@ -128,15 +128,15 @@ export interface DerivedSkillIdParts {
   childKey: string;
 }
 
-function isRecord(value: unknown): value is JsonRecord {
+function isRecord(value: any): value is JsonRecord {
   return Boolean(value) && typeof value === "object";
 }
 
-function asSkillFrontmatter(value: unknown): SkillFrontmatter {
+function asSkillFrontmatter(value: any): SkillFrontmatter {
   return isRecord(value) ? (value as SkillFrontmatter) : {};
 }
 
-export function resolveSkillId(id: unknown): unknown {
+export function resolveSkillId(id: any): any {
   if (typeof id !== "string" || id.length === 0) return id;
   return (SKILL_ID_ALIASES as Readonly<Record<string, string>>)[id] ?? id;
 }
@@ -145,7 +145,7 @@ export function resolveSkillId(id: unknown): unknown {
 // rewrites any deprecated id to its current canonical form. Use this at
 // every site that resolves a stored or external skill id; calling
 // `.find()` directly will silently miss aliased ids.
-export function findSkillById(skills: unknown, id: unknown): SkillInfo | undefined {
+export function findSkillById(skills: any, id: any): SkillInfo | undefined {
   if (!Array.isArray(skills) || typeof id !== "string" || id.length === 0) {
     return undefined;
   }
@@ -255,7 +255,7 @@ export async function listSkills(
         if (!stats.isFile()) continue;
         const raw = await readFile(skillPath, "utf8");
         const { data: parsedData, body } = parseFrontmatter(raw) as {
-          data: unknown;
+          data: any;
           body: string;
         };
         const data = asSkillFrontmatter(parsedData);
@@ -519,7 +519,7 @@ export function resolveDerivedExamplePath(parentDir: string, childKey: string): 
 // Split a `<parent>:<child>` synthetic id into its two halves. Returns
 // null for non-derived ids so the caller can fall through to the regular
 // listing-based lookup.
-export function splitDerivedSkillId(id: unknown): DerivedSkillIdParts | null {
+export function splitDerivedSkillId(id: any): DerivedSkillIdParts | null {
   if (typeof id !== "string") return null;
   const idx = id.indexOf(":");
   if (idx <= 0 || idx === id.length - 1) return null;
@@ -627,7 +627,7 @@ async function dirHasAttachments(dir: string): Promise<boolean> {
 // daemon-side allowlist to keep in sync. The compose path checks the
 // file actually exists before injecting; missing files fall through
 // silently. The frontend can render the requested list verbatim.
-function normalizeCraftRequires(value: unknown): string[] {
+function normalizeCraftRequires(value: any): string[] {
   if (!Array.isArray(value)) return [];
   const seen = new Set<string>();
   const out: string[] = [];
@@ -642,7 +642,7 @@ function normalizeCraftRequires(value: unknown): string[] {
   return out;
 }
 
-function normalizeDefaultFor(value: unknown): string[] {
+function normalizeDefaultFor(value: any): string[] {
   if (!value) return [];
   if (Array.isArray(value)) return value.map(String);
   return [String(value)];
@@ -651,7 +651,7 @@ function normalizeDefaultFor(value: unknown): string[] {
 // Optional `od.fidelity` hint for prototype skills. Only 'wireframe' and
 // 'high-fidelity' are meaningful — anything else collapses to null so the
 // caller falls back to the form default ('high-fidelity').
-function normalizeFidelity(value: unknown): "wireframe" | "high-fidelity" | null {
+function normalizeFidelity(value: any): "wireframe" | "high-fidelity" | null {
   if (value === "wireframe" || value === "high-fidelity") return value;
   return null;
 }
@@ -659,7 +659,7 @@ function normalizeFidelity(value: unknown): "wireframe" | "high-fidelity" | null
 // Coerce truthy / falsy strings ("true", "yes", "false", "no") and booleans
 // to a real boolean. Returns null for anything we can't interpret so the
 // caller knows to fall back to the form default.
-function normalizeBoolHint(value: unknown): boolean | null {
+function normalizeBoolHint(value: any): boolean | null {
   if (typeof value === "boolean") return value;
   if (typeof value === "string") {
     const v = value.trim().toLowerCase();
@@ -670,8 +670,8 @@ function normalizeBoolHint(value: unknown): boolean | null {
 }
 
 function localizedMapFromFields(
-  enValue: unknown,
-  zhValue: unknown,
+  enValue: any,
+  zhValue: any,
 ): Record<string, string> | undefined {
   const out: Record<string, string> = {};
   if (typeof enValue === "string" && enValue.trim()) out.en = enValue.trim();
@@ -679,7 +679,7 @@ function localizedMapFromFields(
   return Object.keys(out).length > 0 ? out : undefined;
 }
 
-function localizedMapFromRecord(value: unknown): Record<string, string> | undefined {
+function localizedMapFromRecord(value: any): Record<string, string> | undefined {
   if (!isRecord(value)) return undefined;
   const out: Record<string, string> = {};
   for (const [key, raw] of Object.entries(value)) {
@@ -703,7 +703,7 @@ function localizedMapFromRecord(value: unknown): Record<string, string> | undefi
 // Exported so the spawn-input glue tests can pin the trim / lowercase /
 // reject-typo behavior in isolation from `listSkills()` filesystem
 // scanning (PerishCode P3 on PR #1338).
-export function normalizeCritiquePolicy(value: unknown): SkillCritiquePolicy {
+export function normalizeCritiquePolicy(value: any): SkillCritiquePolicy {
   if (typeof value !== "string") return null;
   const v = value.trim().toLowerCase();
   if (v === "required" || v === "opt-in" || v === "opt-out") return v;
@@ -714,7 +714,7 @@ export function normalizeCritiquePolicy(value: unknown): SkillCritiquePolicy {
 // top of the Examples gallery; `true` is treated as priority 1; anything
 // missing/unrecognised becomes null so non-featured skills keep their
 // natural alphabetical order.
-function normalizeFeatured(value: unknown): number | null {
+function normalizeFeatured(value: any): number | null {
   if (value === true) return 1;
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string" && value.trim()) {
@@ -739,7 +739,7 @@ function derivePrompt(data: SkillFrontmatter): string {
   return (firstSentence || collapsed).slice(0, 320);
 }
 
-function inferMode(body: unknown, description: unknown): SkillMode {
+function inferMode(body: any, description: any): SkillMode {
   const hay = `${description ?? ""}\n${body ?? ""}`.toLowerCase();
   if (/\bimage|poster|illustration|photography|图片|海报|插画/.test(hay)) return "image";
   if (/\bvideo|motion|shortform|animation|视频|动效|短片/.test(hay)) return "video";
@@ -751,7 +751,7 @@ function inferMode(body: unknown, description: unknown): SkillMode {
   return "prototype";
 }
 
-function normalizeMode(value: unknown, body: unknown, description: unknown): SkillMode {
+function normalizeMode(value: any, body: any, description: any): SkillMode {
   if (
     value === "image" || value === "video" || value === "audio" || value === "deck" ||
     value === "design-system" || value === "template" || value === "prototype"
@@ -760,7 +760,7 @@ function normalizeMode(value: unknown, body: unknown, description: unknown): Ski
 }
 
 const KNOWN_SURFACES = new Set<SkillSurface>(["web", "image", "video", "audio"]);
-function normalizeSurface(value: unknown, mode: SkillMode): SkillSurface {
+function normalizeSurface(value: any, mode: SkillMode): SkillSurface {
   if (typeof value === "string") {
     const v = value.trim().toLowerCase();
     if (KNOWN_SURFACES.has(v as SkillSurface)) return v as SkillSurface;
@@ -772,7 +772,7 @@ function normalizeSurface(value: unknown, mode: SkillMode): SkillSurface {
 // Validate platform tag — only desktop / mobile are meaningful for the
 // Examples gallery. Falls back to autodetecting "mobile" from descriptions
 // so legacy skills sort under the right pill without authoring changes.
-function normalizePlatform(value: unknown, mode: SkillMode, body: unknown, description: unknown): SkillPlatform {
+function normalizePlatform(value: any, mode: SkillMode, body: any, description: any): SkillPlatform {
   if (value === "desktop" || value === "mobile") return value;
   if (mode !== "prototype") return null;
   const hay = `${description ?? ""}\n${body ?? ""}`.toLowerCase();
@@ -805,7 +805,7 @@ const KNOWN_SCENARIOS = new Set([
 // pill. We intentionally do not lock down a fixed vocabulary here — the
 // curated catalogue under skills/ owns the canonical category set, and
 // user-imported skills are free to introduce their own.
-function normalizeCategory(value: unknown): string | null {
+function normalizeCategory(value: any): string | null {
   if (typeof value !== "string") return null;
   const slug = value.trim().toLowerCase();
   if (!slug) return null;
@@ -813,7 +813,7 @@ function normalizeCategory(value: unknown): string | null {
   return slug.slice(0, 64);
 }
 
-function normalizeScenario(value: unknown, body: unknown, description: unknown): string {
+function normalizeScenario(value: any, body: any, description: any): string {
   if (typeof value === "string") {
     const v = value.trim().toLowerCase();
     if (v) return v;
@@ -863,7 +863,7 @@ export class SkillImportError extends Error {
 
 const RESERVED_SLUGS = new Set(["", ".", ".."]);
 
-export function slugifySkillName(name: unknown): string {
+export function slugifySkillName(name: any): string {
   if (typeof name !== "string") return "";
   const lowered = name.trim().toLowerCase();
   const cleaned = lowered
@@ -874,7 +874,7 @@ export function slugifySkillName(name: unknown): string {
   return cleaned.slice(0, 64);
 }
 
-function escapeYamlString(value: unknown): string {
+function escapeYamlString(value: any): string {
   return String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
@@ -916,10 +916,10 @@ function buildSkillMarkdown({
 }
 
 export interface SkillImportInput {
-  name?: unknown;
-  description?: unknown;
-  body?: unknown;
-  triggers?: unknown;
+  name?: any;
+  description?: any;
+  body?: any;
+  triggers?: any;
 }
 
 export interface SkillImportResult {
@@ -928,7 +928,7 @@ export interface SkillImportResult {
   dir: string;
 }
 
-function isErrnoException(err: unknown): err is NodeJS.ErrnoException {
+function isErrnoException(err: any): err is NodeJS.ErrnoException {
   return Boolean(err) && typeof err === "object" && "code" in (err as object);
 }
 
@@ -970,7 +970,7 @@ export async function importUserSkill(
         `a user skill with slug "${slug}" already exists`,
       );
     }
-  } catch (err) {
+  } catch (err: any) {
     if (err instanceof SkillImportError) throw err;
     if (isErrnoException(err) && err.code !== "ENOENT") {
       throw new SkillImportError(
@@ -987,9 +987,9 @@ export async function importUserSkill(
 
 export interface SkillUpdateInput {
   name: string;
-  description?: unknown;
-  body?: unknown;
-  triggers?: unknown;
+  description?: any;
+  body?: any;
+  triggers?: any;
   // Original on-disk dir for the skill being edited. When the caller is
   // shadowing a built-in for the first time (i.e. `sourceDir` differs
   // from the user shadow target and the shadow folder does not exist
@@ -1179,7 +1179,7 @@ export async function deleteUserSkill(
   }
   try {
     await stat(target);
-  } catch (err) {
+  } catch (err: any) {
     if (isErrnoException(err) && err.code === "ENOENT") {
       throw new SkillImportError("NOT_FOUND", "user skill not found");
     }

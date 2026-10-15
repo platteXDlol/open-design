@@ -24,11 +24,11 @@ Agent runtime invocation:
   "$OD_NODE_BIN" "$OD_BIN" tools design-systems read --path preview/colors.html
 `;
 
-function writeJson(value: unknown, stream: NodeJS.WriteStream = process.stdout): void {
+function writeJson(value: any, stream: NodeJS.WriteStream = process.stdout): void {
   stream.write(`${JSON.stringify(value)}\n`);
 }
 
-function fail(message: string, details?: unknown): ToolCliResult {
+function fail(message: string, details?: any): ToolCliResult {
   writeJson({ ok: false, error: { message, ...(details === undefined ? {} : { details }) } }, process.stderr);
   return { exitCode: 1 };
 }
@@ -86,7 +86,7 @@ function endpoint(baseUrl: URL, pathname: string): string {
   return url.toString();
 }
 
-async function requestJson(baseUrl: URL, token: string, pathname: string, init: RequestInit = {}): Promise<{ status: number; body: unknown }> {
+async function requestJson(baseUrl: URL, token: string, pathname: string, init: RequestInit = {}): Promise<{ status: number; body: any }> {
   const response = await fetch(endpoint(baseUrl, pathname), {
     ...init,
     headers: {
@@ -97,10 +97,10 @@ async function requestJson(baseUrl: URL, token: string, pathname: string, init: 
     },
   });
   const text = await response.text();
-  let body: unknown = text;
+  let body: any = text;
   if (text.length > 0) {
     try {
-      body = JSON.parse(text) as unknown;
+      body = JSON.parse(text) as any;
     } catch {
       body = { message: text };
     }
@@ -108,7 +108,7 @@ async function requestJson(baseUrl: URL, token: string, pathname: string, init: 
   return { status: response.status, body };
 }
 
-function normalizeCliError(body: unknown): JsonObject {
+function normalizeCliError(body: any): JsonObject {
   const rawError = body && typeof body === 'object' && 'error' in body ? (body as JsonObject).error : body;
   if (typeof rawError === 'string') return { message: rawError };
   if (!rawError || typeof rawError !== 'object') return { message: String(rawError ?? 'request failed') };
@@ -120,7 +120,7 @@ function normalizeCliError(body: unknown): JsonObject {
   };
 }
 
-async function printApiResult(response: { status: number; body: unknown }): Promise<ToolCliResult> {
+async function printApiResult(response: { status: number; body: any }): Promise<ToolCliResult> {
   if (response.status < 200 || response.status >= 300) {
     writeJson({ ok: false, status: response.status, error: normalizeCliError(response.body) }, process.stderr);
     return { exitCode: 1 };

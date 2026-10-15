@@ -132,7 +132,7 @@ export function registerMcpRoutes(app: Express, ctx: RegisterMcpRoutesDeps) {
         (existing) => isCodexRegistrationOwnedBy(existing, payload),
       )
         .then((outcome) => console.info('[mcp] codex registration refresh', { outcome }))
-        .catch((err: unknown) => console.warn('[mcp] codex registration refresh failed', {
+        .catch((err: any) => console.warn('[mcp] codex registration refresh failed', {
           error: err instanceof Error ? err.message : String(err),
         }));
     }, MCP_REGISTRATION_REFRESH_DELAY_MS);
@@ -146,7 +146,7 @@ export function registerMcpRoutes(app: Express, ctx: RegisterMcpRoutesDeps) {
     try {
       const status = await probeCodexInstall(CODEX_MCP_NAME);
       res.json(status);
-    } catch (err) {
+    } catch (err: any) {
       sendApiError(res, 500, 'CODEX_PROBE_FAILED', err instanceof Error ? err.message : String(err));
     }
   });
@@ -167,7 +167,7 @@ export function registerMcpRoutes(app: Express, ctx: RegisterMcpRoutesDeps) {
         env: payload.env,
       });
       res.json({ ok: true });
-    } catch (err) {
+    } catch (err: any) {
       sendApiError(res, 500, 'CODEX_INSTALL_FAILED', err instanceof Error ? err.message : String(err));
     }
   });
@@ -179,7 +179,7 @@ export function registerMcpRoutes(app: Express, ctx: RegisterMcpRoutesDeps) {
     try {
       await uninstallCodexMcp(CODEX_MCP_NAME);
       res.json({ ok: true });
-    } catch (err) {
+    } catch (err: any) {
       sendApiError(res, 500, 'CODEX_UNINSTALL_FAILED', err instanceof Error ? err.message : String(err));
     }
   });
@@ -477,7 +477,7 @@ function renderOAuthResultPage(opts: any) {
         bc.postMessage(payload);
         bc.close();
       }
-    } catch (e) { /* ignore postMessage failures */ }
+    } catch (e: any) { /* ignore postMessage failures */ }
   </script>
 </body>
 </html>`;

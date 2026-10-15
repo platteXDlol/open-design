@@ -74,7 +74,7 @@ export async function registerBundledPlugins(
   let topLevel;
   try {
     topLevel = await fsp.readdir(input.bundledRoot, { withFileTypes: true });
-  } catch (err) {
+  } catch (err: any) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
       // A missing bundledRoot is a packaging problem, not a removal of
       // every bundled plugin — never prune on this path.

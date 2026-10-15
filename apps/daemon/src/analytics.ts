@@ -209,7 +209,7 @@ export interface AnalyticsCaptureResult {
   errorType: AnalyticsCaptureErrorType | null;
 }
 
-export function normalizeAnalyticsCaptureResult(value: unknown): AnalyticsCaptureResult {
+export function normalizeAnalyticsCaptureResult(value: any): AnalyticsCaptureResult {
   if (value && typeof value === 'object') {
     const candidate = value as Partial<AnalyticsCaptureResult>;
     if (

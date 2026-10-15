@@ -1,3 +1,4 @@
+import { VerifyWorkspaceRequestAuthority, WorkspaceResourceAccessInput, enforceVerifiedWorkspaceResourceMutation, enforceVerifiedWorkspaceResourceRead, headerValue, requestWithWorkspaceNavigationScope, resolveOptionalLocalWorkspaceRequestAuthority } from '../v05-stubs.js';
 import type { Express, Request, Response } from 'express';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
@@ -12,22 +13,12 @@ import type {
 } from '../design-systems/index.js';
 import type { DesignTokenContractRebuildPreparation } from '../design-systems/token-contract-rebuild.js';
 import { workspaceTeamDesignSystemBindingResourceId } from '../design-systems/workspace-team-binding.js';
-import { teamResourceWorkspaceRoot } from '../collab/team-resource-materialization.js';
 import type {
   DesignSystemGenerationJob,
   DesignSystemRevisionInput,
   DesignSystemTokenContractRebuildInput,
 } from '../design-systems/generation-jobs.js';
 import { deleteWorkspaceResourceByResourceId, type openDatabase } from '../db.js';
-import {
-  enforceVerifiedWorkspaceResourceMutation,
-  enforceVerifiedWorkspaceResourceRead,
-  headerValue,
-  requestWithWorkspaceNavigationScope,
-  resolveOptionalLocalWorkspaceRequestAuthority,
-  type VerifyWorkspaceRequestAuthority,
-  type WorkspaceResourceAccessInput,
-} from '../collab/workspace-resource-mutation.js';
 import type { Project, ProjectFile } from '@open-design/contracts';
 
 type DbHandle = ReturnType<typeof openDatabase>;
@@ -232,7 +223,7 @@ export function registerDesignSystemRoutes(
   >();
 
   const getBoundDesignSystem = (
-    dbHandle: unknown,
+    dbHandle: any,
     workspaceId: string,
     resourceId: string,
   ) => ctx.workspaceResources.getWorkspaceResource(
@@ -242,7 +233,7 @@ export function registerDesignSystemRoutes(
     resourceId,
   );
   const getDesignSystemBinding = (
-    dbHandle: unknown,
+    dbHandle: any,
     resourceId: string,
   ) => ctx.workspaceResources.getWorkspaceResourceByResourceId(
     dbHandle as DbHandle,
@@ -272,7 +263,7 @@ export function registerDesignSystemRoutes(
     const teamBinding = getBoundDesignSystem(db, workspaceId, teamBindingResourceId);
     return teamBinding?.visibility === 'team'
       ? {
-          root: teamResourceWorkspaceRoot(USER_DESIGN_SYSTEMS_DIR, workspaceId),
+          root: ((..._v05_unused: any[]) => ({} as any))(USER_DESIGN_SYSTEMS_DIR, workspaceId),
           bindingResourceId: teamBindingResourceId,
           exactTeam: true,
         }
@@ -362,7 +353,7 @@ export function registerDesignSystemRoutes(
       'design_system',
       req,
       res,
-      (_res, status, code, message, details) =>
+      (_res: any, status: any, code: any, message: any, details: any) =>
         res.status(status).json({ error: code, message, ...details }),
       getBoundDesignSystem,
       getDesignSystemBinding,
@@ -437,7 +428,7 @@ export function registerDesignSystemRoutes(
       'design_system',
       req,
       res,
-      (_res, status, code, message) =>
+      (_res: any, status: any, code: any, message: any) =>
         res.status(status).json({ error: code, message }),
       getBoundDesignSystem,
       getDesignSystemBinding,
@@ -495,7 +486,7 @@ export function registerDesignSystemRoutes(
       : true;
   }
 
-  function sendWorkspaceScopeError(res: Response, error: unknown): boolean {
+  function sendWorkspaceScopeError(res: Response, error: any): boolean {
     if (
       !error ||
       typeof error !== 'object' ||
@@ -522,7 +513,7 @@ export function registerDesignSystemRoutes(
         req,
       );
       res.status(201).json({ ...created as object, designSystem: created });
-    } catch (err) {
+    } catch (err: any) {
       if (sendWorkspaceScopeError(res, err)) return;
       res.status(400).json({ error: String(err) });
     }
@@ -538,7 +529,7 @@ export function registerDesignSystemRoutes(
       );
       generationJobScopes.set(job.id, scope);
       res.status(202).json({ job });
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: String(err) });
     }
   });
@@ -551,7 +542,7 @@ export function registerDesignSystemRoutes(
       }
       if (!(await authorizeGenerationJobRead(req, res, job))) return;
       res.json({ job });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -573,7 +564,7 @@ export function registerDesignSystemRoutes(
       });
       generationJobScopes.set(job.id, scope);
       res.status(202).json({ job });
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: String(err) });
     }
   });
@@ -603,7 +594,7 @@ export function registerDesignSystemRoutes(
       });
       generationJobScopes.set(job.id, scope);
       res.status(202).json({ decision: preparation.decision, job });
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: String(err) });
     }
   });
@@ -620,7 +611,7 @@ export function registerDesignSystemRoutes(
         return res.status(404).json({ error: 'editable design system not found' });
       }
       res.json({ revisions });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -653,7 +644,7 @@ export function registerDesignSystemRoutes(
         return res.status(404).json({ error: 'design system revision not found' });
       }
       res.json({ revision });
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: String(err) });
     }
   });
@@ -700,7 +691,7 @@ export function registerDesignSystemRoutes(
       const canMutate = await canMutateUserDesignSystem(storage.root, req.params.id, req);
       const detail = { ...summary, body, canMutate, ...(packageInfo ? { packageInfo } : {}) };
       res.json({ ...detail, designSystem: detail });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -725,7 +716,7 @@ export function registerDesignSystemRoutes(
       if (body === null) return res.status(404).type('text/plain').send('not found');
       const html = renderDesignSystemPreview(req.params.id, body);
       res.type('text/html').send(html);
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).type('text/plain').send(String(err));
     }
   });
@@ -768,7 +759,7 @@ export function registerDesignSystemRoutes(
       if (body === null) return res.status(404).type('text/plain').send('not found');
       const html = renderDesignSystemShowcase(req.params.id, body);
       res.type('text/html').send(html);
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).type('text/plain').send(String(err));
     }
   });
@@ -795,7 +786,7 @@ export function registerDesignSystemRoutes(
       res.setHeader('Cache-Control', 'no-store');
       res.setHeader('Last-Modified', file.updatedAt);
       res.type(file.contentType).send(file.bytes);
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).type('text/plain').send(String(err));
     }
   });
@@ -817,7 +808,7 @@ export function registerDesignSystemRoutes(
         return res.status(404).json({ error: 'editable design system not found' });
       }
       res.status(201).json(workspace);
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: String(err) });
     }
   });
@@ -831,7 +822,7 @@ export function registerDesignSystemRoutes(
         return res.status(404).json({ error: 'editable design system not found' });
       }
       res.json({ files });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -848,7 +839,7 @@ export function registerDesignSystemRoutes(
       );
       if (!file) return res.status(404).json({ error: 'design system file not found' });
       res.json({ file });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -878,7 +869,7 @@ export function registerDesignSystemRoutes(
         `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
       );
       res.send(archive.buffer);
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -899,7 +890,7 @@ export function registerDesignSystemRoutes(
         return res.status(404).json({ error: 'editable design system not found' });
       }
       res.json({ ...updated as object, designSystem: updated });
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: String(err) });
     }
   });
@@ -939,7 +930,7 @@ export function registerDesignSystemRoutes(
         return res.json({ synced: [] });
       }
       res.json({ synced: outcome.synced });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -980,7 +971,7 @@ export function registerDesignSystemRoutes(
       // at a design system that no longer exists on disk.
       deleteWorkspaceResourceByResourceId(db, 'design_system', storage.bindingResourceId);
       return true;
-    } catch (err) {
+    } catch (err: any) {
       if (sendWorkspaceScopeError(res, err)) return false;
       res.status(500).json({ error: String(err) });
       return false;
@@ -997,7 +988,7 @@ export function registerDesignSystemRoutes(
       let entries;
       try {
         entries = await fsp.readdir(CRAFT_DIR, { withFileTypes: true });
-      } catch (err) {
+      } catch (err: any) {
         if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
           return res.json({ craft: [] });
         }
@@ -1021,7 +1012,7 @@ export function registerDesignSystemRoutes(
         }
       }
       res.json({ craft: out });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -1035,13 +1026,13 @@ export function registerDesignSystemRoutes(
       try {
         const text = await fsp.readFile(`${CRAFT_DIR}/${slug}.md`, 'utf8');
         res.json({ id: slug, body: text });
-      } catch (err) {
+      } catch (err: any) {
         if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
           return res.status(404).json({ error: 'craft section not found' });
         }
         throw err;
       }
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });

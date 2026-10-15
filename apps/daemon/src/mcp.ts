@@ -1,3 +1,4 @@
+import { resolveMcpWorkspaceContext } from './v05-stubs.js';
 // `od mcp` - stdio MCP server that proxies project tool calls to the
 // running daemon's HTTP API. Lets a coding agent in a *different* repo
 // (Claude Code, Cursor, Zed) pull files from a local OpenDesign
@@ -39,7 +40,6 @@ import {
 import { randomUUID } from 'node:crypto';
 
 import { postCreateArtifactRequest } from './artifacts/create.js';
-import { resolveMcpWorkspaceContext } from './mcp-workspace-context.js';
 import {
   createLocalMcpBriefStore as createBriefStore,
   localMcpBriefResponseCopy,
@@ -49,7 +49,6 @@ import {
   OPEN_DESIGN_BRIEF_APP_HTML,
   OPEN_DESIGN_BRIEF_APP_VERSION,
 } from './mcp-apps/brief-resource.js';
-import { DEFAULT_AMR_RECHARGE_URL } from './integrations/vela-errors.js';
 import {
   type ExternalPluginContext,
   logicalPluginRequestDigest,
@@ -91,7 +90,7 @@ interface ProjectPayload { project?: ProjectSummary; id?: string; name?: string;
 interface ActiveContext { active?: boolean; projectId?: string; projectName?: string | null; fileName?: string | null; ageMs?: number | null }
 type ResolvedProject = { id: string; name: string; source: 'uuid' | 'id' | 'exact' | 'slug' | 'substring' };
 interface ProjectListCache { baseUrl: string; t: number; list: ProjectSummary[] }
-interface McpArgs extends JsonObject { project?: unknown; entry?: unknown; include?: unknown; maxBytes?: unknown; path?: unknown; offset?: unknown; limit?: unknown; since?: unknown; query?: unknown; pattern?: unknown; max?: unknown; name?: unknown; content?: unknown; encoding?: unknown; artifactManifest?: unknown; confirm?: unknown; prompt?: unknown; plugin?: unknown; inputs?: unknown; agent?: unknown; model?: unknown; serviceTier?: unknown; apiKey?: unknown; requestId?: unknown; resume?: unknown; runId?: unknown; id?: unknown; designSystem?: unknown; skill?: unknown; skills?: string[]; includeUnavailable?: unknown; artifactType?: unknown; projectTitle?: unknown; locale?: unknown; knownAnswers?: unknown; skip?: unknown; briefDraftId?: unknown; nonce?: unknown; answers?: unknown; externalPluginContext?: unknown; pluginWorkflowId?: unknown }
+interface McpArgs extends JsonObject { project?: any; entry?: any; include?: any; maxBytes?: any; path?: any; offset?: any; limit?: any; since?: any; query?: any; pattern?: any; max?: any; name?: any; content?: any; encoding?: any; artifactManifest?: any; confirm?: any; prompt?: any; plugin?: any; inputs?: any; agent?: any; model?: any; serviceTier?: any; apiKey?: any; requestId?: any; resume?: any; runId?: any; id?: any; designSystem?: any; skill?: any; skills?: string[]; includeUnavailable?: any; artifactType?: any; projectTitle?: any; locale?: any; knownAnswers?: any; skip?: any; briefDraftId?: any; nonce?: any; answers?: any; externalPluginContext?: any; pluginWorkflowId?: any }
 interface ProjectFileBundleEntry { name: string; mime: string; size: number | null; content: string | null; binary: boolean }
 interface BundleInput { project: ProjectPayload | ProjectSummary; entry: string; files: ProjectFileBundleEntry[]; truncated: boolean; skippedFileCount?: number; active: ActiveContext | null; resolved?: ResolvedProject | null }
 interface ErrorWithCode { message?: string; code?: string; cause?: { code?: string } }
@@ -106,7 +105,7 @@ interface McpPluginAttribution {
   pluginWorkflowId: string;
 }
 interface McpToolCallResult {
-  [key: string]: unknown;
+  [key: string]: any;
   content: Array<{ type: 'text'; text: string }>;
   structuredContent?: JsonObject;
   isError?: boolean;
@@ -173,7 +172,7 @@ export function createMcpDaemonTarget(options: RunMcpOptions): {
       const invoke = async (baseUrl: string): Promise<McpToolCallResult> => {
         try {
           return await handler(baseUrl);
-        } catch (error) {
+        } catch (error: any) {
           return errorResult(formatError(error, baseUrl));
         }
       };
@@ -202,7 +201,7 @@ export function createMcpDaemonTarget(options: RunMcpOptions): {
   };
 }
 
-export function _localeFromMcpToolMetadata(meta: unknown): string | undefined {
+export function _localeFromMcpToolMetadata(meta: any): string | undefined {
   if (!meta || typeof meta !== 'object' || Array.isArray(meta)) return undefined;
   const record = meta as Record<string, unknown>;
   for (const candidate of [record['openai/locale'], record.locale]) {
@@ -867,7 +866,7 @@ export function localMcpToolDefinitions() {
 
 type RuntimeJsonSchema = {
   type?: string;
-  enum?: unknown[];
+  enum?: any[];
   required?: string[];
   properties?: Record<string, RuntimeJsonSchema>;
   items?: RuntimeJsonSchema;
@@ -875,7 +874,7 @@ type RuntimeJsonSchema = {
 };
 
 function validateRuntimeJsonSchema(
-  value: unknown,
+  value: any,
   schema: RuntimeJsonSchema,
   path: string,
 ): void {
@@ -1147,7 +1146,7 @@ interface PersistedPluginWorkflowBinding {
   externalPluginContext: ExternalPluginContext;
 }
 
-function issuePluginWorkflowId(callerValue: unknown): string {
+function issuePluginWorkflowId(callerValue: any): string {
   if (callerValue !== undefined) {
     throw pluginContractError(
       'pluginWorkflowId must be omitted when externalPluginContext starts a workflow',
@@ -1169,7 +1168,7 @@ export class McpObservabilitySession {
   private constructor(
     private baseUrl: string,
     private readonly identity: McpAnalyticsContextResponse,
-    clientInfo: { name?: unknown; version?: unknown } | null | undefined,
+    clientInfo: { name?: any; version?: any } | null | undefined,
   ) {
     this.hostProduct = mapMcpHostProduct(clientInfo);
   }
@@ -1180,7 +1179,7 @@ export class McpObservabilitySession {
 
   static async create(
     baseUrl: string,
-    clientInfo: { name?: unknown; version?: unknown } | null | undefined,
+    clientInfo: { name?: any; version?: any } | null | undefined,
   ): Promise<McpObservabilitySession> {
     let identity: McpAnalyticsContextResponse = {
       enabled: false,
@@ -1236,7 +1235,7 @@ export class McpObservabilitySession {
   }
 
   async resolveAttribution(
-    name: unknown,
+    name: any,
     args: McpArgs,
     briefStore: LocalMcpBriefStore,
   ): Promise<McpPluginAttribution | null> {
@@ -1495,7 +1494,7 @@ function parseMcpResult(result: McpToolCallResult): JsonObject | null {
   const text = result.content[0]?.text;
   if (typeof text !== 'string') return null;
   try {
-    const parsed = JSON.parse(text) as unknown;
+    const parsed = JSON.parse(text) as any;
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
       ? (parsed as JsonObject)
       : null;
@@ -1567,7 +1566,7 @@ async function observeMcpToolCall(
   session: McpObservabilitySession,
   briefStore: LocalMcpBriefStore,
   daemonTarget: ReturnType<typeof createMcpDaemonTarget>,
-  nameValue: unknown,
+  nameValue: any,
   args: McpArgs,
 ): Promise<McpToolCallResult> {
   const name = typeof nameValue === 'string' ? nameValue : 'unknown';
@@ -1586,7 +1585,7 @@ async function observeMcpToolCall(
         'plugin get_artifact must identify the run project explicitly',
       );
     }
-  } catch (error) {
+  } catch (error: any) {
     const observed = session.beginCall(name, args, null);
     const rawPlugin =
       args.externalPluginContext
@@ -1849,7 +1848,7 @@ export function _installMcpFatalErrorHandlers(options: {
       done();
     }
   };
-  const reportAndExit = (kind: string, reason: unknown) => {
+  const reportAndExit = (kind: string, reason: any) => {
     if (exiting) return;
     exiting = true;
     try {
@@ -1864,7 +1863,7 @@ export function _installMcpFatalErrorHandlers(options: {
   const onUncaughtException = (error: Error) => {
     reportAndExit('uncaught exception', error);
   };
-  const onUnhandledRejection = (reason: unknown) => {
+  const onUnhandledRejection = (reason: any) => {
     reportAndExit('unhandled rejection', reason);
   };
   process.on('uncaughtException', onUncaughtException);
@@ -2036,7 +2035,7 @@ async function runMcpStdioImplementation(options: RunMcpOptions): Promise<void> 
     };
     if (name === 'collect_brief' && args.locale === undefined) {
       const locale = _localeFromMcpToolMetadata(
-        (req.params as { _meta?: unknown } | undefined)?._meta,
+        (req.params as { _meta?: any } | undefined)?._meta,
       );
       if (locale) args.locale = locale;
     }
@@ -2101,7 +2100,7 @@ async function runMcpStdioImplementation(options: RunMcpOptions): Promise<void> 
   }
 }
 
-function ok(payload: unknown): McpToolCallResult {
+function ok(payload: any): McpToolCallResult {
   const text =
     typeof payload === 'string' ? payload : JSON.stringify(payload, null, 2);
   return { content: [{ type: 'text', text }] };
@@ -2111,7 +2110,7 @@ function errorResult(message: string): McpToolCallResult {
   return { isError: true, content: [{ type: 'text', text: message }] };
 }
 
-function requireString(v: unknown, name: string): asserts v is string {
+function requireString(v: any, name: string): asserts v is string {
   if (typeof v !== 'string' || v.length === 0) {
     throw new Error(`${name} is required (string).`);
   }
@@ -2120,7 +2119,7 @@ function requireString(v: unknown, name: string): asserts v is string {
 const MCP_CREDENTIAL_FIELD_PATTERN =
   /^(?:api[_-]?key|authorization|access[_-]?token|refresh[_-]?token|secret|password)$/iu;
 
-function containsMcpCredentialField(value: unknown, depth = 0): boolean {
+function containsMcpCredentialField(value: any, depth = 0): boolean {
   if (depth > 20) return true;
   if (!value || typeof value !== 'object') return false;
   if (Array.isArray(value)) {
@@ -2132,7 +2131,7 @@ function containsMcpCredentialField(value: unknown, depth = 0): boolean {
   );
 }
 
-function publicVelaLoginStatus(status: unknown): unknown {
+function publicVelaLoginStatus(status: any): any {
   if (!status || typeof status !== 'object' || Array.isArray(status)) return status;
   const { configPath: _configPath, ...publicStatus } = status as JsonObject;
   return publicStatus;
@@ -2161,7 +2160,7 @@ const PROJECT_OR_RUN_TOOLS = new Set([
 
 async function handleMcpToolCall(
   baseUrl: string,
-  name: unknown,
+  name: any,
   args: McpArgs,
   options: HandleMcpToolCallOptions = {},
 ): Promise<McpToolCallResult> {
@@ -2183,7 +2182,7 @@ async function handleMcpToolCall(
               text: copy.completeCard,
             },
           ],
-          structuredContent: collected as unknown as JsonObject,
+          structuredContent: collected as any as JsonObject,
         };
       }
       case 'confirm_brief': {
@@ -2207,7 +2206,7 @@ async function handleMcpToolCall(
               ].join('\n'),
             },
           ],
-          structuredContent: confirmed as unknown as JsonObject,
+          structuredContent: confirmed as any as JsonObject,
         };
       }
       case 'list_projects':
@@ -2220,7 +2219,7 @@ async function handleMcpToolCall(
             projects: (data?.projects ?? []).map((p) => ({
               id: p.id,
               name: p.name,
-              ...(p.metadata ? { metadata: p.metadata as unknown as JsonObject } : {}),
+              ...(p.metadata ? { metadata: p.metadata as any as JsonObject } : {}),
               workspaceId: p.workspaceId,
             })),
           });
@@ -2291,7 +2290,7 @@ async function handleMcpToolCall(
         if (typeof args.since === 'number' && Number.isFinite(args.since)) params.set('since', String(args.since));
         const qs = params.toString();
         const url = `${baseUrl}/api/projects/${encodeURIComponent(id)}/files${qs ? `?${qs}` : ''}`;
-        return ok(withActiveEcho(await getJson(url, headers), active, resolved));
+        return ok(withActiveEcho(await getJson<JsonObject>(url, headers), active, resolved));
       }
       case 'get_file': {
         const { id, resolved, active } = await resolveProjectArg(baseUrl, args.project, headers);
@@ -2321,7 +2320,7 @@ async function handleMcpToolCall(
         if (args.max) params.set('max', String(args.max));
         return ok(
           withActiveEcho(
-            await getJson(
+            await getJson<JsonObject>(
               `${baseUrl}/api/projects/${encodeURIComponent(id)}/search?${params.toString()}`,
               headers,
             ),
@@ -2382,7 +2381,7 @@ async function handleMcpToolCall(
       default:
         return errorResult(`unknown tool: ${name}`);
     }
-  } catch (err) {
+  } catch (err: any) {
     return errorResult(formatError(err, baseUrl));
   }
 }
@@ -2484,7 +2483,7 @@ async function formatDaemonError(resp: Response, url: string): Promise<string> {
 
 async function postJson<T>(
   url: string,
-  body: unknown,
+  body: any,
   headers: Record<string, string> = {},
 ): Promise<T> {
   const resp = await fetch(url, {
@@ -2532,7 +2531,7 @@ async function createProject(
   // the next workspace list.
   try {
     return ok(await postJson<JsonObject>(`${baseUrl}/api/projects`, body, headers ?? {}));
-  } catch (err) {
+  } catch (err: any) {
     if (!headers || !String(err).includes('WORKSPACE_')) throw err;
     return ok(await postJson<JsonObject>(`${baseUrl}/api/projects`, body));
   }
@@ -2578,7 +2577,7 @@ async function listAgents(baseUrl: string, includeUnavailable: boolean): Promise
     : all.filter((a) => a?.available === true);
   const MAX_MODELS = 10;
   const agents = filtered.map((a) => {
-    const models = Array.isArray(a?.models) ? (a.models as unknown[]) : [];
+    const models = Array.isArray(a?.models) ? (a.models as any[]) : [];
     const out: JsonObject = {
       id: a?.id,
       name: a?.name,
@@ -2751,7 +2750,7 @@ async function getRun(
     const enriched: JsonObject = { ...status };
     if (studioUrl) enriched.studioUrl = studioUrl;
     if (status.failureAction === 'recharge') {
-      enriched.rechargeUrl = DEFAULT_AMR_RECHARGE_URL;
+      enriched.rechargeUrl = null as any;
       enriched.hint =
         'OpenDesign Cloud paused this logical run because the account balance is insufficient. Preserve the brief and project, show rechargeUrl to the user, and do not switch modes. After the user confirms the top-up, call start_run once with the exact original payload, the same requestId, and resume:true; OpenDesign Cloud will resume the existing run and billing operation. Do not expose internal runtime or tool identifiers.';
     }
@@ -2837,7 +2836,7 @@ async function fetchRunAgentMessage(
       }
       if (eventName !== 'agent' || !dataLine) continue;
       try {
-        const data = JSON.parse(dataLine) as { type?: string; delta?: unknown };
+        const data = JSON.parse(dataLine) as { type?: string; delta?: any };
         if (data?.type === 'text_delta' && typeof data.delta === 'string') {
           parts.push(data.delta);
         }
@@ -2879,9 +2878,9 @@ async function getWebBaseUrl(daemonBaseUrl: string): Promise<string | null> {
 
 function buildStudioUrl(
   webBaseUrl: string | null,
-  projectId: unknown,
-  conversationId: unknown,
-  entryFile: unknown,
+  projectId: any,
+  conversationId: any,
+  entryFile: any,
 ): string | null {
   if (!webBaseUrl) return null;
   if (typeof projectId !== 'string' || !projectId) return null;
@@ -2930,7 +2929,7 @@ async function getDefaultConversationId(
 async function resolveProjectEntry(
   baseUrl: string,
   projectId: string,
-  declared: unknown,
+  declared: any,
   headers?: Record<string, string>,
 ): Promise<string | null> {
   if (typeof declared === 'string' && declared.length > 0) return declared;
@@ -2962,7 +2961,7 @@ async function resolveProjectEntry(
 // host-injected React/Babel do not — those still need the OpenDesign
 // UI). Returns null when there's no entry file. Pure: no I/O, so
 // get_project can call it from project data it already has.
-function rawPreviewUrl(baseUrl: string, projectId: string, entry: unknown): string | null {
+function rawPreviewUrl(baseUrl: string, projectId: string, entry: any): string | null {
   return buildProjectRawFileUrl(baseUrl, projectId, entry);
 }
 
@@ -3025,7 +3024,7 @@ async function createArtifact(
 // Resource description renderers in some MCP UIs collapse whitespace
 // poorly; keep our descriptions on a single line so they don't break
 // the catalog list layout.
-function oneLine(s: unknown): string | undefined {
+function oneLine(s: any): string | undefined {
   if (typeof s !== 'string') return undefined;
   return s.replace(/\s+/g, ' ').trim().slice(0, 200) || undefined;
 }
@@ -3063,7 +3062,7 @@ async function fetchProjectList(
     list = (data?.projects ?? []).map((p) => ({
       id: p.id,
       name: p.name,
-      ...(p.metadata ? { metadata: p.metadata as unknown as JsonObject } : {}),
+      ...(p.metadata ? { metadata: p.metadata as any as JsonObject } : {}),
     }));
   } else {
     const data = await getJson<ProjectsPayload>(`${baseUrl}/api/projects`);
@@ -3080,7 +3079,7 @@ async function fetchProjectList(
 // rather than guessing.
 async function resolveProjectArg(
   baseUrl: string,
-  arg: unknown,
+  arg: any,
   headers?: Record<string, string>,
 ): Promise<{ id: string; resolved: ResolvedProject | null; active: ActiveContext | null }> {
   if (typeof arg === 'string' && arg.length > 0) {
@@ -3090,7 +3089,7 @@ async function resolveProjectArg(
   let active: ActiveContext;
   try {
     active = await getJson<ActiveContext>(`${baseUrl}/api/active`);
-  } catch (err) {
+  } catch (err: any) {
     throw new Error(
       `project arg omitted and active context lookup failed: ${errorMessage(err)}. Pass project="<id-or-name>".`,
     );
@@ -3105,7 +3104,7 @@ async function resolveProjectArg(
 
 async function resolveProjectId(
   baseUrl: string,
-  arg: unknown,
+  arg: any,
   headers?: Record<string, string>,
 ): Promise<ResolvedProject> {
   if (typeof arg !== 'string' || !arg) {
@@ -3119,7 +3118,7 @@ async function resolveProjectId(
   }
 
   const lower = arg.toLowerCase();
-  const norm = (s: unknown): string =>
+  const norm = (s: any): string =>
     String(s || '')
       .toLowerCase()
       .replace(/\s*\(\d+\)\s*$/, '')
@@ -3261,10 +3260,10 @@ function totalTextBytes(files: ProjectFileBundleEntry[]): number {
 
 async function getArtifact(
   baseUrl: string,
-  projectArg: unknown,
-  entryArg: unknown,
-  includeMode: unknown,
-  maxBytesArg: unknown,
+  projectArg: any,
+  entryArg: any,
+  includeMode: any,
+  maxBytesArg: any,
   headers?: Record<string, string>,
 ) {
   const include = includeMode == null || includeMode === '' ? 'auto' : includeMode;
@@ -3301,7 +3300,7 @@ async function getArtifact(
     let file;
     try {
       file = await fetchProjectFile(baseUrl, id, entry, undefined, headers);
-    } catch (err) {
+    } catch (err: any) {
       return errorResult(errorMessage(err));
     }
     return okBundle({ project, entry, files: [file], truncated: false, skippedFileCount: 0, active, resolved });
@@ -3324,7 +3323,7 @@ async function getArtifact(
       try {
         const remaining = maxBytes - totalTextBytes(fetched);
         fetched.push(await fetchProjectFile(baseUrl, id, f.name, remaining, headers));
-      } catch (err) {
+      } catch (err: any) {
         if (err instanceof BudgetExceededError) truncated = true;
         else skippedFileCount += 1;
         // Skip files that fail to fetch; keep going.
@@ -3339,7 +3338,7 @@ async function getArtifact(
   let entryFile;
   try {
     entryFile = await fetchProjectFile(baseUrl, id, entry, undefined, headers);
-  } catch (err) {
+  } catch (err: any) {
     return errorResult(errorMessage(err));
   }
   const MAX_DEPTH = 3;
@@ -3366,7 +3365,7 @@ async function getArtifact(
       try {
         const remaining = maxBytes - totalTextBytes(fetched);
         file = await fetchProjectFile(baseUrl, id, refPath, remaining, headers);
-      } catch (err) {
+      } catch (err: any) {
         if (err instanceof BudgetExceededError) truncated = true;
         else skippedFileCount += 1;
         continue;
@@ -3564,7 +3563,7 @@ async function safeText(resp: Response): Promise<string> {
   }
 }
 
-function formatError(err: unknown, daemonUrl: string): string {
+function formatError(err: any, daemonUrl: string): string {
   const e = err as ErrorWithCode | null | undefined;
   const code = e && (e.cause?.code || e.code);
   const msg = errorMessage(err);
@@ -3574,7 +3573,7 @@ function formatError(err: unknown, daemonUrl: string): string {
   return msg;
 }
 
-function errorMessage(err: unknown): string {
+function errorMessage(err: any): string {
   return err instanceof Error ? err.message : String(err);
 }
 

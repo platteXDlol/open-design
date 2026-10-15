@@ -85,7 +85,7 @@ function readable(value: string | null | undefined): string | null {
  */
 function acpCliSessionRefusalDetails(
   identity: AcpAgentIdentity,
-  existing: unknown,
+  existing: any,
 ): Record<string, unknown> {
   const agent = readable(identity.agentName);
   return {
@@ -100,9 +100,9 @@ function acpCliSessionRefusalDetails(
 
 /** The failure frame `agent-protocol/acp/session.ts` puts on `send('error', …)`. */
 interface AcpErrorFrame {
-  message?: unknown;
-  error?: unknown;
-  [key: string]: unknown;
+  message?: any;
+  error?: any;
+  [key: string]: any;
 }
 
 /**
@@ -135,9 +135,9 @@ interface AcpErrorFrame {
  * @returns The payload to send, carrying `AGENT_CLI_SESSION_REFUSED` when applicable.
  */
 export function withAcpHandshakeFailureGuidance(
-  payload: unknown,
+  payload: any,
   identity: AcpAgentIdentity = {},
-): unknown {
+): any {
   if (!payload || typeof payload !== 'object') return payload;
   const frame = payload as AcpErrorFrame;
   const nested =

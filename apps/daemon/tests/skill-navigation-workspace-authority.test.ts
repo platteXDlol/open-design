@@ -157,7 +157,6 @@ async function fixture() {
     paths,
     resources: {
       listAllDesignSystems: async () => [],
-      resolveWorkspaceScope: async () => null,
       listAllSkills: async () => [],
       listAllDesignTemplates: async () => [],
       listAllSkillLikeEntries: (async (

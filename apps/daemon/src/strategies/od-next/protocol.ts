@@ -138,7 +138,7 @@ function firstBalancedJsonObject(value: string): string | null {
   return null;
 }
 
-function jsonValue(value: string): { ok: true; value: unknown } | { ok: false } {
+function jsonValue(value: string): { ok: true; value: any } | { ok: false } {
   try {
     return { ok: true, value: JSON.parse(value) };
   } catch {
@@ -457,7 +457,7 @@ export class OdNextMachineProtocolStream {
    * normalization; every other shape passes through to schema validation
    * unchanged.
    */
-  private normalizeMachineValue(kind: MachineKind, value: unknown): unknown {
+  private normalizeMachineValue(kind: MachineKind, value: any): any {
     if (kind !== 'runtime') return value;
     if (
       typeof value !== 'object'

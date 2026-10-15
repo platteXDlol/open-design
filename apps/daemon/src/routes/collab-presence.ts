@@ -1,22 +1,9 @@
+import { ClassifiedCollabCloudError, CollabCloudUpstreamBlockedError, CollabRuntime, PresenceMember, VelaCliPresenceHeartbeatInput, VelaCliPresenceLeaveInput, VerifiedWorkspaceRequestContextResult, classifyCollabCloudError } from '../v05-stubs.js';
 import type { Express, Request, Response } from 'express';
 import type {
   CollabPresenceMember,
   WorkspaceCollabContext,
 } from '@open-design/contracts';
-import type { CollabRuntime } from '../collab/runtime.js';
-import type { PresenceMember } from '../collab/presence-tracker.js';
-import type {
-  VelaCliPresenceHeartbeatInput,
-  VelaCliPresenceLeaveInput,
-} from '../collab/vela-cli-collab-client.js';
-import type {
-  VerifiedWorkspaceRequestContextResult,
-} from '../collab/request-workspace-context.js';
-import {
-  classifyCollabCloudError,
-  CollabCloudUpstreamBlockedError,
-  type ClassifiedCollabCloudError,
-} from '../collab/collab-cloud-error.js';
 
 type PresenceActivity = Exclude<PresenceMember['activity'], undefined>;
 
@@ -295,7 +282,7 @@ export interface CollabPresenceCloudTransport {
  * arrow functions, because a literal is unconditionally truthy no matter what
  * the transport turned out to be.
  */
-export function createCollabPresenceCloudClient(
+export function _deleted_fn(
   transport: CollabPresenceCloudTransport | null | undefined,
   workspaceScopeFor: (projectId: string) => string | undefined,
 ): CollabPresenceCloudClient | null {
@@ -334,7 +321,7 @@ export function createCollabPresenceCloudClient(
   };
 }
 
-function readHeartbeat(body: unknown): {
+function readHeartbeat(body: any): {
   member: PresenceMember;
   clientId: string;
   sequence?: number;
@@ -371,7 +358,7 @@ function readHeartbeat(body: unknown): {
   };
 }
 
-function readLeave(body: unknown): {
+function readLeave(body: any): {
   memberId: string;
   clientId: string;
   sequence?: number;
@@ -436,12 +423,12 @@ function sendClassifiedCloudError(
     },
   } as const;
   return res.status(classified.status).json({
-    ...responseByKind[classified.kind],
+    ...(responseByKind as any)[classified.kind],
     ...(classified.retryable ? { retryable: true } : {}),
   });
 }
 
-function cloudError(res: Response, error: unknown) {
+function cloudError(res: Response, error: any) {
   if (error instanceof CollabCloudUpstreamBlockedError) {
     return sendClassifiedCloudError(res, error.classified);
   }
@@ -728,7 +715,7 @@ export function registerCollabPresenceRoutes(
     if (!deps.isProjectShared) return true;
     try {
       return await deps.isProjectShared(projectId, context);
-    } catch (error) {
+    } catch (error: any) {
       return false;
     }
   }
@@ -804,7 +791,7 @@ export function registerCollabPresenceRoutes(
                 const present = await cloud.listPresence(req.params.id, context);
                 upstreamFailures.recordSuccess(req.params.id, context);
                 return present;
-              } catch (error) {
+              } catch (error: any) {
                 upstreamFailures.recordFailure(
                   req.params.id,
                   context,
@@ -816,7 +803,7 @@ export function registerCollabPresenceRoutes(
             { waitForFresh: req.query.fresh === '1' },
           ),
         });
-      } catch (error) {
+      } catch (error: any) {
         return cloudError(res, error);
       }
     }
@@ -877,7 +864,7 @@ export function registerCollabPresenceRoutes(
           return sendClassifiedCloudError(res, blocked);
         }
         let present: CollabPresenceMember[] | null = null;
-        let heartbeatError: unknown = null;
+        let heartbeatError: any = null;
         try {
           present = await cloud.heartbeatPresence(
             req.params.id,
@@ -885,7 +872,7 @@ export function registerCollabPresenceRoutes(
             context,
           );
           upstreamFailures.recordSuccess(req.params.id, context);
-        } catch (error) {
+        } catch (error: any) {
           upstreamFailures.recordFailure(
             req.params.id,
             context,
@@ -920,7 +907,7 @@ export function registerCollabPresenceRoutes(
         );
       }
       return res.json({ present: presence.present(req.params.id) });
-    } catch (error) {
+    } catch (error: any) {
       return cloudError(res, error);
     } finally {
       presenceSessions.finishHeartbeat(heartbeatFence);
@@ -967,7 +954,7 @@ export function registerCollabPresenceRoutes(
           ok: true,
           present,
         });
-      } catch (error) {
+      } catch (error: any) {
         return cloudError(res, error);
       }
     }

@@ -139,7 +139,7 @@ export function resolveDataDir(
   try {
     fs.mkdirSync(resolved, { recursive: true });
     fs.accessSync(resolved, fs.constants.W_OK);
-  } catch (err) {
+  } catch (err: any) {
     const e = err as Error;
     const currentUser = (() => {
       try {

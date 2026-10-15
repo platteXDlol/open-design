@@ -59,7 +59,7 @@ export type RunSteeringVerdict =
  */
 type PromptInputFormatBearer = {
   promptInputFormat?: 'text' | 'stream-json';
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 /**

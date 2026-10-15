@@ -42,15 +42,15 @@ type JsonObject = Record<string, unknown>;
 type AgentEvent = Record<string, unknown>;
 export type CodexAppServerEventHandler = (event: AgentEvent) => void;
 
-function isRecord(value: unknown): value is JsonObject {
+function isRecord(value: any): value is JsonObject {
   return value != null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function str(value: unknown): string {
+function str(value: any): string {
   return typeof value === 'string' ? value : '';
 }
 
-function num(value: unknown): number | undefined {
+function num(value: any): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
@@ -71,7 +71,7 @@ function num(value: unknown): number | undefined {
  * a readable tag stays unnamed, which makes `codexFileChanges` reject the whole
  * item — the same conservative behaviour `exec --json` has for an unknown kind.
  */
-function execPatchKind(kind: unknown): string {
+function execPatchKind(kind: any): string {
   if (typeof kind === 'string') return kind;
   return isRecord(kind) ? str(kind.type) : '';
 }
@@ -178,7 +178,7 @@ function toExecItem(item: JsonObject): JsonObject | null {
 
 export interface CodexAppServerNormalizer {
   /** Route one server-to-client notification. Never throws on bad input. */
-  handleNotification(method: string, params: unknown): void;
+  handleNotification(method: string, params: any): void;
   /** Counters for notifications/items this build had no mapping for. */
   stats(): { unknownNotifications: number; unknownItems: number };
 }
@@ -641,7 +641,7 @@ export function createCodexAppServerNormalizer(
   }
 
   return {
-    handleNotification(method: string, rawParams: unknown): void {
+    handleNotification(method: string, rawParams: any): void {
       const params = isRecord(rawParams) ? rawParams : {};
       switch (method) {
         case 'thread/started': {

@@ -5,7 +5,6 @@ import type {
 } from '@open-design/contracts';
 import { projectKindFromMetadataToTrackingOrLegacyDefault } from '@open-design/contracts/analytics';
 import type { RouteDeps } from '../../server-context.js';
-import type { BoundWorkspaceResourceMutationGate } from '../../collab/workspace-resource-mutation.js';
 import { getProject, isProjectCommentAnchorConversationId } from '../../db.js';
 
 export type ProjectCommentWorkspaceContextResolution =
@@ -41,7 +40,7 @@ export interface RegisterProjectCommentRoutesDeps extends RouteDeps<'db' | 'proj
    * since `enforceWorkspaceResourceMutation` itself passes a `row === null`
    * lookup straight through regardless of ctx.
    */
-  enforceWorkspaceProjectMutation?: BoundWorkspaceResourceMutationGate;
+  enforceWorkspaceProjectMutation?: any;
   /** Paired with `enforceWorkspaceProjectMutation` above — see that field. */
   sendApiError?: (res: any, status: number, code: string, message: string) => unknown;
   /**
@@ -272,7 +271,7 @@ export function registerProjectCommentRoutes(app: Express, ctx: RegisterProjectC
   function sendWorkspaceResolutionError(
     res: any,
     resolution: Extract<ProjectCommentWorkspaceContextResolution, { ok: false }>,
-  ): unknown {
+  ): any {
     if (ctx.sendApiError) {
       return ctx.sendApiError(
         res,
@@ -468,7 +467,7 @@ export function registerProjectCommentRoutes(app: Express, ctx: RegisterProjectC
         updateProject(db, req.params.id, {});
         if (saved && syncEnabled) {
           requireRelayEnqueued(ctx.onCommentCreated?.(
-            saved as unknown as PreviewComment,
+            saved as any as PreviewComment,
             workspaceContext,
           ));
         }
@@ -581,7 +580,7 @@ export function registerProjectCommentRoutes(app: Express, ctx: RegisterProjectC
           updateProject(db, req.params.id, {});
           if (syncEnabled) {
             requireRelayEnqueued(ctx.onCommentUpdated?.(
-              saved as unknown as PreviewComment,
+              saved as any as PreviewComment,
               workspaceContext,
             ));
           }

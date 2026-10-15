@@ -14,7 +14,7 @@ type JsonRecord = Record<string, unknown>;
 type QoderEvent = Record<string, unknown>;
 type QoderEventSink = (event: QoderEvent) => void;
 
-function isRecord(value: unknown): value is JsonRecord {
+function isRecord(value: any): value is JsonRecord {
   return Boolean(value) && typeof value === 'object';
 }
 
@@ -29,7 +29,7 @@ function isRecord(value: unknown): value is JsonRecord {
  * them, which is the same guarantee the other runtimes get for free from
  * `child.stdout.setEncoding('utf8')`.
  */
-function stringifyContent(value: unknown, decoder: StringDecoder): string {
+function stringifyContent(value: any, decoder: StringDecoder): string {
   if (typeof value === 'string') return value;
   if (Buffer.isBuffer(value)) return decoder.write(value);
   if (value == null) return '';
@@ -40,14 +40,14 @@ function stringifyContent(value: unknown, decoder: StringDecoder): string {
   }
 }
 
-function textFromContentBlock(block: unknown): string {
+function textFromContentBlock(block: any): string {
   if (!isRecord(block)) return '';
   if (block.type === 'text' && typeof block.text === 'string') return block.text;
   if (typeof block.text === 'string') return block.text;
   return '';
 }
 
-function messageFromError(error: unknown): string {
+function messageFromError(error: any): string {
   if (isRecord(error) && typeof error.message === 'string') {
     return error.message;
   }
@@ -83,7 +83,7 @@ export function createQoderStreamHandler(onEvent: QoderEventSink) {
   const decoder = new StringDecoder('utf8');
   let emittedThinkingStart = false;
 
-  function handleObject(obj: unknown, rawLine: string) {
+  function handleObject(obj: any, rawLine: string) {
     if (!isRecord(obj)) return;
 
     if (obj.type === 'system' && obj.subtype === 'init') {
@@ -174,7 +174,7 @@ export function createQoderStreamHandler(onEvent: QoderEventSink) {
     }
   }
 
-  function feed(chunk: unknown) {
+  function feed(chunk: any) {
     buffer += stringifyContent(chunk, decoder);
     let nl;
     while ((nl = buffer.indexOf('\n')) !== -1) {

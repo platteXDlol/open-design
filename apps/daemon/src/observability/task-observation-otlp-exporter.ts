@@ -164,7 +164,7 @@ export function otlpTaskSpanId(observationId: string): string {
   return stableHexId('open-design/task-observation-otlp-span/v1', observationId, 16);
 }
 
-function jsonString(value: unknown): string {
+function jsonString(value: any): string {
   return JSON.stringify(value) ?? 'null';
 }
 
@@ -314,7 +314,7 @@ function promptBoundary(observation: NormalizedAgentObservationV1) {
 
 function safeObservationInput(
   observation: NormalizedAgentObservationV1,
-): unknown {
+): any {
   const prompt = promptBoundary(observation);
   return prompt && (prompt.availability === 'exact' || prompt.availability === 'partial')
     ? prompt.safePayload
@@ -646,9 +646,9 @@ export function legacyAndOtlpTaskMappingsMatch(
     type: string;
     body: Record<string, unknown>;
   } => !!event && typeof event === 'object' && !Array.isArray(event) &&
-    typeof (event as { type?: unknown }).type === 'string' &&
-    !!(event as { body?: unknown }).body &&
-    typeof (event as { body?: unknown }).body === 'object');
+    typeof (event as { type?: any }).type === 'string' &&
+    !!(event as { body?: any }).body &&
+    typeof (event as { body?: any }).body === 'object');
   const trace = legacyEvents.find((event) => event.type === 'trace-create');
   if (!trace || trace.body.id !== aggregate.root.observationId) return false;
   const rootLimitations = safeTaskObservationLimitationCodes(aggregate.limitations);
@@ -935,7 +935,7 @@ function payloadTooLarge(
 function otlpPartialSuccess(body: string): boolean {
   if (!body) return false;
   try {
-    const parsed = JSON.parse(body) as { partialSuccess?: { rejectedSpans?: unknown } };
+    const parsed = JSON.parse(body) as { partialSuccess?: { rejectedSpans?: any } };
     const value = parsed.partialSuccess?.rejectedSpans;
     return (typeof value === 'number' && value > 0) ||
       (typeof value === 'string' && Number.parseInt(value, 10) > 0);

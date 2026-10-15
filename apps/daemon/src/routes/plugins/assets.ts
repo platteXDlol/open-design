@@ -1,11 +1,8 @@
+import { VerifyWorkspaceRequestAuthority, resolveOptionalLocalWorkspaceRequestAuthority } from '../../v05-stubs.js';
 import type { Express, Request, Response } from 'express';
 import type * as BetterSqlite3 from 'better-sqlite3';
 import path from 'node:path';
 import type { WorkspaceCollabContext } from '@open-design/contracts';
-import {
-  resolveOptionalLocalWorkspaceRequestAuthority,
-  type VerifyWorkspaceRequestAuthority,
-} from '../../collab/workspace-resource-mutation.js';
 
 export interface RegisterPluginAssetRoutesDeps {
   db: PluginDbLike;
@@ -17,7 +14,7 @@ export interface RegisterPluginAssetRoutesDeps {
     workspaceMemberId?: string | null,
   ) => InstalledPluginLike | null | Promise<InstalledPluginLike | null>;
   pluginAssetCache: { get(url: string): Promise<{ buf: Buffer; contentType: string }> };
-  AssetCacheError: new (...args: unknown[]) => Error & { status: number };
+  AssetCacheError: new (...args: any[]) => Error & { status: number };
   assetCacheRewriteUrl: (url: string) => string;
   isCacheableExternalUrl: (url: string) => boolean;
   assembleExample: (templateHtml: string, slidesHtml: string, title: string) => string;
@@ -34,17 +31,17 @@ interface PluginManifestLike {
   title?: string;
   od?: {
     preview?: { entry?: string };
-    context?: { assets?: unknown[] };
+    context?: { assets?: any[] };
     useCase?: { exampleOutputs?: PluginExampleOutput[] };
   };
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 interface InstalledPluginLike {
   fsPath: string;
   title?: string;
   manifest?: PluginManifestLike;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export function registerPluginAssetRoutes(app: Express, deps: RegisterPluginAssetRoutesDeps): void {
@@ -209,7 +206,7 @@ export function registerPluginAssetRoutes(app: Express, deps: RegisterPluginAsse
         );
       }
       res.send(buf);
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   }
@@ -271,7 +268,7 @@ export function registerPluginAssetRoutes(app: Express, deps: RegisterPluginAsse
   function collectPluginPreviewCandidates(plugin: InstalledPluginLike): string[] {
     const candidates: string[] = [];
     const seen = new Set<string>();
-    const push = (rel: unknown) => {
+    const push = (rel: any) => {
       if (typeof rel !== 'string') return;
       const trimmed = rel.replace(/^\.\//, '');
       if (!trimmed || seen.has(trimmed)) return;
@@ -376,7 +373,7 @@ export function registerPluginAssetRoutes(app: Express, deps: RegisterPluginAsse
       const ct = ext === '.html' ? 'text/html; charset=utf-8' : ext === '.js' ? 'application/javascript; charset=utf-8' : ext === '.css' ? 'text/css; charset=utf-8' : ext === '.json' ? 'application/json; charset=utf-8' : ext === '.md' || ext === '.markdown' ? 'text/markdown; charset=utf-8' : ext === '.svg' ? 'image/svg+xml' : ext === '.png' ? 'image/png' : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : 'application/octet-stream';
       res.setHeader('Content-Type', ct);
       res.send(buf);
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -390,7 +387,7 @@ export function registerPluginAssetRoutes(app: Express, deps: RegisterPluginAsse
       res.setHeader('Content-Security-Policy', "default-src 'none'");
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
       return res.send(buf);
-    } catch (err) {
+    } catch (err: any) {
       const status = err instanceof AssetCacheError ? err.status : 502;
       return res.status(status).json({ error: err instanceof Error ? err.message : String(err) });
     }

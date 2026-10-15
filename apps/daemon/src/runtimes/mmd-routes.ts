@@ -41,11 +41,11 @@ export function resolveMmdRoutesFile(env: RuntimeEnv): string | null {
   return join(home, DEFAULT_MMD_MODEL_ROUTES_FILE);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-export function parseMmdRouteModelIds(raw: unknown): string[] {
+export function parseMmdRouteModelIds(raw: any): string[] {
   if (!isRecord(raw) || !isRecord(raw.routes)) return [];
 
   const seen = new Set<string>();
@@ -60,7 +60,7 @@ export function parseMmdRouteModelIds(raw: unknown): string[] {
 }
 
 export function resolveMmdRouteLaunchEnv(
-  raw: unknown,
+  raw: any,
   modelId: string | null | undefined,
 ): MmdRouteLaunchEnv | null {
   const id = sanitizeCustomModel(modelId);
@@ -129,7 +129,7 @@ export async function loadMmdRouteModels(
     return null;
   }
 
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(text);
   } catch {
@@ -155,7 +155,7 @@ export async function loadMmdRouteLaunchEnv(
     return null;
   }
 
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(text);
   } catch {

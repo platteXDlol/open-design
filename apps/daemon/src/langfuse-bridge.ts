@@ -112,7 +112,7 @@ export interface DaemonRunRecord {
   events: Array<{
     id: number;
     event: string;
-    data: unknown;
+    data: any;
     timestamp?: number;
   }>;
   // The fields below are stashed by `startChatRun` (and the POST /api/runs
@@ -151,8 +151,8 @@ export interface DaemonRunRecord {
 export interface BuildSafeRunQualityProjectionFromDaemonOpts {
   exactPrompt?: { text: string; stage: string; sha256: string; utf8Bytes: number };
   captureObjects?: boolean;
-  onTraceProjection?: (projection: { input?: unknown; output?: unknown; metadata: Record<string, unknown> }) => void;
-  db: unknown;
+  onTraceProjection?: (projection: { input?: any; output?: any; metadata: Record<string, unknown> }) => void;
+  db: any;
   dataDir: string;
   run: SafeRunQualityDaemonRunRecord;
   prefs: TelemetryPrefs;
@@ -207,7 +207,7 @@ interface FinalTraceSafeManifests {
 }
 
 export interface ReportRunCompletedFromDaemonOpts {
-  db: unknown;
+  db: any;
   dataDir: string;
   run: DaemonRunRecord;
   persistedRunStatus?: string;
@@ -281,13 +281,13 @@ function mergeTraceSafeManifests(
   };
 }
 
-function nonNegativeInteger(value: unknown): number | undefined {
+function nonNegativeInteger(value: any): number | undefined {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0
     ? value
     : undefined;
 }
 
-function nonNegativeFinite(value: unknown): number | undefined {
+function nonNegativeFinite(value: any): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
     ? value
     : undefined;
@@ -504,7 +504,7 @@ function summarizeEvents(
   const toolCallIds = new Set<string>();
   let errors = 0;
   for (const rec of events) {
-    const data = rec.data as { type?: string; id?: unknown } | null | undefined;
+    const data = rec.data as { type?: string; id?: any } | null | undefined;
     if (rec.event === 'agent') {
       const t = data?.type;
       if (t === 'tool_use') {
@@ -601,7 +601,7 @@ function redactLocalPaths(value: string): string {
 }
 
 function serializeToolPayload(
-  value: unknown,
+  value: any,
   opts: { toolName: string; direction: 'input' | 'output' },
 ): string | undefined {
   if (value === undefined || value === null) return undefined;
@@ -630,12 +630,12 @@ function collectToolCalls(
     const data = rec.data as
       | {
           type?: string;
-          id?: unknown;
-          name?: unknown;
-          input?: unknown;
-          toolUseId?: unknown;
-          content?: unknown;
-          isError?: unknown;
+          id?: any;
+          name?: any;
+          input?: any;
+          toolUseId?: any;
+          content?: any;
+          isError?: any;
         }
       | null
       | undefined;
@@ -643,7 +643,7 @@ function collectToolCalls(
       const eventTs = eventTimestamp(rec, runStartedAt + rec.id);
       // Prefer producer-supplied start time (ACP firstSeenAt) over event log ts.
       const payloadStartedAt =
-        typeof (data as { startedAt?: unknown }).startedAt === 'number' &&
+        typeof (data as { startedAt?: any }).startedAt === 'number' &&
         Number.isFinite((data as { startedAt: number }).startedAt)
           ? (data as { startedAt: number }).startedAt
           : undefined;
@@ -741,27 +741,27 @@ function collectAgentEvents(
     const data = rec.data as
       | {
           type?: string;
-          label?: unknown;
-          model?: unknown;
-          ttftMs?: unknown;
-          usage?: unknown;
-          costUsd?: unknown;
-          durationMs?: unknown;
-          stopReason?: unknown;
-          name?: unknown;
-          source?: unknown;
-          reason?: unknown;
-          shape?: unknown;
-          elapsedMs?: unknown;
-          suppressedChars?: unknown;
-          suppressedChunks?: unknown;
-          openedBlocks?: unknown;
-          closedBlocks?: unknown;
-          fileCount?: unknown;
-          files?: unknown;
-          pendingCandidateChars?: unknown;
-          suppressing?: unknown;
-          requestId?: unknown;
+          label?: any;
+          model?: any;
+          ttftMs?: any;
+          usage?: any;
+          costUsd?: any;
+          durationMs?: any;
+          stopReason?: any;
+          name?: any;
+          source?: any;
+          reason?: any;
+          shape?: any;
+          elapsedMs?: any;
+          suppressedChars?: any;
+          suppressedChunks?: any;
+          openedBlocks?: any;
+          closedBlocks?: any;
+          fileCount?: any;
+          files?: any;
+          pendingCandidateChars?: any;
+          suppressing?: any;
+          requestId?: any;
         }
       | null
       | undefined;
@@ -967,7 +967,7 @@ function collectAgentEvents(
   return out;
 }
 
-function stableObjectId(prefix: 'att' | 'art', parts: unknown[]): string {
+function stableObjectId(prefix: 'att' | 'art', parts: any[]): string {
   const h = createHash('sha256')
     .update(JSON.stringify(parts))
     .digest('hex')
@@ -982,14 +982,14 @@ function extensionFromName(value: string): string | undefined {
   return basename.slice(dot + 1).toLowerCase();
 }
 
-function safeSha256(value: unknown): string | undefined {
+function safeSha256(value: any): string | undefined {
   if (typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   if (!trimmed) return undefined;
   return trimmed.startsWith('sha256:') ? trimmed : `sha256:${trimmed}`;
 }
 
-function safeStatus(value: unknown): string | undefined {
+function safeStatus(value: any): string | undefined {
   return typeof value === 'string' && value.trim().length > 0
     ? value.trim().slice(0, 64)
     : undefined;
@@ -1017,7 +1017,7 @@ function objectStorageRef(args: {
   ].join('/');
 }
 
-function statusForSize(size: unknown): {
+function statusForSize(size: any): {
   status: 'ok' | 'partial';
   reason?: string;
   sizeBytes?: number;
@@ -1038,7 +1038,7 @@ function sanitizeProducedFileSlug(item: Record<string, unknown>): string {
   return raw.split(/[\\/]/).filter(Boolean).pop() ?? raw;
 }
 
-function summarizeProducedFiles(items: unknown): ArtifactSummary[] {
+function summarizeProducedFiles(items: any): ArtifactSummary[] {
   if (!Array.isArray(items)) return [];
   const out: ArtifactSummary[] = [];
   for (const item of items) {
@@ -1055,7 +1055,7 @@ function summarizeProducedFiles(items: unknown): ArtifactSummary[] {
   return out;
 }
 
-function buildTraceObjectArtifactSources(items: unknown): TraceArtifactObjectSource[] {
+function buildTraceObjectArtifactSources(items: any): TraceArtifactObjectSource[] {
   if (!Array.isArray(items)) return [];
   const out: TraceArtifactObjectSource[] = [];
   for (const item of items) {
@@ -1083,8 +1083,8 @@ function buildTraceObjectArtifactSources(items: unknown): TraceArtifactObjectSou
 function collectPriorUserAttachments(
   messages: Array<Record<string, unknown>>,
   assistantIndex: number,
-): unknown {
-  const attachments: unknown[] = [];
+): any {
+  const attachments: any[] = [];
   const priorMessages = messages.slice(
     0,
     assistantIndex >= 0 ? assistantIndex : messages.length,
@@ -1101,8 +1101,8 @@ function collectPriorUserAttachments(
 function buildTraceSafeManifests(args: {
   projectId: string | null | undefined;
   runId: string;
-  attachmentsRaw: unknown;
-  traceObjectFilesRaw: unknown;
+  attachmentsRaw: any;
+  traceObjectFilesRaw: any;
 }): TraceSafeManifestResult {
   const attachmentManifest: AttachmentManifestEntry[] = [];
   const artifactManifest: ArtifactManifestEntry[] = [];
@@ -1245,12 +1245,12 @@ function buildTraceSafeManifests(args: {
   };
 }
 
-function traceObjectFilesForTelemetry(traceObjectFilesRaw: unknown, producedFilesRaw: unknown): unknown {
+function traceObjectFilesForTelemetry(traceObjectFilesRaw: any, producedFilesRaw: any): any {
   return Array.isArray(traceObjectFilesRaw) ? traceObjectFilesRaw : producedFilesRaw;
 }
 
 function buildTraceObjectSummary(args: {
-  traceObjectFilesRaw: unknown;
+  traceObjectFilesRaw: any;
   uploaded?: FinalTraceSafeManifests | TraceObjectUploadManifests;
 }): TraceObjectSummary {
   const files = Array.isArray(args.traceObjectFilesRaw)
@@ -1293,7 +1293,7 @@ function pickRunError(
     const rec = run.events[i]!;
     if (rec.event === 'error') {
       const data = rec.data as
-        | { error?: { message?: unknown }; message?: unknown }
+        | { error?: { message?: any }; message?: any }
         | null
         | undefined;
       const msg =
@@ -1324,15 +1324,15 @@ export async function buildSafeRunQualityProjectionFromDaemon(
   if (opts.prefs.metrics !== true) return undefined;
   const { db, dataDir, run } = opts;
   let messageContent = '';
-  let resultDeliveryState: unknown;
+  let resultDeliveryState: any;
   let evaluationAttachments: ReturnType<typeof attachmentContext> | undefined;
-  let producedFilesRaw: unknown;
-  let traceObjectFilesRaw: unknown;
-  let attachmentsRaw: unknown;
+  let producedFilesRaw: any;
+  let traceObjectFilesRaw: any;
+  let attachmentsRaw: any;
   if (run.conversationId && run.assistantMessageId) {
     try {
       const messages = (
-        listMessages as (database: unknown, conversationId: string) => unknown[]
+        listMessages as (database: any, conversationId: string) => unknown[]
       )(db, run.conversationId) as Array<Record<string, unknown>>;
       const assistantIndex = messages.findIndex((message) => (
         message.id === run.assistantMessageId
@@ -1351,7 +1351,7 @@ export async function buildSafeRunQualityProjectionFromDaemon(
         );
         attachmentsRaw = collectPriorUserAttachments(messages, assistantIndex);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.warn('[langfuse-bridge] Task quality message read failed:', String(error));
     }
   }
@@ -1509,7 +1509,7 @@ export async function buildSafeRunQualityProjectionFromDaemon(
       ...(run.promptTelemetry ? { promptTelemetry: run.promptTelemetry } : {}),
       ...(deliverableSyntax ? { deliverableSyntax } : {}),
     };
-    const event = buildTracePayload(context)[0] as { body: { input?: unknown; output?: unknown; metadata: Record<string, unknown> } };
+    const event = buildTracePayload(context)[0] as { body: { input?: any; output?: any; metadata: Record<string, unknown> } };
     opts.onTraceProjection({ input: event.body.input, output: event.body.output, metadata: {
       ...event.body.metadata,
       provider_reported_usage: analytics,
@@ -1572,19 +1572,19 @@ export async function reportRunCompletedFromDaemon(
     const configuredAmrEnv = agentCliEnvForAgent(cfg.agentCliEnv, 'amr');
 
     const evalMode = evidenceMode(process.env.OPEN_DESIGN_EVAL_CONTRACT_V2_MODE);
-    let resultDeliveryState: unknown;
+    let resultDeliveryState: any;
     let v2Attachments: ReturnType<typeof attachmentContext> | undefined;
     let messageContent = '';
-    let producedFilesRaw: unknown = undefined;
-    let traceObjectFilesRaw: unknown = undefined;
-    let attachmentsRaw: unknown = undefined;
+    let producedFilesRaw: any = undefined;
+    let traceObjectFilesRaw: any = undefined;
+    let attachmentsRaw: any = undefined;
     if (run.conversationId && run.assistantMessageId) {
       try {
         // Best-effort. Web persists assistant content via PUT /messages/:id
         // during the SSE stream, so by close time it is normally up to date,
         // but we tolerate a partial / missing message rather than throwing.
         const messages = (
-          listMessages as (db: unknown, cid: string) => unknown[]
+          listMessages as (db: any, cid: string) => unknown[]
         )(db, run.conversationId);
         const allMessages = messages as Array<Record<string, unknown>>;
         const assistantIndex = allMessages.findIndex(
@@ -1600,7 +1600,7 @@ export async function reportRunCompletedFromDaemon(
           traceObjectFilesRaw = traceObjectFilesForTelemetry(m.traceObjectFiles, producedFilesRaw);
           attachmentsRaw = collectPriorUserAttachments(allMessages, assistantIndex);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn('[langfuse-bridge] message read failed:', String(err));
       }
     }
@@ -1851,7 +1851,7 @@ export async function reportRunCompletedFromDaemon(
         ...(opts.fetchImpl ? { fetchImpl: opts.fetchImpl } : {}),
       },
     );
-  } catch (err) {
+  } catch (err: any) {
     console.warn('[langfuse-bridge] report failed:', String(err));
     return {
       langfuse_expected: true,
@@ -1892,7 +1892,7 @@ export async function reportRunFeedbackFromDaemon(
   let cfg;
   try {
     cfg = await readAppConfig(opts.dataDir);
-  } catch (err) {
+  } catch (err: any) {
     console.warn('[langfuse-bridge] feedback config read failed:', String(err));
     return { status: 'skipped_no_sink' };
   }

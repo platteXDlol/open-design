@@ -10,28 +10,28 @@ const NETWORK_ERROR_CODES = new Set([
 ]);
 
 interface DeployErrorShape {
-  name?: unknown;
-  code?: unknown;
-  status?: unknown;
-  details?: unknown;
-  syscall?: unknown;
-  cause?: unknown;
-  message?: unknown;
+  name?: any;
+  code?: any;
+  status?: any;
+  details?: any;
+  syscall?: any;
+  cause?: any;
+  message?: any;
 }
 
-function asShape(value: unknown): DeployErrorShape | null {
+function asShape(value: any): DeployErrorShape | null {
   return typeof value === 'object' && value !== null ? value as DeployErrorShape : null;
 }
 
 /** Provider error code from a Vercel (`error.code`) or Cloudflare (`errors[0].code`) body. */
-function providerErrorCode(details: unknown): string | undefined {
-  const body = asShape(details) as { error?: { code?: unknown }; errors?: Array<{ code?: unknown }> } | null;
+function providerErrorCode(details: any): string | undefined {
+  const body = asShape(details) as { error?: { code?: any }; errors?: Array<{ code?: any }> } | null;
   return normalizeUpstreamCode(body?.error?.code)
     ?? normalizeUpstreamCode(Array.isArray(body?.errors) ? body.errors[0]?.code : undefined);
 }
 
-function isVercelTokenRejection(details: unknown): boolean {
-  const error = (asShape(details) as { error?: { invalidToken?: unknown; missingToken?: unknown } } | null)?.error;
+function isVercelTokenRejection(details: any): boolean {
+  const error = (asShape(details) as { error?: { invalidToken?: any; missingToken?: any } } | null)?.error;
   return error?.invalidToken === true || error?.missingToken === true;
 }
 
@@ -55,7 +55,7 @@ function isNetworkFailure(err: DeployErrorShape): boolean {
  */
 export function classifyDeployFailure(
   stage: 'file_plan' | 'provider',
-  error: unknown,
+  error: any,
   isDeployError: boolean,
 ): ApiFailureDetail {
   const err = asShape(error);

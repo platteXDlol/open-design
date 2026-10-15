@@ -97,7 +97,7 @@ export async function runAutoExtractionCleanup(
         await deleteMemoryEntry(dataDir, entry.id);
         deletedIds.push(entry.id);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn(
         `[memory] cleanup skipped entry ${summary.id}:`,
         err instanceof Error ? err.message : err,
@@ -112,7 +112,7 @@ export async function runAutoExtractionCleanup(
   // the marker short-circuits every later boot.
   try {
     await writeMemoryConfig(dataDir, { chatExtractionEnabled: false });
-  } catch (err) {
+  } catch (err: any) {
     console.warn(
       '[memory] cleanup could not update config:',
       err instanceof Error ? err.message : err,

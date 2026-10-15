@@ -8,7 +8,7 @@ import {
   LiveArtifactStoreValidationError,
 } from './store.js';
 
-export function sendLiveArtifactRouteError(res: Response, err: unknown): Response {
+export function sendLiveArtifactRouteError(res: Response, err: any): Response {
   if (err instanceof LiveArtifactStoreValidationError) {
     return sendApiError(res, 400, 'LIVE_ARTIFACT_INVALID', err.message, {
       details: {
@@ -72,6 +72,6 @@ export function setLiveArtifactCodeHeaders(res: Response): void {
   res.setHeader('Referrer-Policy', 'no-referrer');
 }
 
-function isNodeErrorWithCode(err: unknown, code: string): boolean {
+function isNodeErrorWithCode(err: any, code: string): boolean {
   return Boolean(err && typeof err === 'object' && 'code' in err && err.code === code);
 }

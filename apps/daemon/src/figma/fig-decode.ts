@@ -80,7 +80,7 @@ export async function decodeFigFile(input: Uint8Array): Promise<FigDecodeResult>
           if (hash) images.set(hash, await entry.async('uint8array'));
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       warnings.push(`zip: ${errMsg(err)}`);
     }
   } else if (hasFigPrelude(input)) {
@@ -101,7 +101,7 @@ export async function decodeFigFile(input: Uint8Array): Promise<FigDecodeResult>
       fonts = built.fonts;
       nodeCount = built.nodeCount;
       for (const w of built.warnings) warnings.push(w);
-    } catch (err) {
+    } catch (err: any) {
       warnings.push(`kiwi: ${errMsg(err)} (degraded to assets-only)`);
     }
   }
@@ -168,7 +168,7 @@ function decodeCanvas(bytes: Uint8Array): FigMessage {
   const schemaBytes = decompressChunk(schemaChunk);
   const messageBytes = decompressChunk(messageChunk);
   const schema = kiwi.decodeBinarySchema(schemaBytes);
-  const compiled = kiwi.compileSchema(schema) as unknown as CompiledFigSchema;
+  const compiled = kiwi.compileSchema(schema) as any as CompiledFigSchema;
   if (typeof compiled.decodeMessage !== 'function') {
     throw new Error('compiled schema has no Message root');
   }
@@ -178,7 +178,7 @@ function decodeCanvas(bytes: Uint8Array): FigMessage {
 // Node 24 ships `zlib.zstdDecompressSync`, but the daemon's pinned
 // `@types/node` predates it, so reach the method through a narrow cast
 // rather than a hard type dependency.
-const zstdDecompressSync = (zlib as unknown as {
+const zstdDecompressSync = (zlib as any as {
   zstdDecompressSync?: (buf: Uint8Array) => Buffer;
 }).zstdDecompressSync;
 
@@ -237,7 +237,7 @@ interface FigNodeChange {
   fontName?: { family?: string; style?: string };
   fontSize?: number;
   textData?: { characters?: string };
-  componentPropDefs?: unknown;
+  componentPropDefs?: any;
 }
 
 interface BuiltDocument {
@@ -437,13 +437,13 @@ function round(n: number): number {
 async function readJson(entry: JSZip.JSZipObject): Promise<Record<string, unknown> | null> {
   try {
     const text = await entry.async('string');
-    const parsed: unknown = JSON.parse(text);
+    const parsed: any = JSON.parse(text);
     return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null;
   } catch {
     return null;
   }
 }
 
-function errMsg(err: unknown): string {
+function errMsg(err: any): string {
   return err instanceof Error ? err.message : String(err);
 }

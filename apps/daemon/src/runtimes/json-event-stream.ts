@@ -40,11 +40,11 @@ type Usage = {
   cached_write_tokens?: number;
 };
 
-function isRecord(value: unknown): value is JsonObject {
+function isRecord(value: any): value is JsonObject {
   return value != null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function safeParseJson(value: unknown): unknown {
+function safeParseJson(value: any): any {
   if (value == null) return null;
   if (typeof value === 'object') return value;
   if (typeof value !== 'string') return null;
@@ -55,7 +55,7 @@ function safeParseJson(value: unknown): unknown {
   }
 }
 
-function stringifyContent(value: unknown): string {
+function stringifyContent(value: any): string {
   if (typeof value === 'string') return value;
   if (value == null) return '';
   try {
@@ -113,7 +113,7 @@ function connectorToolSelectionErrorMessage(content: string): string | null {
   return `${target} Re-list the connector catalog and choose one of the currently allowed read-only tools.`;
 }
 
-function extractErrorMessage(value: unknown, fallback: string): string {
+function extractErrorMessage(value: any, fallback: string): string {
   if (typeof value === 'string') {
     const parsed = safeParseJson(value);
     if (parsed && typeof parsed === 'object') {
@@ -158,7 +158,7 @@ function recoverableCodexReconnectProgress(
   return { attempt, max };
 }
 
-function formatOpenCodeUsage(tokens: unknown): Usage | null {
+function formatOpenCodeUsage(tokens: any): Usage | null {
   if (!isRecord(tokens)) return null;
   const usage: Usage = {};
   if (typeof tokens.input === 'number') usage.input_tokens = tokens.input;
@@ -171,7 +171,7 @@ function formatOpenCodeUsage(tokens: unknown): Usage | null {
   return Object.keys(usage).length > 0 ? usage : null;
 }
 
-function isPowerShellErrorRecord(toolName: string, output: unknown): boolean {
+function isPowerShellErrorRecord(toolName: string, output: any): boolean {
   const normalizedTool = toolName.toLowerCase();
   if (normalizedTool !== 'bash' && normalizedTool !== 'shell') return false;
   if (typeof output !== 'string') return false;
@@ -213,7 +213,7 @@ function openCodeToolResult(
   return { content: stringifyContent(contentSource), isError };
 }
 
-function handleOpenCodeEvent(obj: unknown, onEvent: StreamEventHandler, state: ParserState): boolean {
+function handleOpenCodeEvent(obj: any, onEvent: StreamEventHandler, state: ParserState): boolean {
   if (!isRecord(obj)) return false;
   if (state.openCodeToolEvents.handle(obj, onEvent)) return true;
   const part = isRecord(obj.part) ? obj.part : {};
@@ -299,7 +299,7 @@ function handleOpenCodeEvent(obj: unknown, onEvent: StreamEventHandler, state: P
   return false;
 }
 
-function handleGeminiEvent(obj: unknown, onEvent: StreamEventHandler, state: ParserState): boolean {
+function handleGeminiEvent(obj: any, onEvent: StreamEventHandler, state: ParserState): boolean {
   if (!isRecord(obj)) return false;
 
   const isAssistantTextMessage =
@@ -419,7 +419,7 @@ function handleGeminiEvent(obj: unknown, onEvent: StreamEventHandler, state: Par
   return false;
 }
 
-function handleKimiEvent(obj: unknown, onEvent: StreamEventHandler): boolean {
+function handleKimiEvent(obj: any, onEvent: StreamEventHandler): boolean {
   if (!isRecord(obj)) return false;
 
   if (obj.role === 'assistant' && Array.isArray(obj.tool_calls)) {
@@ -469,7 +469,7 @@ function handleKimiEvent(obj: unknown, onEvent: StreamEventHandler): boolean {
   return false;
 }
 
-function extractCursorText(message: unknown): string {
+function extractCursorText(message: any): string {
   const content = isRecord(message) ? message.content : undefined;
   const blocks = Array.isArray(content) ? content : [];
   return blocks
@@ -478,7 +478,7 @@ function extractCursorText(message: unknown): string {
     .join('');
 }
 
-function normalizeTodoStatus(value: unknown): string {
+function normalizeTodoStatus(value: any): string {
   const status = typeof value === 'string'
     ? value.trim().toLowerCase().replace(/[-\s]+/g, '_')
     : '';
@@ -505,7 +505,7 @@ function normalizeTodoStatus(value: unknown): string {
   return 'pending';
 }
 
-function todoWriteInputFromItems(items: unknown): JsonObject | null {
+function todoWriteInputFromItems(items: any): JsonObject | null {
   if (!Array.isArray(items)) return null;
   const todos = items
     .map((raw): JsonObject | null => {
@@ -531,7 +531,7 @@ function todoWriteInputFromItems(items: unknown): JsonObject | null {
   return todos.length > 0 ? { todos } : null;
 }
 
-function todoWriteInputFromParsedValue(value: unknown): JsonObject | null {
+function todoWriteInputFromParsedValue(value: any): JsonObject | null {
   if (Array.isArray(value)) return todoWriteInputFromItems(value);
   if (!isRecord(value)) return null;
   if (Array.isArray(value.todos)) return todoWriteInputFromItems(value.todos);
@@ -594,7 +594,7 @@ function flushPendingArtifactText(state: ParserState, onEvent: StreamEventHandle
   onEvent({ type: 'text_delta', delta });
 }
 
-function isFileWriteToolUse(toolName: string, input: unknown): boolean {
+function isFileWriteToolUse(toolName: string, input: any): boolean {
   if (!isRecord(input)) return false;
   const path = typeof input.file_path === 'string'
     ? input.file_path
@@ -668,7 +668,7 @@ function reconcileCursorTurnReplay(text: string, onEvent: StreamEventHandler, st
   state.cursorTurnStart = state.cursorTextSoFar.length;
 }
 
-function handleCursorEvent(obj: unknown, onEvent: StreamEventHandler, state: ParserState): boolean {
+function handleCursorEvent(obj: any, onEvent: StreamEventHandler, state: ParserState): boolean {
   if (!isRecord(obj)) return false;
 
   if (obj.type === 'system' && obj.subtype === 'init') {
@@ -859,7 +859,7 @@ interface CodexDiffStat {
  * and a non-string `diff` from some future shape must degrade to the old
  * elapsed-time row rather than to `+0 −0`.
  */
-function codexChangeDiffStat(kind: string, diff: unknown): CodexDiffStat | null {
+function codexChangeDiffStat(kind: string, diff: any): CodexDiffStat | null {
   if (typeof diff !== 'string' || diff.length === 0) return null;
   if (kind === 'add') return { added: diff.split('\n').length, removed: 0 };
   if (kind !== 'update') return null;
@@ -892,7 +892,7 @@ function codexFileChanges(item: JsonObject): CodexFileChange[] | null {
   const itemId = typeof item.id === 'string' ? item.id : '';
   if (!itemId) return null;
   if (!Array.isArray(item.changes) || item.changes.length === 0) return null;
-  const changes: unknown[] = item.changes;
+  const changes: any[] = item.changes;
   const out: CodexFileChange[] = [];
   for (let index = 0; index < changes.length; index += 1) {
     const change = changes[index];
@@ -1052,7 +1052,7 @@ function codexWebSearchQuery(item: JsonObject): string | null {
   return query.length > 0 ? query : null;
 }
 
-function handleCodexEvent(obj: unknown, onEvent: StreamEventHandler, state: ParserState): boolean {
+function handleCodexEvent(obj: any, onEvent: StreamEventHandler, state: ParserState): boolean {
   if (!isRecord(obj)) return false;
 
   if (obj.type === 'error') {
@@ -1401,7 +1401,7 @@ export function createJsonEventStreamHandler(
   // all carry the same bounded line — a cursor-agent `editToolCall` completion
   // alone repeats the edited file twice (see run-event-payload-budget.ts).
   function handleLine(line: string): void {
-    let obj: unknown;
+    let obj: any;
     try {
       obj = JSON.parse(line);
     } catch {

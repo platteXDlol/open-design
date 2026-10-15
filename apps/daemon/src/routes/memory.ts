@@ -78,15 +78,15 @@ interface MemoryAppConfigLike {
   agentModels?: Record<string, { model?: string }>;
 }
 
-function asRecord(value: unknown): UnknownRecord {
+function asRecord(value: any): UnknownRecord {
   return value && typeof value === 'object' ? (value as UnknownRecord) : {};
 }
 
-function errorMessage(err: unknown): string {
+function errorMessage(err: any): string {
   return err instanceof Error ? err.message : String(err);
 }
 
-function isMemoryType(value: unknown): value is MemoryType {
+function isMemoryType(value: any): value is MemoryType {
   // Sourced from the shared contract so the new `profile` / `rule` buckets
   // can't be rejected here while the type union already allows them.
   return (
@@ -95,7 +95,7 @@ function isMemoryType(value: unknown): value is MemoryType {
   );
 }
 
-function isExtractionProvider(value: unknown): value is MemoryExtractionProvider {
+function isExtractionProvider(value: any): value is MemoryExtractionProvider {
   return (
     value === 'anthropic'
     || value === 'openai'
@@ -132,7 +132,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
         entries,
         extraction: maskMemoryExtractionConfig(config.extraction),
       });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -151,7 +151,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
         rootDir: memoryDir(RUNTIME_DATA_DIR),
         tree,
       });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: errorMessage(err) });
     }
   });
@@ -166,7 +166,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
       );
       const tree = await buildMemoryTree(RUNTIME_DATA_DIR);
       res.json({ entry, tree });
-    } catch (err) {
+    } catch (err: any) {
       const message = errorMessage(err);
       res.status(message === 'memory not found' ? 404 : 400).json({ error: message });
     }
@@ -178,7 +178,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
       const index = typeof body.index === 'string' ? body.index : '';
       await writeMemoryIndex(RUNTIME_DATA_DIR, index, undefined);
       res.json({ index });
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: errorMessage(err) });
     }
   });
@@ -270,7 +270,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
         verifyEnabled: next.verifyEnabled,
         extraction: maskMemoryExtractionConfig(next.extraction),
       });
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: errorMessage(err) });
     }
   });
@@ -287,16 +287,16 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
   app.get('/api/memory/events', async (_req, res) => {
     const sse = createSseResponse(res);
     sse.send('connected', { at: Date.now() });
-    const onChange = (event: unknown) => {
+    const onChange = (event: any) => {
       sse.send('change', event);
     };
-    const onExtraction = (event: unknown) => {
+    const onExtraction = (event: any) => {
       sse.send('extraction', event);
     };
     // `verify` events carry POST self-verify enforcement outcomes (THREAD 2),
     // one per enforced turn. Multiplexed on the same connection as `change`
     // and `extraction` so the settings panel opens a single stream.
-    const onVerify = (event: unknown) => {
+    const onVerify = (event: any) => {
       sse.send('verify', event);
     };
     memoryEvents.on('change', onChange);
@@ -316,7 +316,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
   app.get('/api/memory/extractions', async (_req, res) => {
     try {
       res.json({ extractions: listMemoryExtractions() });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -328,7 +328,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
     try {
       const removed = clearMemoryExtractions();
       res.json({ removed });
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: errorMessage(err) });
     }
   });
@@ -337,7 +337,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
     try {
       const removed = removeMemoryExtraction(req.params.id);
       res.json({ removed });
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: errorMessage(err) });
     }
   });
@@ -349,7 +349,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
   app.get('/api/memory/verifications', async (_req, res) => {
     try {
       res.json({ verifications: listMemoryVerifications() });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: String(err) });
     }
   });
@@ -360,7 +360,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
     try {
       const removed = clearMemoryVerifications();
       res.json({ removed });
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: errorMessage(err) });
     }
   });
@@ -369,7 +369,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
     try {
       const removed = removeMemoryVerification(req.params.id);
       res.json({ removed });
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: errorMessage(err) });
     }
   });
@@ -384,7 +384,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
       const body = asRecord(req.body);
       const rawAnnotations = Array.isArray(body.annotations) ? body.annotations : [];
       const annotations = rawAnnotations
-        .map((item: unknown) => {
+        .map((item: any) => {
           const a = asRecord(item);
           const note = typeof a.note === 'string' ? a.note : '';
           if (!note.trim()) return null;
@@ -424,7 +424,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
         },
       );
       res.json(result);
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: errorMessage(err) });
     }
   });
@@ -434,7 +434,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
       const body = asRecord(req.body);
       const connectorIds = Array.isArray(body.connectorIds)
         ? body.connectorIds
-          .filter((id: unknown): id is string => typeof id === 'string')
+          .filter((id: any): id is string => typeof id === 'string')
           .map((id: string) => id.trim())
           .filter(Boolean)
           .slice(0, 12)
@@ -472,7 +472,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
       };
       const result = await suggestMemoryFromConnectors(RUNTIME_DATA_DIR, options);
       res.json(result);
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: errorMessage(err) });
     }
   });
@@ -482,7 +482,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
       const body = asRecord(req.body);
       const connectorIds = Array.isArray(body.connectorIds)
         ? body.connectorIds
-          .filter((id: unknown): id is string => typeof id === 'string')
+          .filter((id: any): id is string => typeof id === 'string')
           .map((id: string) => id.trim())
           .filter(Boolean)
           .slice(0, 12)
@@ -520,7 +520,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
       };
       const result = await extractMemoryFromConnectors(RUNTIME_DATA_DIR, options);
       res.json(result);
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: errorMessage(err) });
     }
   });
@@ -613,7 +613,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
           );
       }
       res.json({ changed, attemptedLLM });
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: errorMessage(err) });
     }
   });
@@ -630,7 +630,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
     try {
       const body = await composeMemoryBody(RUNTIME_DATA_DIR);
       res.json({ body });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: errorMessage(err) });
     }
   });
@@ -643,11 +643,11 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
       }
       const entry = await upsertMemoryEntry(
         RUNTIME_DATA_DIR,
-        body as unknown as MemoryEntryInput,
+        body as any as MemoryEntryInput,
         undefined,
       );
       res.json({ entry });
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: errorMessage(err) });
     }
   });
@@ -657,7 +657,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
       const entry = await readMemoryEntry(RUNTIME_DATA_DIR, req.params.id);
       if (!entry) return res.status(404).json({ error: 'memory not found' });
       res.json({ entry });
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: errorMessage(err) });
     }
   });
@@ -671,13 +671,13 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
       const entry = await upsertMemoryEntry(
         RUNTIME_DATA_DIR,
         {
-          ...(body as unknown as MemoryEntryInput),
+          ...(body as any as MemoryEntryInput),
           id: req.params.id,
         },
         undefined,
       );
       res.json({ entry });
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: errorMessage(err) });
     }
   });
@@ -686,7 +686,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
     try {
       await deleteMemoryEntry(RUNTIME_DATA_DIR, req.params.id);
       res.json({ ok: true });
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: errorMessage(err) });
     }
   });

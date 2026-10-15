@@ -27,7 +27,7 @@ export type FetchLike = (
 ) => Promise<{
   ok: boolean;
   status: number;
-  json: () => Promise<unknown>;
+  json: () => Promise<any>;
   text: () => Promise<string>;
 }>;
 
@@ -190,7 +190,7 @@ async function fetchJson(
   fetchFn: FetchLike,
   url: string,
   timeoutMs: number,
-): Promise<{ ok: true; value: unknown } | { ok: false; error: string }> {
+): Promise<{ ok: true; value: any } | { ok: false; error: string }> {
   try {
     const response = await fetchWithTimeout(fetchFn, url, {
       headers: {
@@ -200,7 +200,7 @@ async function fetchJson(
     }, timeoutMs);
     if (!response.ok) return { ok: false, error: `HTTP ${response.status}` };
     return { ok: true, value: await response.json() };
-  } catch (err) {
+  } catch (err: any) {
     return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
@@ -271,7 +271,7 @@ function branchCandidates(defaultBranch: string): string[] {
 function parsePackageInfo(raw: string): { name?: string; description?: string } {
   if (!raw) return {};
   try {
-    const value = JSON.parse(raw) as unknown;
+    const value = JSON.parse(raw) as any;
     const record = asRecord(value);
     const name = readOptionalString(record.name);
     const description = readOptionalString(record.description);
@@ -349,7 +349,7 @@ function stripGitSuffix(value: string): string {
   return value.replace(/\.git$/i, '');
 }
 
-function parseTopics(raw: unknown): string[] {
+function parseTopics(raw: any): string[] {
   if (!Array.isArray(raw)) return [];
   return raw
     .filter((value): value is string => typeof value === 'string')
@@ -358,15 +358,15 @@ function parseTopics(raw: unknown): string[] {
     .slice(0, 12);
 }
 
-function readOptionalString(value: unknown): string | undefined {
+function readOptionalString(value: any): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
-function readOptionalNumber(value: unknown): number | undefined {
+function readOptionalNumber(value: any): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
-function asRecord(value: unknown): Record<string, unknown> {
+function asRecord(value: any): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
 

@@ -31,31 +31,31 @@ export interface RunContextSelection {
 }
 
 type MetadataContextRef = {
-  id?: unknown;
-  title?: unknown;
-  label?: unknown;
-  name?: unknown;
-  provider?: unknown;
-  transport?: unknown;
-  status?: unknown;
-  accountLabel?: unknown;
+  id?: any;
+  title?: any;
+  label?: any;
+  name?: any;
+  provider?: any;
+  transport?: any;
+  status?: any;
+  accountLabel?: any;
 };
 
 type ProjectMetadataContext = {
-  contextPlugins?: unknown;
-  contextMcpServers?: unknown;
-  contextConnectors?: unknown;
+  contextPlugins?: any;
+  contextMcpServers?: any;
+  contextConnectors?: any;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
-function cleanString(value: unknown, max = 500): string {
+function cleanString(value: any, max = 500): string {
   return typeof value === 'string' ? value.trim().slice(0, max) : '';
 }
 
-export function normalizeWorkspaceContextItems(items: unknown): WorkspaceContextItem[] {
+export function normalizeWorkspaceContextItems(items: any): WorkspaceContextItem[] {
   if (!Array.isArray(items)) return [];
   const out: WorkspaceContextItem[] = [];
   const seen = new Set<string>();
@@ -86,9 +86,9 @@ export function normalizeWorkspaceContextItems(items: unknown): WorkspaceContext
   return out;
 }
 
-export function normalizeRunContextSelection(value: unknown): RunContextSelection {
+export function normalizeRunContextSelection(value: any): RunContextSelection {
   if (!isRecord(value)) return {};
-  const stringList = (items: unknown): string[] => {
+  const stringList = (items: any): string[] => {
     if (!Array.isArray(items)) return [];
     const out: string[] = [];
     const seen = new Set<string>();
@@ -110,7 +110,7 @@ export function normalizeRunContextSelection(value: unknown): RunContextSelectio
   };
 }
 
-export function mergeRunContextSelections(...contexts: unknown[]): RunContextSelection {
+export function mergeRunContextSelections(...contexts: any[]): RunContextSelection {
   const merged: Required<RunContextSelection> = {
     skillIds: [],
     pluginIds: [],
@@ -143,10 +143,10 @@ export function mergeRunContextSelections(...contexts: unknown[]): RunContextSel
   ) as RunContextSelection;
 }
 
-export function projectMetadataContextSelection(metadata: unknown): RunContextSelection {
+export function projectMetadataContextSelection(metadata: any): RunContextSelection {
   if (!isRecord(metadata)) return {};
   const contextMetadata = metadata as ProjectMetadataContext;
-  const idsFromRefs = (refs: unknown): string[] => (
+  const idsFromRefs = (refs: any): string[] => (
     Array.isArray(refs)
       ? refs
           .map((item) => isRecord(item) ? item.id : undefined)
@@ -160,7 +160,7 @@ export function projectMetadataContextSelection(metadata: unknown): RunContextSe
   };
 }
 
-function formatContextRefList(ids: string[], refs: unknown, titleKey: 'title' | 'label' | 'name' = 'title') {
+function formatContextRefList(ids: string[], refs: any, titleKey: 'title' | 'label' | 'name' = 'title') {
   const byId = new Map<string, MetadataContextRef>();
   if (Array.isArray(refs)) {
     for (const ref of refs) {
@@ -242,7 +242,7 @@ function renderWorkspaceContextToolHints(items: WorkspaceContextItem[]) {
   return hints.join('\n');
 }
 
-export function renderRunContextPrompt(selection: unknown, metadata: unknown) {
+export function renderRunContextPrompt(selection: any, metadata: any) {
   const context = mergeRunContextSelections(projectMetadataContextSelection(metadata), selection);
   const metadataRecord = isRecord(metadata) ? metadata : {};
   const lines: string[] = [];

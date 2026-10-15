@@ -74,31 +74,31 @@ type ResearchInput = {
 
 export interface OdNextInitialPromptMeta {
   agentId: string;
-  doneKey?: unknown;
-  message?: unknown;
-  currentPrompt?: unknown;
-  priorTranscript?: unknown;
-  systemPrompt?: unknown;
-  projectId?: unknown;
-  conversationId?: unknown;
-  skillId?: unknown;
-  skillIds?: unknown;
-  designSystemId?: unknown;
-  sessionMode?: unknown;
-  locale?: unknown;
+  doneKey?: any;
+  message?: any;
+  currentPrompt?: any;
+  priorTranscript?: any;
+  systemPrompt?: any;
+  projectId?: any;
+  conversationId?: any;
+  skillId?: any;
+  skillIds?: any;
+  designSystemId?: any;
+  sessionMode?: any;
+  locale?: any;
   research?: ResearchInput;
-  context?: unknown;
-  titleGeneration?: unknown;
-  byokMediaDefaults?: unknown;
-  mediaExecution?: unknown;
-  appliedPluginSnapshotId?: unknown;
+  context?: any;
+  titleGeneration?: any;
+  byokMediaDefaults?: any;
+  mediaExecution?: any;
+  appliedPluginSnapshotId?: any;
   workspaceScope?: RunWorkspaceScope | null;
-  toolBundle?: unknown;
+  toolBundle?: any;
   strategyRolloutDecision?: {
     syntheticCanary?: boolean;
     effectiveMode?: 'off' | 'observe' | 'active';
   } | null;
-  runtimeCapabilitySnapshot?: unknown;
+  runtimeCapabilitySnapshot?: any;
 }
 
 interface DaemonSystemPromptResult {
@@ -141,17 +141,17 @@ export interface PreparedOdNextInitialPromptBundle {
   text: string;
 }
 
-function record(value: unknown): Record<string, unknown> | null {
+function record(value: any): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
     : null;
 }
 
-function stringValue(value: unknown): string | undefined {
+function stringValue(value: any): string | undefined {
   return typeof value === 'string' ? value : undefined;
 }
 
-function runScopedMcpServers(toolBundle: unknown): McpServerConfig[] {
+function runScopedMcpServers(toolBundle: any): McpServerConfig[] {
   const servers = record(toolBundle)?.mcpServers;
   return Array.isArray(servers) ? servers as McpServerConfig[] : [];
 }
@@ -160,13 +160,13 @@ function runScopedMcpServers(toolBundle: unknown): McpServerConfig[] {
 export async function resolveOdNextPromptRecipeForRun(input: {
   db: SqliteDb;
   bundledPluginsDir: string;
-  appliedPluginSnapshotId: unknown;
+  appliedPluginSnapshotId: any;
   agentId: string;
   streamFormat: string;
   atomPromptsEnabled: boolean;
   syntheticCanary: boolean;
   automaticAdmission: boolean;
-  runtimeCapabilitySnapshot?: unknown;
+  runtimeCapabilitySnapshot?: any;
   getRuntimeVersions: () => Promise<DetectedRuntimeVersions | null>;
 }): Promise<OdNextStrategyRequestRecipeV2 | null> {
   const snapshotId = stringValue(input.appliedPluginSnapshotId);
@@ -388,7 +388,7 @@ export function createOdNextInitialPromptBundleService(
     if (!deps.sandboxEnabled) {
       try {
         persistedMcpServers = (await readMcpConfig(deps.runtimeDataDir)).servers;
-      } catch (error) {
+      } catch (error: any) {
         console.warn('[mcp-config] prompt freeze read failed:', error);
       }
     }
@@ -414,7 +414,7 @@ export function createOdNextInitialPromptBundleService(
             connectedPromptServerIds.add(serverId);
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.warn('[mcp-tokens] prompt freeze read failed:', error);
       }
     }

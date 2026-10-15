@@ -26,7 +26,7 @@ import { boundedRawAgentEvent } from './runtimes/run-event-payload-budget.js';
 type StreamEvent = Record<string, unknown>;
 type EventSink = (event: StreamEvent) => void;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
@@ -64,7 +64,7 @@ export function createCopilotStreamHandler(onEvent: EventSink) {
     }
   }
 
-  function handleObject(obj: unknown) {
+  function handleObject(obj: any) {
     if (!isRecord(obj) || typeof obj.type !== 'string') return;
     const data = isRecord(obj.data) ? obj.data : {};
 
@@ -131,7 +131,7 @@ export function createCopilotStreamHandler(onEvent: EventSink) {
   return { feed, flush };
 }
 
-function stringifyResult(r: unknown): string {
+function stringifyResult(r: any): string {
   if (r == null) return '';
   if (typeof r === 'string') return r;
   if (!isRecord(r)) return JSON.stringify(r);

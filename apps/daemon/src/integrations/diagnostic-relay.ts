@@ -22,7 +22,7 @@ export function diagnosticRelayUrl(env: NodeJS.ProcessEnv): string | null {
 export class DiagnosticRelay {
   constructor(readonly origin: string, private readonly allowed: () => boolean,
     private readonly fetcher: typeof fetch = fetch) {}
-  private async post(path: string, body: unknown, signal: AbortSignal, credential?: string): Promise<Record<string, unknown>> {
+  private async post(path: string, body: any, signal: AbortSignal, credential?: string): Promise<Record<string, unknown>> {
     if (!this.allowed()) throw new DiagnosticRelayError('consent_disabled', 0, true);
     signal.throwIfAborted();
     const response = await this.fetcher(new URL(path, this.origin), {
@@ -49,7 +49,7 @@ export class DiagnosticRelay {
         text += decoder.decode(value, { stream: true });
       }
     } finally { await reader.cancel().catch(() => {}); }
-    const parsed: unknown = JSON.parse(text + decoder.decode());
+    const parsed: any = JSON.parse(text + decoder.decode());
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new DiagnosticRelayError('relay_invalid_response');
     return parsed as Record<string, unknown>;
   }

@@ -82,7 +82,7 @@ export async function writePluginLockfile(
 // is enough — no OS-level file lock needed. Chains are intentionally never
 // evicted: the number of distinct lockfile paths in one daemon's lifetime
 // is bounded by the number of projects it manages, not installs.
-const pendingWritesByPath = new Map<string, Promise<unknown>>();
+const pendingWritesByPath = new Map<string, Promise<any>>();
 
 async function withLockfileQueue<T>(filePath: string, task: () => Promise<T>): Promise<T> {
   const previous = pendingWritesByPath.get(filePath) ?? Promise.resolve();

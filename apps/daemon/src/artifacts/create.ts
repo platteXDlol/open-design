@@ -7,22 +7,22 @@ export interface CreateProjectArtifactInput {
   name: string;
   content: string;
   encoding?: 'utf8' | 'base64' | string;
-  artifactManifest?: unknown;
+  artifactManifest?: any;
 }
 
 export interface CreateProjectArtifactOptions {
   projectsRoot: string;
   projectId: string;
   input: CreateProjectArtifactInput;
-  metadata?: unknown;
+  metadata?: any;
   writeProjectFile: (
     projectsRoot: string,
     projectId: string,
     name: string,
     body: Buffer,
-    options: { overwrite: false; artifactManifest: unknown },
-    metadata?: unknown,
-  ) => Promise<unknown>;
+    options: { overwrite: false; artifactManifest: any },
+    metadata?: any,
+  ) => Promise<any>;
 }
 
 export class ArtifactManifestRequiredError extends Error {
@@ -52,7 +52,7 @@ export function buildCreateArtifactRequestBody(input: CreateProjectArtifactInput
   };
 }
 
-export function resolveCreateArtifactManifest(input: CreateProjectArtifactInput): unknown {
+export function resolveCreateArtifactManifest(input: CreateProjectArtifactInput): any {
   const manifest = input.artifactManifest !== undefined && input.artifactManifest !== null
     ? input.artifactManifest
     : inferLegacyManifest(input.name);
@@ -66,7 +66,7 @@ export function resolveCreateArtifactManifest(input: CreateProjectArtifactInput)
   throw new ArtifactManifestRequiredError(input.name);
 }
 
-export async function createProjectArtifactFile(options: CreateProjectArtifactOptions): Promise<unknown> {
+export async function createProjectArtifactFile(options: CreateProjectArtifactOptions): Promise<any> {
   const { input } = options;
   const body = input.encoding === 'base64'
     ? Buffer.from(input.content, 'base64')
@@ -89,7 +89,7 @@ export async function postCreateArtifactRequest(args: {
   projectId: string;
   input: CreateProjectArtifactInput;
   headers?: Record<string, string>;
-}): Promise<unknown> {
+}): Promise<any> {
   const response = await fetch(
     `${args.baseUrl.replace(/\/$/, '')}/api/projects/${encodeURIComponent(args.projectId)}/files`,
     {
@@ -103,17 +103,17 @@ export async function postCreateArtifactRequest(args: {
     },
   );
   const text = await response.text();
-  let body: unknown = text;
+  let body: any = text;
   if (text.length > 0) {
     try {
-      body = JSON.parse(text) as unknown;
+      body = JSON.parse(text) as any;
     } catch {
       body = { message: text };
     }
   }
   if (!response.ok) {
     const error = new Error(`daemon artifact endpoint failed with ${response.status}`);
-    (error as Error & { details?: unknown; status?: number }).details = body;
+    (error as Error & { details?: any; status?: number }).details = body;
     (error as Error & { status?: number }).status = response.status;
     throw error;
   }

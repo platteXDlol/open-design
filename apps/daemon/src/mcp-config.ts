@@ -103,11 +103,11 @@ function configFile(dataDir: string): string {
   return path.join(dataDir, 'mcp-config.json');
 }
 
-function isPlainObject(v: unknown): v is Record<string, unknown> {
+function isPlainObject(v: any): v is Record<string, unknown> {
   return Boolean(v) && typeof v === 'object' && !Array.isArray(v);
 }
 
-function sanitizeStringMap(raw: unknown): Record<string, string> | undefined {
+function sanitizeStringMap(raw: any): Record<string, string> | undefined {
   if (!isPlainObject(raw)) return undefined;
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(raw)) {
@@ -126,7 +126,7 @@ function sanitizeStringMap(raw: unknown): Record<string, string> | undefined {
   return Object.keys(out).length > 0 ? out : undefined;
 }
 
-function sanitizeStringArray(raw: unknown): string[] | undefined {
+function sanitizeStringArray(raw: any): string[] | undefined {
   if (!Array.isArray(raw)) return undefined;
   const out = raw.filter((v): v is string => typeof v === 'string');
   return out.length > 0 ? out : undefined;
@@ -156,7 +156,7 @@ export function inferMcpAuthModeForUrl(rawUrl: string | undefined): McpAuthMode 
   }
 }
 
-function sanitizeMcpAuthMode(raw: unknown): McpAuthMode | undefined {
+function sanitizeMcpAuthMode(raw: any): McpAuthMode | undefined {
   return typeof raw === 'string' && VALID_AUTH_MODES.has(raw as McpAuthMode)
     ? (raw as McpAuthMode)
     : undefined;
@@ -172,7 +172,7 @@ function effectiveMcpAuthMode(server: McpServerConfig): McpAuthMode {
  * one server doesn't tank the whole config. Returns null when the entry is
  * unsalvageable (no id, or no transport-required fields).
  */
-export function sanitizeMcpServer(raw: unknown): McpServerConfig | null {
+export function sanitizeMcpServer(raw: any): McpServerConfig | null {
   if (!isPlainObject(raw)) return null;
   const id = typeof raw.id === 'string' ? raw.id.trim() : '';
   if (!SERVER_ID_PATTERN.test(id)) return null;
@@ -217,7 +217,7 @@ export function sanitizeMcpServer(raw: unknown): McpServerConfig | null {
   return next;
 }
 
-export function sanitizeMcpConfig(raw: unknown): McpConfig {
+export function sanitizeMcpConfig(raw: any): McpConfig {
   if (!isPlainObject(raw)) return { servers: [] };
   const list = Array.isArray(raw.servers) ? raw.servers : [];
   const seen = new Set<string>();
@@ -235,9 +235,9 @@ export function sanitizeMcpConfig(raw: unknown): McpConfig {
 export async function readMcpConfig(dataDir: string): Promise<McpConfig> {
   try {
     const raw = await readFile(configFile(dataDir), 'utf8');
-    const parsed: unknown = JSON.parse(raw);
+    const parsed: any = JSON.parse(raw);
     return sanitizeMcpConfig(parsed);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const e = err as { code?: string; name?: string; message?: string };
     if (e.code === 'ENOENT') return { servers: [] };
     if (e.name === 'SyntaxError') {
@@ -248,11 +248,11 @@ export async function readMcpConfig(dataDir: string): Promise<McpConfig> {
   }
 }
 
-const writeLocks = new Map<string, Promise<unknown>>();
+const writeLocks = new Map<string, Promise<any>>();
 
 export async function writeMcpConfig(
   dataDir: string,
-  body: unknown,
+  body: any,
 ): Promise<McpConfig> {
   const prev = writeLocks.get(dataDir) ?? Promise.resolve();
   const task = prev.catch(() => {}).then(() => doWrite(dataDir, body));
@@ -264,7 +264,7 @@ export async function writeMcpConfig(
   }
 }
 
-async function doWrite(dataDir: string, body: unknown): Promise<McpConfig> {
+async function doWrite(dataDir: string, body: any): Promise<McpConfig> {
   const next = sanitizeMcpConfig(body);
   const file = configFile(dataDir);
   await mkdir(path.dirname(file), { recursive: true });
@@ -312,7 +312,7 @@ export function isManagedProjectCwd(
 export function buildClaudeMcpJson(
   servers: McpServerConfig[],
   tokens: Record<string, string> = {},
-): unknown | null {
+): any | null {
   const enabled = servers.filter((s) => s.enabled);
   if (enabled.length === 0) return null;
   const out: Record<string, Record<string, unknown>> = {};

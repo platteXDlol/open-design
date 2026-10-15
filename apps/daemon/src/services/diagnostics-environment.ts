@@ -51,23 +51,23 @@ export function summarizeProxyEnvironment(env: NodeJS.ProcessEnv) {
 
 export type DiagnosticProxyEnvironment = ReturnType<typeof summarizeProxyEnvironment>;
 
-export function diagnosticId(value: unknown): string | null {
+export function diagnosticId(value: any): string | null {
   return typeof value === 'string' && /^[a-zA-Z0-9_-]{1,128}$/.test(value) ? value : null;
 }
 
 export type DiagnosticFailureCode = 'timeout' | 'aborted' | 'dns' | 'connection-refused' | 'tls' | 'proxy' | 'http' | 'other';
 
 /** Error text, argv, stdout and stderr can contain secrets. Never retain them. */
-export function diagnosticFailureCode(error: unknown): DiagnosticFailureCode {
+export function diagnosticFailureCode(error: any): DiagnosticFailureCode {
   if (typeof error !== 'object' || error === null) return 'other';
-  const candidate = error as { code?: unknown; name?: unknown; cause?: { code?: unknown } };
+  const candidate = error as { code?: any; name?: any; cause?: { code?: any } };
   const code = candidate.code ?? candidate.cause?.code;
   if (['ETIMEDOUT', 'UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_HEADERS_TIMEOUT', 'UND_ERR_BODY_TIMEOUT'].includes(String(code)) || candidate.name === 'TimeoutError') return 'timeout';
   if (code === 'ABORT_ERR' || candidate.name === 'AbortError') return 'aborted';
   if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') return 'dns';
   if (code === 'ECONNREFUSED') return 'connection-refused';
   if (['CERT_HAS_EXPIRED', 'DEPTH_ZERO_SELF_SIGNED_CERT', 'UNABLE_TO_VERIFY_LEAF_SIGNATURE'].includes(String(code))) return 'tls';
-  const stderr = (error as { stderr?: unknown }).stderr;
+  const stderr = (error as { stderr?: any }).stderr;
   const tail = typeof stderr === 'string' ? stderr.slice(-4096) : '';
   if (/proxyconnect|proxy authentication required/i.test(tail)) return 'proxy';
   if (/context deadline exceeded|Client\.Timeout/i.test(tail)) return 'timeout';

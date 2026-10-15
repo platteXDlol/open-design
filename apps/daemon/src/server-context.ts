@@ -1,13 +1,9 @@
+import { AuthorizeProjectToolRequest } from './v05-stubs.js';
 import type { Express } from 'express';
 import type { SkillInfo } from './skills.js';
 import type { DesignSystemSummary } from './design-systems/index.js';
 import type { RoutineRoutesService } from './routes/routine.js';
 import type { OpenDesignPublicMetadataService } from './services/open-design-public-metadata.js';
-import type { ResourceHubPrincipal } from './collab/resource-principal.js';
-import type {
-  AuthorizeProjectRequest,
-  AuthorizeProjectToolRequest,
-} from './collab/project-request-authority.js';
 
 export interface HttpDeps {
   createSseResponse: (...args: any[]) => any;
@@ -58,7 +54,7 @@ export interface ResourceDeps {
   // The workspace a catalog read should be scoped to (#145). Data-plane reads
   // resolve it from this exact request's explicit Workspace/member identity,
   // never from a daemon-global active/current Workspace.
-  resolveWorkspaceScope?: (req: any) => Promise<string | null>;
+  _deleted?: (req: any) => Promise<string | null>;
   // Whether the caller may mutate (edit / publish-toggle / delete) design
   // system `id` — the same verdict the PATCH/DELETE routes enforce (see
   // `registerDesignSystemRoutes`'s identically-named dep). Optional so a
@@ -189,7 +185,7 @@ export interface ServerContext {
   uploads: any;
   node: any;
   projectStore: any;
-  authorizeProjectRequest: AuthorizeProjectRequest;
+  authorizeProjectRequest: any;
   authorizeProjectToolRequest: AuthorizeProjectToolRequest;
   isApiTokenAuthorization: (authorization: string | undefined) => boolean;
   projectFiles: any;
@@ -241,14 +237,14 @@ export interface ServerContext {
    * used by the demo surface.
    */
   collabSync: {
-    requestTeamShare(projectId: string, share?: string | ResourceHubPrincipal): Promise<{ version: number | null }>;
-    requestTeamUnshare(projectId: string, share?: string | ResourceHubPrincipal): Promise<void>;
+    requestTeamShare(projectId: string, share?: string | unknown): Promise<{ version: number | null }>;
+    requestTeamUnshare(projectId: string, share?: string | unknown): Promise<void>;
     /**
      * Pull and atomically register a catalog-only Team project before an
      * exact-owner mutation needs local state. This preserves a Personal copy
      * before unshare and gives a second-device rename a real row to update.
      */
-    materializeTeamProject?(projectId: string, principal: ResourceHubPrincipal): Promise<void>;
+    materializeTeamProject?(projectId: string, principal: any): Promise<void>;
     /**
      * Re-upsert the shared project's hub catalog entry after a metadata-only
      * change (rename). Without this a rename with no follow-up content

@@ -30,7 +30,6 @@ import { proxyDispatcherRequestInit, validateUserProviderBaseUrl } from '../conn
 import { isKnownReasoningEffort, resolveModelForServiceTier } from '../runtimes/models.js';
 import { createRoleMarkerGuard } from '../role-marker-guard.js';
 import { authorizeReasoningEgress, sendReasoningEgressDenial } from '../reasoning-egress.js';
-import type { AuthorizeProjectRequest } from '../collab/project-request-authority.js';
 
 // Allowlist for the `/feedback` route. Mirrors the
 // ChatMessageFeedbackReasonCode union in packages/contracts/src/api/chat.ts.
@@ -53,7 +52,7 @@ const FEEDBACK_REASON_ALLOWLIST: ReadonlySet<string> = new Set([
 ]);
 
 export interface RegisterChatRoutesDeps extends RouteDeps<'db' | 'design' | 'http' | 'chat' | 'agents' | 'critique' | 'validation' | 'lifecycle' | 'paths' | 'telemetry' | 'appConfig'> {
-  authorizeProjectRequest: AuthorizeProjectRequest;
+  authorizeProjectRequest: any;
 }
 
 export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
@@ -700,9 +699,9 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
 
   const buildAnthropicChatPayload = (
     model: string,
-    systemPrompt: unknown,
-    messages: unknown,
-    maxTokens: unknown,
+    systemPrompt: any,
+    messages: any,
+    maxTokens: any,
   ) => {
     const payload: any = {
       model,
@@ -1234,12 +1233,12 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
     defaultBaseUrl: string;
     tools: any[];
     buildHeaders: (apiKey: string) => Record<string, string>;
-    isImageModel: (value: unknown) => boolean;
+    isImageModel: (value: any) => boolean;
     /** Validates the per-request `byokVideoModel` default before it is fed to
      *  the `generate_video` tool. Omitted when the provider has no video tool. */
-    isVideoModel?: (value: unknown) => boolean;
+    isVideoModel?: (value: any) => boolean;
     /** Validates the per-request `byokSpeechModel` default for the speech tool. */
-    isSpeechModel?: (value: unknown) => boolean;
+    isSpeechModel?: (value: any) => boolean;
     runImage: ByokToolRunner;
     runSpeech: ByokToolRunner;
     /** Omitted when the provider has no video endpoint (AIHubMix). */
@@ -1825,7 +1824,7 @@ export function registerChatRoutes(app: Express, ctx: RegisterChatRoutesDeps) {
           );
         }
       })
-      .catch((err: unknown) => {
+      .catch((err: any) => {
         console.warn(
           `[${opts.logTag}] seed media-config failed: ${
             err instanceof Error ? err.message : String(err)

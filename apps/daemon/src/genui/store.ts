@@ -31,7 +31,7 @@ export interface SurfaceRow {
   kind:              SurfaceKind;
   persist:           SurfaceTier;
   schemaDigest:      string | null;
-  value:             unknown;
+  value: any;
   status:            SurfaceStatus;
   respondedBy:       SurfaceRespondedBy | null;
   requestedAt:       number;
@@ -53,7 +53,7 @@ export interface RequestSurfaceInput {
 
 export interface RespondSurfaceInput {
   rowId:        string;
-  value:        unknown;
+  value: any;
   respondedBy:  SurfaceRespondedBy;
   expiresAt?:   number | null | undefined;
 }
@@ -64,7 +64,7 @@ export interface PrefillSurfaceInput {
   surfaceId:         string;
   kind:              SurfaceKind;
   persist:           SurfaceTier;
-  value:             unknown;
+  value: any;
   schemaDigest?:     string | null | undefined;
   expiresAt?:        number | null | undefined;
 }

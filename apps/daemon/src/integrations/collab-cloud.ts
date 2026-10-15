@@ -83,7 +83,7 @@ export function createCollabCloudClient(options: CollabCloudClientOptions = {}) 
   async function request<T>(
     method: string,
     path: string,
-    body?: unknown,
+    body?: any,
     extraHeaders?: Record<string, string>,
   ): Promise<{ status: number; payload: T; etag: string | null }> {
     const controller = new AbortController();

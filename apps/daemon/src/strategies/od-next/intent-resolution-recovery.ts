@@ -14,7 +14,7 @@ export interface IntentRecoveryRunState extends Pick<RestartRecoverableDurableRu
   conversationId: string | null;
   agentId: string | null;
   cancelOrigin?: string | null;
-  odNextTaskInputSnapshot?: unknown;
+  odNextTaskInputSnapshot?: any;
 }
 
 /** Only daemon-persisted ownership participates; no mutable launch defaults are reconstructed. */
@@ -41,7 +41,7 @@ export function recoverPlanningIntentResolution(
   if ((['succeeded', 'failed', 'canceled'].includes(run.status) && !derivedRestartFailure) || run.cancelOrigin) return null;
   let task;
   try { task = getStrategyTaskExecutionByRunId(db, run.id); }
-  catch (error) {
+  catch (error: any) {
     if (error instanceof InvalidStrategyTaskRecordError || error instanceof InvalidFrozenSkillPackageError) return null;
     throw error;
   }

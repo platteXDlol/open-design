@@ -41,7 +41,7 @@ export interface PromptTelemetryInputSection {
   kind: PromptTelemetrySectionKind;
   content?: string | null;
   captureContent?: boolean;
-  metadata?: unknown;
+  metadata?: any;
 }
 
 export interface PromptTelemetrySection {
@@ -289,7 +289,7 @@ function sizeBucket(value: number): string {
   return '1MiB+';
 }
 
-function summarizeMetadataValue(value: unknown): Record<string, unknown> {
+function summarizeMetadataValue(value: any): Record<string, unknown> {
   if (Array.isArray(value)) {
     const extensions = new Set<string>();
     const sizeBuckets = new Map<string, number>();

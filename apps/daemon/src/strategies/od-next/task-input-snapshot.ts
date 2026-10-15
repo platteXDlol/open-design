@@ -119,7 +119,7 @@ function safeTaskId(value: string): string {
   return value;
 }
 
-function cleanupErrorCode(error: unknown): string {
+function cleanupErrorCode(error: any): string {
   if (error instanceof OdNextTaskInputSnapshotError) return error.code;
   const code = (error as NodeJS.ErrnoException)?.code;
   return typeof code === 'string' && /^[A-Z0-9_]+$/.test(code) ? code : 'UNKNOWN';
@@ -128,7 +128,7 @@ function cleanupErrorCode(error: unknown): string {
 function warnSnapshotCleanupFailure(
   phase: OdNextTaskInputCleanupPhase,
   taskExecutionId: string,
-  error: unknown,
+  error: any,
 ): void {
   console.warn(
     `[od-next-task-input] cleanup failed phase=${phase} task=${taskExecutionId} code=${cleanupErrorCode(error)}`,
@@ -191,7 +191,7 @@ function removeManagedSnapshotDir(input: {
   let rootStat: fs.BigIntStats;
   try {
     rootStat = fs.lstatSync(snapshotsRoot, { bigint: true });
-  } catch (error) {
+  } catch (error: any) {
     if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') return;
     throw error;
   }
@@ -205,7 +205,7 @@ function removeManagedSnapshotDir(input: {
   let snapshotStat: fs.BigIntStats;
   try {
     snapshotStat = fs.lstatSync(snapshotDir, { bigint: true });
-  } catch (error) {
+  } catch (error: any) {
     if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') return;
     throw error;
   }
@@ -358,7 +358,7 @@ function openVerifiedReadOnly(
       );
     }
     return { fd, stat };
-  } catch (error) {
+  } catch (error: any) {
     fs.closeSync(fd);
     throw error;
   }
@@ -494,7 +494,7 @@ function readSourceWithoutFollowingSymlinks(
   }
 }
 
-function normalizeLocale(value: unknown): string {
+function normalizeLocale(value: any): string {
   if (typeof value !== 'string' || !value.trim()) return 'und';
   try {
     return new Intl.Locale(value.trim().replaceAll('_', '-')).toString();
@@ -503,7 +503,7 @@ function normalizeLocale(value: unknown): string {
   }
 }
 
-function safeOptionalConfig(value: unknown, field: string): string | undefined {
+function safeOptionalConfig(value: any, field: string): string | undefined {
   if (typeof value !== 'string') return undefined;
   const normalized = value.trim();
   if (!normalized || normalized.length > 256 || /[\u0000-\u001f\u007f]/.test(normalized)) {
@@ -519,12 +519,12 @@ function safeOptionalConfig(value: unknown, field: string): string | undefined {
 
 export function buildOdNextTaskConfigurationV1(input: {
   taskType: OdNextProductionTaskTypeV1;
-  locale?: unknown;
+  locale?: any;
   selectedAgentId: string;
-  sessionMode?: unknown;
-  model?: unknown;
-  reasoning?: unknown;
-  serviceTier?: unknown;
+  sessionMode?: any;
+  model?: any;
+  reasoning?: any;
+  serviceTier?: any;
   mediaExecution: MediaExecutionPolicy;
   route?: 'direct_edit' | 'full_plan';
   mode?: 'simple' | 'complex' | 'unresolved';
@@ -622,7 +622,7 @@ export function createOdNextTaskInputSnapshot(input: {
     try {
       fs.mkdirSync(snapshotDir, { recursive: false, mode: 0o700 });
       snapshotCleanupAllowed = true;
-    } catch (error) {
+    } catch (error: any) {
       if ((error as NodeJS.ErrnoException)?.code !== 'EEXIST') throw error;
       const existingStat = fs.lstatSync(snapshotDir);
       if (existingStat.isSymbolicLink() || !existingStat.isDirectory()) {
@@ -641,7 +641,7 @@ export function createOdNextTaskInputSnapshot(input: {
       // committed, not a reusable canonical snapshot.
       try {
         removeManagedSnapshotDir({ snapshotsRoot, taskExecutionId, snapshotDir });
-      } catch (cleanupError) {
+      } catch (cleanupError: any) {
         warnSnapshotCleanupFailure('replace-partial', taskExecutionId, cleanupError);
         throw cleanupError;
       }
@@ -658,7 +658,7 @@ export function createOdNextTaskInputSnapshot(input: {
           input.beforeOpenSource,
           input.afterReadSource,
         );
-      } catch (error) {
+      } catch (error: any) {
         if (error instanceof OdNextTaskInputSnapshotError) throw error;
         throw new OdNextTaskInputSnapshotError(
           'OD Next attachment could not be read and frozen safely.',
@@ -739,11 +739,11 @@ export function createOdNextTaskInputSnapshot(input: {
     const manifestPath = path.join(snapshotDir, 'manifest.json');
     fs.writeFileSync(manifestPath, manifestBytes, { flag: 'wx', mode: 0o400 });
     return { taskExecutionId, snapshotDir, manifestSha256: sha256(manifestBytes) };
-  } catch (error) {
+  } catch (error: any) {
     if (snapshotCleanupAllowed) {
       try {
         removeManagedSnapshotDir({ snapshotsRoot, taskExecutionId, snapshotDir });
-      } catch (cleanupError) {
+      } catch (cleanupError: any) {
         warnSnapshotCleanupFailure('create', taskExecutionId, cleanupError);
       }
     }
@@ -824,7 +824,7 @@ function removeRunProjectionTree(target: string): void {
   let stat: fs.Stats;
   try {
     stat = fs.lstatSync(target);
-  } catch (error) {
+  } catch (error: any) {
     if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') return;
     throw error;
   }
@@ -1068,7 +1068,7 @@ export function createOdNextRunInputProjection(input: {
       projectionDir,
       projectionAccessRoot: taskProjectionRoot,
     };
-  } catch (error) {
+  } catch (error: any) {
     if (projectionPathVerified) {
       removeRunProjectionTree(projectionDir);
       if (fs.existsSync(taskProjectionRoot)) {
@@ -1097,7 +1097,7 @@ export function removeOdNextRunInputProjection(
   let accessRootStat: fs.Stats;
   try {
     accessRootStat = fs.lstatSync(projectionAccessRoot);
-  } catch (error) {
+  } catch (error: any) {
     if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') return;
     throw error;
   }
@@ -1155,7 +1155,7 @@ export function removeOdNextTaskInputSnapshotBestEffort(
   try {
     taskExecutionId = safeTaskId(descriptor.taskExecutionId);
     removeOdNextTaskInputSnapshot(descriptor, snapshotsRoot);
-  } catch (error) {
+  } catch (error: any) {
     warnSnapshotCleanupFailure(phase, taskExecutionId, error);
   }
 }

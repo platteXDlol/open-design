@@ -84,7 +84,7 @@ export async function importGitHubDesignSystemProject(
         ...(sourceBranch ? { branch: sourceBranch } : {}),
       },
     });
-  } catch (err) {
+  } catch (err: any) {
     await rm(cloneDir, { recursive: true, force: true });
     if (err instanceof LocalDesignSystemImportError) throw err;
     throw new LocalDesignSystemImportError(
@@ -163,11 +163,11 @@ async function execGit(
   });
 }
 
-function formatGitError(err: unknown): string {
+function formatGitError(err: any): string {
   if (typeof err === 'object' && err !== null) {
-    const stderr = (err as { stderr?: unknown }).stderr;
+    const stderr = (err as { stderr?: any }).stderr;
     if (typeof stderr === 'string' && stderr.trim()) return stderr.trim().split('\n').slice(-1)[0] ?? stderr.trim();
-    const message = (err as { message?: unknown }).message;
+    const message = (err as { message?: any }).message;
     if (typeof message === 'string' && message.trim()) return message.trim();
   }
   return String(err);

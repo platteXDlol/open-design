@@ -58,7 +58,7 @@ export interface MarketplaceJsonManifest {
   version: string;
   generatedAt?: string;
   plugins: MarketplaceJsonEntry[];
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export interface MarketplaceJsonEntry {
@@ -74,7 +74,7 @@ export interface MarketplaceJsonEntry {
   };
   homepage?: string;
   repo?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 }
 
 export interface MarketplaceJsonPublishOutcome {

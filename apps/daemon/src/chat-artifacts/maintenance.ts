@@ -163,7 +163,7 @@ export function startChatArtifactMaintenance(
           );
         }
         options.onPass?.(result);
-      } catch (error) {
+      } catch (error: any) {
         // A broken snapshot store degrades the cards. It must never take the
         // daemon, and it must never stop the NEXT pass from trying again.
         log(`[chat-artifacts] maintenance pass failed: ${String(error)}`);

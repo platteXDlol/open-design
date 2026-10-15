@@ -173,10 +173,10 @@ function recordRunEventStorageShape(
     }
     if (eventChars > shape.largestEventChars) {
       shape.largestEventChars = eventChars;
-      const kind = (persisted as { kind?: unknown }).kind;
+      const kind = (persisted as { kind?: any }).kind;
       shape.largestEventKind = typeof kind === 'string' && EVENT_KIND_PATTERN.test(kind) ? kind : null;
     }
-    const truncated = (persisted as { truncated?: { originalBytes?: unknown } }).truncated;
+    const truncated = (persisted as { truncated?: { originalBytes?: any } }).truncated;
     const originalBytes = truncated?.originalBytes;
     if (typeof originalBytes === 'number' && Number.isSafeInteger(originalBytes) && originalBytes >= 0) {
       shape.truncatedEventCount += 1;
@@ -207,7 +207,7 @@ export function runEventStorageShapeAnalytics(
   };
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, unknown> {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 }
 
@@ -230,7 +230,7 @@ function retireSupersededAttemptProse(db: SqliteDb, run: ChatRunMessageState): v
   flushRunMessageEvents(run);
   try {
     dropTrailingMessageAgentDeltas(db, messageId);
-  } catch (err) {
+  } catch (err: any) {
     const telemetry = ensureRunMessageEventPersistenceTelemetry(run);
     telemetry.persistenceErrorCount += 1;
     console.warn('[runs] superseded attempt cleanup failed', err);
@@ -241,7 +241,7 @@ export function persistRunEventToAssistantMessage(
   db: SqliteDb,
   run: ChatRunMessageState,
   event: string,
-  data: unknown,
+  data: any,
 ): void {
   if (!run.assistantMessageId) return;
   if (event === 'start') retireSupersededAttemptProse(db, run);
@@ -319,7 +319,7 @@ export function flushRunMessageEvents(run: ChatRunMessageState): void {
   try {
     const events = appendMessageAgentEvents(pending.db, pending.messageId, pending.events);
     if (events) telemetry.persistedEventCount += events.length;
-  } catch (err) {
+  } catch (err: any) {
     telemetry.persistenceErrorCount += 1;
     console.warn('[runs] message event persistence failed', err);
   } finally {
@@ -346,7 +346,7 @@ export function finalizeRunMessageEvents(
       telemetry.finalEventCount = events.length;
     }
     finalizedInputEventCounts.set(run, telemetry.inputEventCount);
-  } catch (err) {
+  } catch (err: any) {
     telemetry.persistenceErrorCount += 1;
     console.warn('[runs] message event finalization failed', err);
   } finally {
@@ -386,7 +386,7 @@ export function persistRunFailureClassification(
       .prepare(`SELECT events_json AS eventsJson FROM messages WHERE id = ?`)
       .get(run.assistantMessageId) as { eventsJson?: string } | undefined;
     if (!row) return;
-    let events: unknown[] = [];
+    let events: any[] = [];
     try {
       const parsed = JSON.parse(row.eventsJson ?? '[]');
       if (Array.isArray(parsed)) events = parsed;
@@ -431,7 +431,7 @@ export function persistRunFailureClassification(
     const telemetry = ensureRunMessageEventPersistenceTelemetry(run);
     telemetry.persistedEventCount = events.length;
     telemetry.finalEventCount = events.length;
-  } catch (err) {
+  } catch (err: any) {
     console.warn('[runs] failure classification persistence failed', err);
   }
 }
@@ -445,7 +445,7 @@ export function persistRunFailureClassification(
  */
 export function runSseEventToPersistedAgentEvent(
   event: string,
-  data: unknown,
+  data: any,
 ): PersistedAgentEvent | null {
   const persisted = unboundedPersistedAgentEvent(event, data);
   return persisted ? boundPersistedAgentEvent(persisted) : null;
@@ -453,7 +453,7 @@ export function runSseEventToPersistedAgentEvent(
 
 function unboundedPersistedAgentEvent(
   event: string,
-  data: unknown,
+  data: any,
 ): PersistedAgentEvent | null {
   const record = isRecord(data) ? data : {};
   if (event === 'start') {
@@ -521,12 +521,12 @@ const TRANSIENT_ACP_PERSISTED_STATUS_LABELS = new Set([
 ]);
 
 /** The persisted form of one `agent` SSE payload, within the storage budget. */
-export function daemonAgentPayloadToPersistedAgentEvent(data: unknown): PersistedAgentEvent | null {
+export function daemonAgentPayloadToPersistedAgentEvent(data: any): PersistedAgentEvent | null {
   const persisted = unboundedAgentPayloadToPersistedAgentEvent(data);
   return persisted ? boundPersistedAgentEvent(persisted) : null;
 }
 
-function unboundedAgentPayloadToPersistedAgentEvent(data: unknown): PersistedAgentEvent | null {
+function unboundedAgentPayloadToPersistedAgentEvent(data: any): PersistedAgentEvent | null {
   if (!isRecord(data)) return null;
   const type = data.type;
   if (type === 'status' && typeof data.label === 'string') {
@@ -738,7 +738,7 @@ function unboundedAgentPayloadToPersistedAgentEvent(data: unknown): PersistedAge
   return null;
 }
 
-function normalizePersistedToolInput(input: unknown): unknown {
+function normalizePersistedToolInput(input: any): any {
   if (!isRecord(input)) return input;
   if (typeof input.filePath === 'string') {
     return { ...input, file_path: input.filePath };
@@ -746,15 +746,15 @@ function normalizePersistedToolInput(input: unknown): unknown {
   return input;
 }
 
-function stringValue(value: unknown): string {
+function stringValue(value: any): string {
   return typeof value === 'string' ? value : '';
 }
 
-function liveArtifactAction(value: unknown): 'created' | 'updated' | 'deleted' {
+function liveArtifactAction(value: any): 'created' | 'updated' | 'deleted' {
   return value === 'created' || value === 'deleted' ? value : 'updated';
 }
 
-function liveArtifactRefreshPhase(value: unknown): 'started' | 'succeeded' | 'failed' {
+function liveArtifactRefreshPhase(value: any): 'started' | 'succeeded' | 'failed' {
   if (value === 'started' || value === 'succeeded' || value === 'failed') return value;
   return 'started';
 }

@@ -1,4 +1,3 @@
-import type { WorkspaceResourceContext } from '../collab/workspace-resource-mutation.js';
 import {
   createUserDesignSystem,
   deleteUserDesignSystem,
@@ -50,7 +49,7 @@ export interface DeleteWorkspaceOwnedDesignSystemDeps {
 export async function createWorkspaceOwnedDesignSystem(
   root: string,
   input: UserDesignSystemInput,
-  context: WorkspaceResourceContext | null,
+  context: any | null,
   deps: CreateWorkspaceOwnedDesignSystemDeps,
 ): Promise<DesignSystemSummary> {
   const create = deps.createUserDesignSystem ?? createUserDesignSystem;
@@ -90,7 +89,7 @@ export async function createWorkspaceOwnedDesignSystem(
       throw new Error('DESIGN_SYSTEM_ID_CONFLICT');
     }
     return created;
-  } catch (error) {
+  } catch (error: any) {
     await remove(root, created.id).catch(() => false);
     throw error;
   }

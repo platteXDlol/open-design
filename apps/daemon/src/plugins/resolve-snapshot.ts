@@ -180,7 +180,7 @@ function pickPluginFields(body: Record<string, unknown> | null | undefined) {
         ? (body.inputs as Record<string, unknown>)
         : {};
   const grantCaps = Array.isArray(body.grantCaps)
-    ? (body.grantCaps as unknown[])
+    ? (body.grantCaps as any[])
         .filter((c): c is string => typeof c === 'string')
     : [];
   const locale = typeof body.locale === 'string' ? body.locale : undefined;
@@ -235,7 +235,7 @@ export function resolvePluginSnapshot(input: ResolveSnapshotInput): ResolveSnaps
     if (input.requireSnapshotProjectMatch) {
       const row = input.db
         .prepare('SELECT project_id AS projectId FROM applied_plugin_snapshots WHERE id = ?')
-        .get(fields.snapshotId) as { projectId?: unknown } | undefined;
+        .get(fields.snapshotId) as { projectId?: any } | undefined;
       if (row?.projectId !== input.projectId) {
         return {
           ok: false,
@@ -317,7 +317,7 @@ export function resolvePluginSnapshot(input: ResolveSnapshotInput): ResolveSnaps
       locale: fields.locale,
       internalStrategyBinding,
     });
-  } catch (err) {
+  } catch (err: any) {
     if (err instanceof InternalBundledStrategyApplyError) {
       return {
         ok: false,

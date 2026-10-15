@@ -70,7 +70,7 @@ export function openBrowser(url: string, deps: OpenBrowserDeps = {}): ChildProce
     });
     child.unref();
     return child;
-  } catch (error) {
+  } catch (error: any) {
     const detail = error instanceof Error ? error.message : String(error);
     warn(`[od] failed to open browser: ${detail}`);
     return null;

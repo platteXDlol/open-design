@@ -51,7 +51,7 @@ export function mountJsonRoute<Input, Output, Deps>(
         return;
       }
       sendJson(res, spec.successStatus ?? 200, result.value);
-    } catch (e) {
+    } catch (e: any) {
       const message = e instanceof Error ? e.message : String(e);
       sendApiError(res, 500, createApiError('INTERNAL_ERROR', message));
     }

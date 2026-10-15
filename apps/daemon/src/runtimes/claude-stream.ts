@@ -35,11 +35,11 @@ import { boundedRawAgentEvent } from './run-event-payload-budget.js';
 type StreamEvent = Record<string, unknown>;
 type EventSink = (event: StreamEvent) => void;
 type BlockState = {
-  type?: unknown;
-  name?: unknown;
-  id?: unknown;
+  type?: any;
+  name?: any;
+  id?: any;
   input: string;
-  inputValue?: unknown;
+  inputValue?: any;
   /**
    * Reads the write target — and, for whole-file writes, the running line
    * count — out of `input` as it streams. `null` for every tool that names no
@@ -66,7 +66,7 @@ type RuntimeTask = {
   activeForm?: string;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: any): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
@@ -83,7 +83,7 @@ export interface ClaudePerRequestUsage {
 /** Extract the per-request token fields from an assistant `message.usage`,
  *  keeping only finite numbers. Returns null when `usage` is absent or carries
  *  no token field, so the parser does not emit empty per-request records. */
-function perRequestUsageFrom(usage: unknown): ClaudePerRequestUsage | null {
+function perRequestUsageFrom(usage: any): ClaudePerRequestUsage | null {
   if (!isRecord(usage)) return null;
   const out: ClaudePerRequestUsage = {};
   const keys = [
@@ -242,7 +242,7 @@ export function createClaudeStreamHandler(
   function emitTurnEndOnce(
     messageId: string | null,
     stopReason: string,
-    parentToolUseId: unknown,
+    parentToolUseId: any,
   ): void {
     // `turn_end` is the MAIN turn's boundary. Under `--verbose`, a Task
     // sub-agent's frames stream inline carrying a non-null top-level
@@ -279,7 +279,7 @@ export function createClaudeStreamHandler(
     wroteHtmlFileThisTurn = false;
   }
 
-  function normalizeTaskStatus(value: unknown): RuntimeTask['status'] {
+  function normalizeTaskStatus(value: any): RuntimeTask['status'] {
     if (value === 'completed' || value === 'in_progress' || value === 'stopped') {
       return value;
     }
@@ -350,7 +350,7 @@ export function createClaudeStreamHandler(
     });
   }
 
-  function emitCanonicalTaskSnapshot(toolUseId: unknown, name: unknown, input: unknown): boolean {
+  function emitCanonicalTaskSnapshot(toolUseId: any, name: any, input: any): boolean {
     if (typeof toolUseId !== 'string' || typeof name !== 'string') return false;
     if (name === 'TaskList') {
       // The call itself still renders as an ordinary tool row; we only want to
@@ -458,7 +458,7 @@ export function createClaudeStreamHandler(
    * written in an earlier run of this resumed session gets back onto the card
    * instead of the card showing only what this turn happened to create.
    */
-  function absorbTaskToolResult(toolUseId: unknown, content: string, isError: boolean): void {
+  function absorbTaskToolResult(toolUseId: any, content: string, isError: boolean): void {
     if (typeof toolUseId !== 'string') return;
     // Retire the pending entry either way — a failed call is still answered, and
     // leaving it pending would keep the slot waiting for a result that already
@@ -475,7 +475,7 @@ export function createClaudeStreamHandler(
     if (mergeTaskListResult(content)) emitTaskSnapshot(`${toolUseId}:todo-task`);
   }
 
-  function emitToolUse(id: unknown, name: unknown, input: unknown): void {
+  function emitToolUse(id: any, name: any, input: any): void {
     if (emitCanonicalTaskSnapshot(id, name, input)) return;
     if (isFileWriteToolUse(name, input)) {
       suppressNextArtifactText = true;
@@ -494,7 +494,7 @@ export function createClaudeStreamHandler(
     });
   }
 
-  function blockKey(index: unknown): string {
+  function blockKey(index: any): string {
     return `${currentMessageId ?? 'anon'}:${index}`;
   }
 
@@ -522,7 +522,7 @@ export function createClaudeStreamHandler(
    * deltas were truncated, and then the wrapper's own input is the better of
    * the two.
    */
-  function wrapperToolUseInput(block: Record<string, unknown>): unknown {
+  function wrapperToolUseInput(block: Record<string, unknown>): any {
     if (typeof block.id === 'string') {
       const open = openToolUseBlock(block.id);
       if (open && open.input.trim()) {
@@ -654,7 +654,7 @@ export function createClaudeStreamHandler(
     return 0;
   }
 
-  function isFileWriteToolUse(name: unknown, input: unknown): boolean {
+  function isFileWriteToolUse(name: any, input: any): boolean {
     if (typeof name !== 'string' || !isRecord(input)) return false;
     const path = typeof input.file_path === 'string'
       ? input.file_path
@@ -670,14 +670,14 @@ export function createClaudeStreamHandler(
     return typeof input.content === 'string' || typeof input.new_string === 'string';
   }
 
-  function fileWriteContent(input: unknown): string | null {
+  function fileWriteContent(input: any): string | null {
     if (!isRecord(input)) return null;
     if (typeof input.content === 'string') return input.content;
     if (typeof input.new_string === 'string') return input.new_string;
     return null;
   }
 
-  function isHtmlWriteToolInput(input: unknown): boolean {
+  function isHtmlWriteToolInput(input: any): boolean {
     if (!isRecord(input)) return false;
     const rawPath = input.file_path ?? input.filePath;
     if (typeof rawPath === 'string' && /\.(?:html?|xhtml)$/i.test(rawPath)) return true;
@@ -718,7 +718,7 @@ export function createClaudeStreamHandler(
     flushPendingArtifactText();
   }
 
-  function handleObject(obj: unknown) {
+  function handleObject(obj: any) {
     if (!isRecord(obj)) return;
 
     childEvidence?.observe(obj);
@@ -968,7 +968,7 @@ export function createClaudeStreamHandler(
     return /^(?:API Error:\s*)?Prompt is too long\.?$/i.test(message.trim());
   }
 
-  function assistantText(content: unknown[]): string {
+  function assistantText(content: any[]): string {
     const parts: string[] = [];
     for (const block of content) {
       if (isRecord(block) && block.type === 'text' && typeof block.text === 'string') {
@@ -978,7 +978,7 @@ export function createClaudeStreamHandler(
     return parts.join('\n').trim();
   }
 
-  function handleStreamEvent(ev: Record<string, unknown>, parentToolUseId: unknown = null) {
+  function handleStreamEvent(ev: Record<string, unknown>, parentToolUseId: any = null) {
     // The turn's real `stop_reason` on Claude Code 2.1.259. It lands after
     // every `content_block_stop` of the message (verified frame-by-frame
     // against the recordings in `tests/fixtures/claude-cli-recordings/`), so by
@@ -1187,7 +1187,7 @@ export function createClaudeStreamHandler(
   return { feed, flush, finishOpenChildEvidence, childEvidenceCoverage };
 }
 
-function stringifyToolResult(content: unknown): string {
+function stringifyToolResult(content: any): string {
   if (typeof content === 'string') return content;
   if (Array.isArray(content)) {
     return content

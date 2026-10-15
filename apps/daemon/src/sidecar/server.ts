@@ -44,7 +44,7 @@ const WEB_PORT_ENV = SIDECAR_ENV.WEB_PORT;
 const DESKTOP_IMPORT_TOKEN_TTL_MS = 60_000;
 
 export type DaemonSidecarHandle = {
-  invoke(action: string, input: unknown): Promise<unknown>;
+  invoke(action: string, input: any): Promise<any>;
   status(): Promise<DaemonStatusSnapshot>;
   stop(): Promise<void>;
   waitUntilStopped(): Promise<void>;
@@ -55,7 +55,7 @@ export type DaemonSidecarRuntime = {
   mode?: string;
   namespace: string;
   source?: string;
-  [field: string]: unknown;
+  [field: string]: any;
 };
 
 function parsePort(value: string | undefined): number {
@@ -103,7 +103,7 @@ export async function startDaemonSidecar(
   runtime: DaemonSidecarRuntime,
   options: {
     inheritedEnvironment?: (baseEnv?: NodeJS.ProcessEnv) => Record<string, string>;
-    invokeDesktop?: <TResult>(action: string, input: unknown, timeoutMs: number) => Promise<TResult>;
+    invokeDesktop?: <TResult>(action: string, input: any, timeoutMs: number) => Promise<TResult>;
     port?: number;
     statusDesktop?: (timeoutMs: number) => Promise<DesktopStatusSnapshot>;
   } = {},
@@ -178,7 +178,7 @@ export async function startDaemonSidecar(
     resolveStopped();
   }
 
-  async function invoke(action: string, input: unknown): Promise<unknown> {
+  async function invoke(action: string, input: any): Promise<any> {
       const request = normalizeDaemonSidecarMessage({ input, type: action });
       switch (request.type) {
         case SIDECAR_MESSAGES.STATUS:

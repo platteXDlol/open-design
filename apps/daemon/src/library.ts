@@ -304,10 +304,10 @@ function dedupIntoExistingAsset(
 }
 
 /** True when `err` is the UNIQUE(content_hash) constraint firing on insert. */
-function isUniqueContentHashViolation(err: unknown): boolean {
+function isUniqueContentHashViolation(err: any): boolean {
   if (!err || typeof err !== 'object') return false;
-  const code = (err as { code?: unknown }).code;
-  const message = (err as { message?: unknown }).message;
+  const code = (err as { code?: any }).code;
+  const message = (err as { message?: any }).message;
   return (
     code === 'SQLITE_CONSTRAINT_UNIQUE' ||
     (typeof message === 'string' &&
@@ -391,7 +391,7 @@ export async function registerLibraryAsset(
       tags,
       metadata: input.metadata,
     });
-  } catch (err) {
+  } catch (err: any) {
     // A concurrent ingest of the same bytes won the UNIQUE(content_hash) race in
     // the window between our findLibraryAssetByHash SELECT above and this INSERT
     // (the `await mkdir`/`await writeFile` yield lets a sibling request slip

@@ -17,7 +17,7 @@ export type BundledStrategyProvenanceV2 =
   | { kind: 'invalid'; errors: string[] }
   | { kind: 'inactive'; declaration: BundledStrategyDeclarationV2 };
 
-function strategyCandidate(manifest: InstalledPluginRecord['manifest']): unknown {
+function strategyCandidate(manifest: InstalledPluginRecord['manifest']): any {
   const od = manifest.od as (Record<string, unknown> | undefined);
   return od?.['strategy'];
 }
@@ -25,7 +25,7 @@ function strategyCandidate(manifest: InstalledPluginRecord['manifest']): unknown
 /**
  * Interpret the V2 strategy sidecar only after installed provenance proves
  * that the bytes came from the daemon's bundled tree. `PluginManifestSchema`
- * deliberately keeps this field as unknown passthrough data so community and
+ * deliberately keeps this field as any passthrough data so community and
  * older manifests cannot be forced through an internal contract.
  *
  * Task 04 ships content and contracts only. Until the later activation task
@@ -70,7 +70,7 @@ export class InvalidBundledStrategyActivationV2Error extends Error {
  */
 export function validateBundledStrategyActivationV2(
   plugin: StrategyProvenanceInput & Pick<InstalledPluginRecord, 'id' | 'version'>,
-  candidate: unknown,
+  candidate: any,
 ): AppliedStrategyBindingV2 {
   const provenance = inspectBundledStrategyProvenanceV2(plugin);
   if (provenance.kind !== 'inactive') {

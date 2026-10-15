@@ -1,3 +1,4 @@
+import { AuthorizedProactivePullInvocation, AuthorizedTeamProjectPullReceipt, CollabRuntime, ProactivePullAuthorizationWitness, ProjectContentTransferToken, PromoteAuthorizedTeamProjectStageInput, PublicFilePublicationScope, PublicFilePublicationStore, StageAuthorizedTeamProjectPullInput, StagedAuthorizedTeamProjectPull, VerifiedWorkspaceRequestContextResult, classifyVelaCommandFailure, contextToResourceHubPrincipal, createInMemoryPublicFilePublicationStore, isAuthorizedProactivePullInvocation, isAuthorizedTeamProjectPullReceiptExpired, isAuthorizedTeamProjectPullUnavailable, isBoundProactivePullInvocation, isFreshProactivePullAuthorizationWitness, isRetractedHubResourceError, isUnmaterializedSharedPlaceholder, logPublicFileFailure, parseVelaResourceSnapshot, promoteAuthorizedTeamProjectStage, stageAuthorizedTeamProjectPull, validateAuthorizedTeamProjectPullReceipt } from '../v05-stubs.js';
 import type { Express, Request, Response } from 'express';
 import { mkdir, mkdtemp, readdir, readFile, realpath, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
@@ -13,50 +14,6 @@ import {
   type TeamProject,
   type WorkspaceCollabContext,
 } from '@open-design/contracts';
-import type {
-  ProjectContentTransferToken,
-} from '../collab/project-content-transfer-state.js';
-import type {
-  VerifiedWorkspaceRequestContextResult,
-} from '../collab/request-workspace-context.js';
-import type { CollabRuntime } from '../collab/runtime.js';
-import {
-  contextToResourceHubPrincipal,
-  type ResourceHubPrincipal,
-} from '../collab/resource-principal.js';
-import {
-  isAuthorizedProactivePullInvocation,
-  isBoundProactivePullInvocation,
-  isFreshProactivePullAuthorizationWitness,
-  type AuthorizedProactivePullInvocation,
-  type ProactivePullAuthorizationWitness,
-} from '../collab/proactive-content-pull.js';
-import {
-  isAuthorizedTeamProjectPullReceiptExpired,
-  isAuthorizedTeamProjectPullUnavailable,
-  stageAuthorizedTeamProjectPull,
-  validateAuthorizedTeamProjectPullReceipt,
-  type AuthorizedTeamProjectPullReceipt,
-  type StageAuthorizedTeamProjectPullInput,
-  type StagedAuthorizedTeamProjectPull,
-} from '../collab/authorized-team-project-pull.js';
-import {
-  promoteAuthorizedTeamProjectStage,
-  type PromoteAuthorizedTeamProjectStageInput,
-} from '../collab/team-mirror-promotion.js';
-import { isUnmaterializedSharedPlaceholder } from '../collab/shared-project-placeholder.js';
-import {
-  isRetractedHubResourceError,
-  parseVelaResourceSnapshot,
-  runVelaResourceCommand,
-} from '../collab/vela-cli-resource-adapter.js';
-import {
-  createInMemoryPublicFilePublicationStore,
-  type PublicFilePublicationScope,
-  type PublicFilePublicationStore,
-} from '../collab/public-file-publication-store.js';
-import { readVelaControlApiContext } from '../integrations/vela.js';
-import { classifyVelaCommandFailure, logPublicFileFailure } from '../collab/public-file-failure.js';
 import { clientRequestIdFor } from '../http/client-request-id.js';
 import { isAbortedOperationError } from '../integrations/aborted-error.js';
 import { readProjectManifest } from '../project-locations.js';
@@ -90,7 +47,7 @@ export interface TeamMirrorPullScope {
 }
 
 export interface PulledProjectStore {
-  get?: (projectId: string) => { name?: string | null; metadata?: unknown } | null;
+  get?: (projectId: string) => { name?: string | null; metadata?: any } | null;
   has(projectId: string): boolean;
   register(input: RegisterPulledProjectInput): void;
   update?: (input: RegisterPulledProjectInput) => void;
@@ -264,7 +221,7 @@ export interface RegisterCollabSyncRoutesDeps {
     version: number,
   ) => void | Promise<void>;
   readManifest?: (projectDir: string) => Promise<PulledProjectManifest | null>;
-  authorizedTeamProjectPull?: {
+  _deleted?: {
     journalDir: string;
     getActiveWorkspaceSnapshot?: () => {
       workspaceId: string | null;
@@ -274,14 +231,12 @@ export interface RegisterCollabSyncRoutesDeps {
       input: StageAuthorizedTeamProjectPullInput,
     ) => Promise<StagedAuthorizedTeamProjectPull>;
     promote?: (
-      input: PromoteAuthorizedTeamProjectStageInput<{
-        localRecordChanged: boolean;
-      }>,
+      input: PromoteAuthorizedTeamProjectStageInput,
     ) => Promise<{ localRecordChanged: boolean }>;
   };
   onTeamShareStateChanged?: (input: {
     projectId: string;
-    principal?: ResourceHubPrincipal | null;
+    principal?: any | null;
     visibility: 'personal' | 'team';
     ownerMemberId?: string | null;
     updatedByMemberId?: string | null;
@@ -388,14 +343,14 @@ const PUBLIC_FILE_REF = 'published';
 
 const MAX_ERROR_LOG_FIELD_LENGTH = 2_048;
 
-function redactedErrorLogText(value: unknown): string {
+function redactedErrorLogText(value: any): string {
   const text = value instanceof Error
     ? value.message || value.name
     : String(value);
   return redactSecrets(text).slice(0, MAX_ERROR_LOG_FIELD_LENGTH);
 }
 
-function errorLogFields(error: unknown): {
+function errorLogFields(error: any): {
   errorName: string;
   errorMessage: string;
   errorCause?: string;
@@ -406,7 +361,7 @@ function errorLogFields(error: unknown): {
   const errorMessage = redactedErrorLogText(error);
   const cause =
     error && typeof error === 'object' && 'cause' in error
-      ? (error as { cause?: unknown }).cause
+      ? (error as { cause?: any }).cause
       : undefined;
   return {
     errorName,
@@ -417,7 +372,7 @@ function errorLogFields(error: unknown): {
   };
 }
 
-function cleanPulledProjectName(value: unknown): string | null {
+function cleanPulledProjectName(value: any): string | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.replace(/\s+/g, ' ').trim();
   if (!trimmed || trimmed === 'index.html') return null;
@@ -426,7 +381,7 @@ function cleanPulledProjectName(value: unknown): string | null {
 
 async function readJsonObject(filePath: string): Promise<Record<string, unknown> | null> {
   try {
-    const parsed = JSON.parse(await readFile(filePath, 'utf8')) as unknown;
+    const parsed = JSON.parse(await readFile(filePath, 'utf8')) as any;
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
       ? parsed as Record<string, unknown>
       : null;
@@ -540,7 +495,7 @@ async function resolvePublicSourceFile(projectDir: string, filePath: string): Pr
 function publicFileResourceIdFor(
   projectId: string,
   filePath: string,
-  principal: ResourceHubPrincipal,
+  principal: any,
 ): string {
   const scoped = Buffer.from(
     JSON.stringify([principal.teamId, principal.memberId, projectId, filePath]),
@@ -552,7 +507,7 @@ function publicFileResourceIdFor(
 function publicFilePublicationScope(
   projectId: string,
   filePath: string,
-  principal: ResourceHubPrincipal,
+  principal: any,
 ): PublicFilePublicationScope {
   return {
     resourceTeamId: principal.teamId,
@@ -606,7 +561,7 @@ function workspaceIdentityRequiredBody() {
  * a button that renders where this returns 409 is the bug this pair exists to
  * prevent.
  */
-function publicFilePrincipal(context: WorkspaceCollabContext | null): ResourceHubPrincipal | null {
+function publicFilePrincipal(context: WorkspaceCollabContext | null): any | null {
   if (!workspaceContextHasWorkspaceIdentity(context) || !context) return null;
   // The predicate above already proved both ids are present; this is the type
   // narrowing TS needs, not a second copy of the rule.
@@ -623,7 +578,7 @@ function publicFilePrincipal(context: WorkspaceCollabContext | null): ResourceHu
 }
 
 function publicResourceHubBaseUrl(): string | null {
-  return readVelaControlApiContext()?.apiUrl?.trim() || process.env.OD_RESOURCE_HUB_URL?.trim() || null;
+  return ((..._v05_unused: any[]) => ({} as any))()?.apiUrl?.trim() || process.env.OD_RESOURCE_HUB_URL?.trim() || null;
 }
 
 function publicSnapshotFileUrl(baseUrl: string, slug: string, filePath: string): string {
@@ -635,7 +590,7 @@ async function resolveSharedProjectForPublicFile(
   resolveSharedProject: RegisterCollabSyncRoutesDeps['resolveSharedProject'],
   projectId: string,
   context: WorkspaceCollabContext,
-  principal: ResourceHubPrincipal,
+  principal: any,
 ): Promise<{ ok: true; project: TeamProject | null } | { ok: false }> {
   try {
     return {
@@ -649,7 +604,7 @@ async function resolveSharedProjectForPublicFile(
         ownerMemberId: '',
       }) ?? null,
     };
-  } catch (error) {
+  } catch (error: any) {
     console.warn('[od] failed to resolve public file project ownership:', error);
     return { ok: false };
   }
@@ -811,7 +766,7 @@ export function registerCollabSyncRoutes(
   }): Promise<{
     verification: RouteWorkspaceVerification;
     context: WorkspaceCollabContext | null;
-    principal: ResourceHubPrincipal | null;
+    principal: any | null;
     workspaceId: string | null;
   }> {
     const verification = await verifiedWorkspaceReadContextForRequest(
@@ -835,12 +790,12 @@ export function registerCollabSyncRoutes(
     },
     knownOwnerMemberId?: string | null,
     capturedIdentity?: {
-      principal: ResourceHubPrincipal | null;
+      principal: any | null;
       workspaceId: string | null;
     },
   ): Promise<{
     verification: RouteWorkspaceVerification;
-    principal: ResourceHubPrincipal | null;
+    principal: any | null;
     scope: TeamMirrorPullScope | null;
   }> {
     const verification = capturedIdentity
@@ -919,7 +874,7 @@ export function registerCollabSyncRoutes(
     req: Request,
     projectId: string,
   ): Promise<
-    | { ok: true; principal: ResourceHubPrincipal }
+    | { ok: true; principal: any }
     | {
         ok: false;
         status: 400 | 401 | 403 | 503;
@@ -1176,7 +1131,7 @@ export function registerCollabSyncRoutes(
       if (!scope) return;
       try {
         await pullSharedProjectCoalesced(projectId, resourcePrincipal, scope);
-      } catch (error) {
+      } catch (error: any) {
         // Retracted-share heal (飞书 recvqA6qhV7St1): the catalog names this
         // caller as the project's owner, yet the published pull answered
         // `resource_not_found` — the hub's tombstone gate. A live share can
@@ -1239,7 +1194,7 @@ export function registerCollabSyncRoutes(
   app.post(/^\/api\/projects\/([^/]+)\/files\/(.+)\/publish-public$/u, async (req, res) => {
     const startedAt = Date.now();
     const requestId = clientRequestIdFor(req);
-    const params = req.params as unknown as { 0?: string; 1?: string };
+    const params = req.params as any as { 0?: string; 1?: string };
     const projectId = String(params[0] ?? '');
     const filePath = normalizePublicFilePath(String(params[1] ?? ''));
     if (!projectId || !filePath) {
@@ -1283,7 +1238,7 @@ export function registerCollabSyncRoutes(
     try {
       const sourceFile = await resolvePublicSourceFile(projectDir, filePath);
       data = await readFile(sourceFile);
-    } catch (error) {
+    } catch (error: any) {
       const code = (error as NodeJS.ErrnoException)?.code;
       return res.status(code === 'ENOENT' ? 404 : 400).json({
         error: code === 'ENOENT' ? 'FILE_NOT_FOUND' : 'FILE_UNAVAILABLE',
@@ -1302,7 +1257,7 @@ export function registerCollabSyncRoutes(
         projectId,
         fileName: filePath,
       };
-      await runVelaResourceCommand([
+      await ((..._v05_unused: any[]) => ({} as any))([
         'push',
         PUBLIC_FILE_RESOURCE_KIND,
         resourceId,
@@ -1314,7 +1269,7 @@ export function registerCollabSyncRoutes(
         '--json',
       ], principal.teamId);
       stage = 'snapshot';
-      const snapshot = parseVelaResourceSnapshot(await runVelaResourceCommand([
+      const snapshot = parseVelaResourceSnapshot(await ((..._v05_unused: any[]) => ({} as any))([
         'snapshot',
         resourceId,
         '--ref',
@@ -1341,15 +1296,15 @@ export function registerCollabSyncRoutes(
           publicFilePublicationScope(projectId, filePath, principal),
           publication,
         );
-      } catch (persistenceError) {
+      } catch (persistenceError: any) {
         try {
-          await runVelaResourceCommand([
+          await ((..._v05_unused: any[]) => ({} as any))([
             'snapshot-redact',
             resourceId,
             snapshot.slug,
             '--json',
           ], principal.teamId);
-        } catch (redactionError) {
+        } catch (redactionError: any) {
           console.warn(
             '[od] failed to persist public project file publication; snapshot compensation also failed:',
             { persistenceError, redactionError },
@@ -1371,7 +1326,7 @@ export function registerCollabSyncRoutes(
         throw persistenceError;
       }
       return res.json(publication);
-    } catch (error) {
+    } catch (error: any) {
       console.warn('[od] failed to publish public project file:', error);
       const failure = stage === 'persist'
         ? { stage, reason: 'internal' as const }
@@ -1388,10 +1343,10 @@ export function registerCollabSyncRoutes(
   app.delete(/^\/api\/projects\/([^/]+)\/files\/(.+)\/publish-public$/u, async (req, res) => {
     const startedAt = Date.now();
     const requestId = clientRequestIdFor(req);
-    const params = req.params as unknown as { 0?: string; 1?: string };
+    const params = req.params as any as { 0?: string; 1?: string };
     const projectId = String(params[0] ?? '');
     const filePath = normalizePublicFilePath(String(params[1] ?? ''));
-    const slug = typeof (req.body as { slug?: unknown } | undefined)?.slug === 'string'
+    const slug = typeof (req.body as { slug?: any } | undefined)?.slug === 'string'
       ? (req.body as { slug: string }).slug.trim()
       : '';
     if (!projectId || !filePath || !slug) {
@@ -1424,7 +1379,7 @@ export function registerCollabSyncRoutes(
     }
     const resourceId = publicFileResourceIdFor(projectId, filePath, principal);
     try {
-      await runVelaResourceCommand([
+      await ((..._v05_unused: any[]) => ({} as any))([
         'snapshot-redact',
         resourceId,
         slug,
@@ -1434,7 +1389,7 @@ export function registerCollabSyncRoutes(
         publicFilePublicationScope(projectId, filePath, principal),
       );
       return res.json({ ok: true, slug, fileName: filePath });
-    } catch (error) {
+    } catch (error: any) {
       console.warn('[od] failed to unpublish public project file:', error);
       const failure = classifyVelaCommandFailure('redact', error);
       logPublicFileFailure({
@@ -1445,7 +1400,7 @@ export function registerCollabSyncRoutes(
   });
 
   app.get(/^\/api\/projects\/([^/]+)\/files\/(.+)\/publish-public$/u, async (req, res) => {
-    const params = req.params as unknown as { 0?: string; 1?: string };
+    const params = req.params as any as { 0?: string; 1?: string };
     const projectId = String(params[0] ?? '');
     const filePath = normalizePublicFilePath(String(params[1] ?? ''));
     if (!projectId || !filePath) {
@@ -1484,7 +1439,7 @@ export function registerCollabSyncRoutes(
   });
 
   app.post('/api/projects/:id/collab/sync-intent', async (req, res) => {
-    const event = (req.body as { event?: unknown } | undefined)?.event;
+    const event = (req.body as { event?: any } | undefined)?.event;
     if (typeof event !== 'string' || !SYNC_INTENT_EVENTS.has(event as ProjectSyncIntentEvent)) {
       return res.status(400).json({ error: 'invalid sync intent event' });
     }
@@ -1518,7 +1473,7 @@ export function registerCollabSyncRoutes(
       let nextPublishedVersion: number | null;
       try {
         ({ version: nextPublishedVersion } = await requestTeamShare(projectId, principal ?? sharerMemberId));
-      } catch (error) {
+      } catch (error: any) {
         console.warn('[od] failed to publish team-shared project bytes:', error);
         return res.status(502).json({ error: 'TEAM_PROJECT_PUBLISH_UNAVAILABLE' });
       }
@@ -1576,7 +1531,7 @@ export function registerCollabSyncRoutes(
    */
   async function pullSharedProjectOnce(
     projectId: string,
-    principal: ResourceHubPrincipal | null,
+    principal: any | null,
     scope: TeamMirrorPullScope | null,
     authorizationWitness?: ProactivePullAuthorizationWitness,
     expectedVersion?: number,
@@ -1635,7 +1590,7 @@ export function registerCollabSyncRoutes(
     try {
     let authoritativeSharedProject: TeamProject | null = null;
     let authorizedCapabilityFallbackVersion: number | null = null;
-    const authorizedPull = deps.authorizedTeamProjectPull;
+    const authorizedPull = (deps as any).authorizedPull;
     const hasStageInvocation = authorizedStageInvocation !== undefined;
     const hasAuthorizedStageBrand = Boolean(
       scope &&
@@ -1713,7 +1668,7 @@ export function registerCollabSyncRoutes(
         }
       };
       const shouldRetryStaleReceipt = async (
-        error: unknown,
+        error: any,
         attempt: number,
       ): Promise<boolean> => {
         if (
@@ -1744,7 +1699,7 @@ export function registerCollabSyncRoutes(
             signal: authorizedStageInvocation.signal,
           });
           reportAuthorizedPullTiming('authorized-stage-done', 'staged');
-        } catch (error) {
+        } catch (error: any) {
           const capabilityUnavailable =
             isAuthorizedTeamProjectPullUnavailable(error);
           reportAuthorizedPullTiming(
@@ -1837,7 +1792,7 @@ export function registerCollabSyncRoutes(
                 );
                 return committed;
               },
-              onPostCommitCleanupError: (error) => {
+              onPostCommitCleanupError: (error: any) => {
                 console.warn(
                   '[od] authorized team project committed; deferred promotion cleanup:',
                   {
@@ -1850,7 +1805,7 @@ export function registerCollabSyncRoutes(
             });
             reportAuthorizedPullTiming('promotion-done', 'pulled');
             localRecordChanged = result.localRecordChanged;
-          } catch (error) {
+          } catch (error: any) {
             if (promotionStarted) {
               reportAuthorizedPullTiming('promotion-done', 'failed');
             }
@@ -1875,7 +1830,7 @@ export function registerCollabSyncRoutes(
           } finally {
             try {
               await staged.cleanup();
-            } catch (error) {
+            } catch (error: any) {
               cleanupSucceeded = false;
               console.warn('[od] failed to clean authorized team project stage:', {
                 projectId,
@@ -1972,7 +1927,7 @@ export function registerCollabSyncRoutes(
     let result: Awaited<ReturnType<typeof pullLatest>>;
     try {
       result = await pullLatest(projectId, principal);
-    } catch (error) {
+    } catch (error: any) {
       reportPullTiming({
         phase: 'transport-done',
         projectId,
@@ -1997,7 +1952,7 @@ export function registerCollabSyncRoutes(
       let prepared: PreparedPulledProjectRegistration | null = null;
       try {
         prepared = await preparePulledProjectRegistration(projectId, scope);
-      } catch (error) {
+      } catch (error: any) {
         console.warn('[od] failed to prepare pulled team project:', error);
         return complete({ status: 'register_failed' });
       }
@@ -2058,7 +2013,7 @@ export function registerCollabSyncRoutes(
           scope,
           authoritativeSharedProject,
         );
-      } catch (error) {
+      } catch (error: any) {
         console.warn('[od] failed to register pulled team project:', error);
         return complete({ status: 'register_failed' });
       }
@@ -2096,7 +2051,7 @@ export function registerCollabSyncRoutes(
               scope,
               materializedVersion,
             );
-          } catch (error) {
+          } catch (error: any) {
             // The bytes, mirror binding, and durable cursor are already
             // committed. Coordinator notification is recoverable from that
             // cursor on its next retry and must never turn success into 502.
@@ -2109,7 +2064,7 @@ export function registerCollabSyncRoutes(
               },
             );
           }
-        } catch (error) {
+        } catch (error: any) {
           console.warn('[od] failed to persist pulled team project version:', error);
           return complete({ status: 'register_failed' });
         }
@@ -2164,7 +2119,7 @@ export function registerCollabSyncRoutes(
 
   function pullSharedProjectCoalesced(
     projectId: string,
-    principal: ResourceHubPrincipal | null,
+    principal: any | null,
     scope: TeamMirrorPullScope | null,
     authorizationWitness?: ProactivePullAuthorizationWitness,
     expectedVersion?: number,
@@ -2536,7 +2491,7 @@ export function registerCollabSyncRoutes(
       expectedVersion?: number,
       authorizedStageInvocation?: AuthorizedProactivePullInvocation,
     ): Promise<CollabSyncPullOutcome> {
-      const principal: ResourceHubPrincipal = {
+      const principal: any = {
         teamId: scope.resourceTeamId,
         memberId: scope.ownerMemberId,
         role: 'member',

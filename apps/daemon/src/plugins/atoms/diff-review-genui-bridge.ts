@@ -41,7 +41,7 @@ export interface ParsedDiffReviewDecision {
   reason?: string;
 }
 
-export function parseDiffReviewGenuiResponse(value: unknown): ParsedDiffReviewDecision | { error: string } {
+export function parseDiffReviewGenuiResponse(value: any): ParsedDiffReviewDecision | { error: string } {
   if (!value || typeof value !== 'object') {
     return { error: 'diff-review response must be a JSON object' };
   }
@@ -63,7 +63,7 @@ export function parseDiffReviewGenuiResponse(value: unknown): ParsedDiffReviewDe
 
 export interface ApplyDiffReviewDecisionInput {
   cwd: string;
-  value: unknown;
+  value: any;
   reviewer: DiffReviewer;
 }
 
@@ -102,11 +102,11 @@ export async function applyDiffReviewDecisionToCwd(
     const result: ApplyDiffReviewDecisionResult = { ok: true, report };
     try {
       result.handoff = await runAndPersistHandoff({ cwd: input.cwd });
-    } catch (err) {
+    } catch (err: any) {
       result.handoffError = (err as Error).message;
     }
     return result;
-  } catch (err) {
+  } catch (err: any) {
     return { ok: false, error: (err as Error).message };
   }
 }

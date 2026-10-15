@@ -3,18 +3,18 @@ export interface NativeFolderDialogCommand {
   args: string[];
 }
 
-function errorCode(error: unknown): unknown {
+function errorCode(error: any): any {
   return error && typeof error === 'object' && 'code' in error
-    ? (error as { code?: unknown }).code
+    ? (error as { code?: any }).code
     : undefined;
 }
 
-function errorMessage(error: unknown): string {
+function errorMessage(error: any): string {
   if (error instanceof Error && error.message) return error.message;
   return String(error);
 }
 
-function hardLinuxFolderDialogFailure(error: unknown, stderrText: string): string | null {
+function hardLinuxFolderDialogFailure(error: any, stderrText: string): string | null {
   const code = errorCode(error);
   if (code === 'ENOENT') return 'zenity is not installed';
   if (/cannot open display/i.test(stderrText)) return stderrText;
@@ -48,7 +48,7 @@ export function buildWindowsFolderDialogCommand(): NativeFolderDialogCommand {
   };
 }
 
-export function parseFolderDialogStdout(error: unknown, stdout: string): string | null {
+export function parseFolderDialogStdout(error: any, stdout: string): string | null {
   if (error) {
     return null;
   }
@@ -57,7 +57,7 @@ export function parseFolderDialogStdout(error: unknown, stdout: string): string 
   return selectedPath.length > 0 ? selectedPath : null;
 }
 
-export function parseLinuxFolderDialogResult(error: unknown, stdout: string, stderr: string): string | null {
+export function parseLinuxFolderDialogResult(error: any, stdout: string, stderr: string): string | null {
   if (error) {
     const stderrText = stderr.trim();
     const code = errorCode(error);

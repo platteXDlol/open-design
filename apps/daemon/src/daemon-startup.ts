@@ -30,7 +30,7 @@ export type DaemonCliStartupParseResult =
 
 export const DEFAULT_DAEMON_BIND_HOST = '127.0.0.1';
 
-export function normalizeDaemonBindHost(input: unknown): string {
+export function normalizeDaemonBindHost(input: any): string {
   const host = String(input ?? '').trim();
   return host || DEFAULT_DAEMON_BIND_HOST;
 }
@@ -128,7 +128,7 @@ export async function startDaemonRuntime(options: DaemonRuntimeOptions = {}): Pr
 
   const stop = async () => {
     const closePromise = closeHttpServer(started.server);
-    const shutdownPromise = started.shutdown?.().catch((error: unknown) => {
+    const shutdownPromise = started.shutdown?.().catch((error: any) => {
       console.error('daemon shutdown cleanup failed', error);
     }) ?? Promise.resolve();
     await Promise.allSettled([shutdownPromise, closePromise]);

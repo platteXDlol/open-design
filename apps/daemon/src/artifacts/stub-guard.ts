@@ -125,7 +125,7 @@ export function artifactIdentifiersMatch(a: string, b: string): boolean {
 async function readSidecarIdentifier(scanDir: string, entryName: string): Promise<string | null> {
   try {
     const raw = await readFile(path.join(scanDir, `${entryName}.artifact.json`), 'utf8');
-    const parsed = JSON.parse(raw) as { metadata?: { identifier?: unknown } } | null;
+    const parsed = JSON.parse(raw) as { metadata?: { identifier?: any } } | null;
     const id = parsed?.metadata?.identifier;
     return typeof id === 'string' && id.length > 0 ? id : null;
   } catch {

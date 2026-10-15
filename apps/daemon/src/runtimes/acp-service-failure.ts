@@ -72,12 +72,12 @@ export const GENERIC_ACP_FAILURE_CODE = 'AGENT_EXECUTION_FAILED';
 
 /** The failure frame `agent-protocol/acp/session.ts` puts on `send('error', …)`. */
 interface AcpErrorFrame {
-  message?: unknown;
-  error?: unknown;
-  [key: string]: unknown;
+  message?: any;
+  error?: any;
+  [key: string]: any;
 }
 
-function readable(value: unknown): string | null {
+function readable(value: any): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
@@ -90,7 +90,7 @@ function readable(value: unknown): string | null {
  * (a cycle, a BigInt) contributes nothing rather than throwing on a path whose
  * whole job is to report a failure.
  */
-function detailsEvidence(details: unknown): string {
+function detailsEvidence(details: any): string {
   if (details === undefined || details === null) return '';
   try {
     return JSON.stringify(details) ?? '';
@@ -106,7 +106,7 @@ function detailsEvidence(details: unknown): string {
  * @param payload - The ACP error payload, forwarded unchanged when no class applies.
  * @returns The payload to send — the same object reference when nothing changed.
  */
-export function withAcpServiceFailureCode(payload: unknown): unknown {
+export function withAcpServiceFailureCode(payload: any): any {
   if (!payload || typeof payload !== 'object') return payload;
   const frame = payload as AcpErrorFrame;
   const nested =

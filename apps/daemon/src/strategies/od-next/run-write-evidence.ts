@@ -8,7 +8,7 @@ import { recordStrategyRunWriteEvidence, type StrategyWriteEvidenceSource } from
 interface EvidenceRun {
   id: string;
   sideEffectLedger?: RunSideEffectLedger;
-  events?: unknown;
+  events?: any;
   artifactOutcome?: {
     filesWritten?: number;
     filesWrittenUnknown?: boolean;
@@ -33,7 +33,7 @@ export function createStrategyRunWriteEvidenceRecorder(db: Database.Database) {
   const lastToolCount = new WeakMap<EvidenceRun, number>();
   const taskForRun = (runId: string) => {
     try { return getStrategyTaskExecutionByRunId(db, runId); }
-    catch (error) {
+    catch (error: any) {
       // A corrupt task has no trustworthy evidence owner. The lifecycle must
       // still persist its failure instead of throwing again while finishing.
       if (error instanceof InvalidStrategyTaskRecordError || error instanceof InvalidFrozenSkillPackageError) return null;

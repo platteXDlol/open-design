@@ -53,11 +53,11 @@ export class ArtifactPublicationBlockedError extends Error {
   }
 }
 
-export function isPublicationGuardedArtifactKind(kind: unknown): boolean {
+export function isPublicationGuardedArtifactKind(kind: any): boolean {
   return typeof kind === 'string' && PUBLICATION_GUARDED_ARTIFACT_KINDS.has(kind);
 }
 
-export function findUnresolvedArtifactPlaceholders(value: unknown): string[] {
+export function findUnresolvedArtifactPlaceholders(value: any): string[] {
   const text = stringifyArtifactContent(value);
   if (!text) return [];
   return UNRESOLVED_ARTIFACT_PLACEHOLDERS.filter((placeholder) =>
@@ -65,7 +65,7 @@ export function findUnresolvedArtifactPlaceholders(value: unknown): string[] {
   );
 }
 
-export function shouldBlockArtifactPublication(value: unknown): boolean {
+export function shouldBlockArtifactPublication(value: any): boolean {
   return findUnresolvedArtifactPlaceholders(value).length > 0;
 }
 
@@ -74,14 +74,14 @@ export function buildArtifactPublicationBlockedMessage(placeholders: readonly st
   return `Artifact still contains unresolved pitch-deck placeholders: ${list}. Provide the required pitch facts before publishing.`;
 }
 
-export function assertArtifactPublicationAllowed(value: unknown): void {
+export function assertArtifactPublicationAllowed(value: any): void {
   const placeholders = findUnresolvedArtifactPlaceholders(value);
   if (placeholders.length > 0) {
     throw new ArtifactPublicationBlockedError(placeholders);
   }
 }
 
-function stringifyArtifactContent(value: unknown): string {
+function stringifyArtifactContent(value: any): string {
   if (typeof value === 'string') return value;
   if (Buffer.isBuffer(value)) return value.toString('utf8');
   if (value instanceof Uint8Array) return Buffer.from(value).toString('utf8');

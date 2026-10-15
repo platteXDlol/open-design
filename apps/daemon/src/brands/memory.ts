@@ -43,7 +43,7 @@ function brandSlug(name: string): string {
   return cleaned || 'brand';
 }
 
-function nonEmpty(value: unknown): value is string {
+function nonEmpty(value: any): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
@@ -220,7 +220,7 @@ export async function reflowBrandToMemory(
     try {
       const saved = await upsertMemoryEntry(dataDir, entry, { source: 'brand' });
       written.push(saved.id);
-    } catch (err) {
+    } catch (err: any) {
       console.warn(`[memory] brand reflow failed for ${entry.id}`, err);
     }
   }

@@ -79,8 +79,8 @@ export class InvalidFrozenSkillPackageError extends Error {
 }
 
 export function normalizeSelectedSkillIds(input: {
-  skillId?: unknown;
-  skillIds?: unknown;
+  skillId?: any;
+  skillIds?: any;
 }): string[] {
   const raw = [
     ...(typeof input.skillId === 'string' ? [input.skillId] : []),
@@ -111,8 +111,8 @@ export function normalizeSelectedSkillIds(input: {
 }
 
 export async function captureFrozenSkillPackage(input: {
-  skillId?: unknown;
-  skillIds?: unknown;
+  skillId?: any;
+  skillIds?: any;
   catalog: readonly SkillInfo[];
   ioHooks?: FrozenSkillCaptureIoHooks;
 }): Promise<FrozenSkillPackageV1> {
@@ -130,8 +130,8 @@ export async function captureFrozenSkillPackage(input: {
  * freezes the entries it is handed.
  */
 export function resolveSelectedCatalogSkills(input: {
-  skillId?: unknown;
-  skillIds?: unknown;
+  skillId?: any;
+  skillIds?: any;
   catalog: readonly SkillInfo[];
 }): SkillInfo[] {
   const resolved: SkillInfo[] = [];
@@ -325,9 +325,9 @@ export function getFrozenSkillPackage(
       FROM strategy_task_frozen_skill_packages
      WHERE task_execution_id = ?
   `).get(taskExecutionId) as {
-    schema?: unknown;
-    identity?: unknown;
-    payloadJson?: unknown;
+    schema?: any;
+    identity?: any;
+    payloadJson?: any;
   } | undefined;
   if (!row) {
     throw new InvalidFrozenSkillPackageError(
@@ -341,7 +341,7 @@ export function getFrozenSkillPackage(
   ) {
     throw new InvalidFrozenSkillPackageError('Frozen Skill package row is malformed.');
   }
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(row.payloadJson);
   } catch {
@@ -639,7 +639,7 @@ async function sideFileIsSkippable(root: string, relativePath: string): Promise<
     let stat;
     try {
       stat = await lstat(cursor);
-    } catch (error) {
+    } catch (error: any) {
       const code = (error as NodeJS.ErrnoException | null)?.code;
       if (code === 'ENOENT' || code === 'ENOTDIR') return true;
       return false;
@@ -823,7 +823,7 @@ function explicitSideFileRoster(body: string): string[] {
   return [...files].sort();
 }
 
-function verifyFrozenSkillPackage(value: unknown): FrozenSkillPackageV1 {
+function verifyFrozenSkillPackage(value: any): FrozenSkillPackageV1 {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new InvalidFrozenSkillPackageError('Frozen Skill package must be an object.');
   }
@@ -875,7 +875,7 @@ function verifyFrozenSkillPackage(value: unknown): FrozenSkillPackageV1 {
   return { schema: input.schema, identity: input.identity, selections };
 }
 
-function verifySelection(value: unknown): FrozenSkillSelectionV1 {
+function verifySelection(value: any): FrozenSkillSelectionV1 {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new InvalidFrozenSkillPackageError('Frozen Skill selection is malformed.');
   }
@@ -917,7 +917,7 @@ function verifySelection(value: unknown): FrozenSkillSelectionV1 {
   return { ...selection, files } as FrozenSkillSelectionV1;
 }
 
-function verifyFile(value: unknown): FrozenSkillFileV1 {
+function verifyFile(value: any): FrozenSkillFileV1 {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new InvalidFrozenSkillPackageError('Frozen Skill file is malformed.');
   }
@@ -945,7 +945,7 @@ function verifyFile(value: unknown): FrozenSkillFileV1 {
 function packageIdentityInput(input: {
   schema: typeof OD_NEXT_FROZEN_SKILL_PACKAGE_SCHEMA;
   selections: FrozenSkillSelectionV1[];
-}): unknown {
+}): any {
   return {
     schema: input.schema,
     selections: input.selections.map((selection) => ({
@@ -974,8 +974,8 @@ function selectionIdentityInput(selection: FrozenSkillSelectionV1): {
   };
 }
 
-function canonicalJson(value: unknown): string {
-  return JSON.stringify(value, (_key, current: unknown) => {
+function canonicalJson(value: any): string {
+  return JSON.stringify(value, (_key, current: any) => {
     if (!current || typeof current !== 'object' || Array.isArray(current)) return current;
     return Object.fromEntries(Object.entries(current as Record<string, unknown>).sort());
   });

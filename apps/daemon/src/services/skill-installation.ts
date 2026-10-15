@@ -289,7 +289,7 @@ async function findSkillRoot(
   }
   try {
     await scan(extractRoot, 0);
-  } catch (cause) {
+  } catch (cause: any) {
     return error(
       'INVALID_MANIFEST',
       cause instanceof Error ? cause.message : String(cause),
@@ -353,7 +353,7 @@ async function readSkillIdentity(
   try {
     const raw = await readFile(path.join(skillRoot, 'SKILL.md'), 'utf8');
     const parsed = parseFrontmatter(raw) as {
-      data?: { name?: unknown };
+      data?: { name?: any };
       body?: string;
     };
     const id = typeof parsed.data?.name === 'string' ? parsed.data.name.trim() : '';
@@ -368,7 +368,7 @@ async function readSkillIdentity(
       return error('INVALID_MANIFEST', 'SKILL.md name must produce a valid skill slug');
     }
     return { id, slug };
-  } catch (cause) {
+  } catch (cause: any) {
     return error(
       'INVALID_MANIFEST',
       `Could not read SKILL.md: ${cause instanceof Error ? cause.message : String(cause)}`,
@@ -400,7 +400,7 @@ async function installSkillSourceCandidate(
     let response: Awaited<ReturnType<SkillArchiveFetcher>>;
     try {
       response = await fetcher(resolved.fetchUrl);
-    } catch (cause) {
+    } catch (cause: any) {
       return error(
         'FETCH_FAILED',
         `Skill download failed: ${cause instanceof Error ? cause.message : String(cause)}`,
@@ -414,7 +414,7 @@ async function installSkillSourceCandidate(
     }
     try {
       await writeBoundedArchive(response.body, archivePath, maxBytes);
-    } catch (cause) {
+    } catch (cause: any) {
       return error(
         'INVALID_ARCHIVE',
         `Skill archive download failed: ${cause instanceof Error ? cause.message : String(cause)}`,
@@ -447,7 +447,7 @@ async function installSkillSourceCandidate(
           },
         }) as NodeJS.WritableStream,
       );
-    } catch (cause) {
+    } catch (cause: any) {
       return error(
         'INVALID_ARCHIVE',
         `Skill archive extraction failed: ${cause instanceof Error ? cause.message : String(cause)}`,
@@ -458,7 +458,7 @@ async function installSkillSourceCandidate(
     }
     try {
       await measureSafeTree(extractRoot, maxBytes);
-    } catch (cause) {
+    } catch (cause: any) {
       return error(
         'INVALID_ARCHIVE',
         cause instanceof Error ? cause.message : String(cause),
@@ -498,7 +498,7 @@ async function installSkillSourceCandidate(
     });
     try {
       await rename(stagedSkill, destination);
-    } catch (cause) {
+    } catch (cause: any) {
       const code =
         cause && typeof cause === 'object' && 'code' in cause
           ? String((cause as NodeJS.ErrnoException).code)
@@ -509,7 +509,7 @@ async function installSkillSourceCandidate(
       throw cause;
     }
     return { ok: true, id: identity.id, dir: destination };
-  } catch (cause) {
+  } catch (cause: any) {
     return error(
       'INTERNAL_ERROR',
       `Skill install failed: ${cause instanceof Error ? cause.message : String(cause)}`,

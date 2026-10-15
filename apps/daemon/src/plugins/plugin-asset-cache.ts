@@ -55,7 +55,7 @@ const EXT_TO_MIME: Record<string, string> = {
 /** True when `raw` is an absolute http(s) URL pointing at a media file we are
  *  willing to route through the cache. Pure + side-effect free so the URL
  *  rewriter and tests can share the exact predicate. */
-export function isCacheableExternalUrl(raw: unknown): raw is string {
+export function isCacheableExternalUrl(raw: any): raw is string {
   if (typeof raw !== 'string') return false;
   const value = raw.trim();
   if (!/^https?:\/\//i.test(value)) return false;
@@ -200,16 +200,16 @@ type DnsLookupCb = typeof dnsLookupCb;
 export function createValidatingLookup(lookupImpl: DnsLookupCb = dnsLookupCb) {
   return function validatingLookup(
     hostname: string,
-    options: unknown,
-    callback?: (err: Error | null, address?: unknown, family?: number) => void,
+    options: any,
+    callback?: (err: Error | null, address?: any, family?: number) => void,
   ): void {
     const cb = (typeof options === 'function' ? options : callback) as (
       err: Error | null,
-      address?: unknown,
+      address?: any,
       family?: number,
     ) => void;
     const opts = (typeof options === 'function' ? {} : (options ?? {})) as Record<string, unknown>;
-    (lookupImpl as unknown as (h: string, o: unknown, c: (e: Error | null, a?: unknown, f?: number) => void) => void)(
+    (lookupImpl as any as (h: string, o: any, c: (e: Error | null, a?: any, f?: number) => void) => void)(
       hostname,
       opts,
       (err, address, family) => {
@@ -270,13 +270,13 @@ export async function safeExternalFetch(
   assertSafePublicUrl(rawUrl);
   if (!sharedSsrfDispatcher) {
     sharedSsrfDispatcher = new Agent({
-      connect: { lookup: createValidatingLookup() as unknown as LookupFunction },
+      connect: { lookup: createValidatingLookup() as any as LookupFunction },
     });
   }
   // `dispatcher` is an undici extension of RequestInit; attach at runtime to
   // dodge the undici-types vs undici@7 skew (same pattern as the asset cache).
   const withGuard: RequestInit = { redirect: 'follow', ...init };
-  (withGuard as { dispatcher?: unknown }).dispatcher = sharedSsrfDispatcher;
+  (withGuard as { dispatcher?: any }).dispatcher = sharedSsrfDispatcher;
   return fetchImpl(rawUrl, withGuard);
 }
 
@@ -292,7 +292,7 @@ export function createPluginAssetCache(opts: PluginAssetCacheOptions): PluginAss
   // the host once, and `validatingLookup` rejects the connection if that exact
   // address is private. No separate pre-validation lookup to rebind around.
   const dispatcher = new Agent({
-    connect: { lookup: createValidatingLookup(opts.lookupImpl) as unknown as LookupFunction },
+    connect: { lookup: createValidatingLookup(opts.lookupImpl) as any as LookupFunction },
   });
   const inflight = new Map<string, Promise<AssetCacheResult>>();
 
@@ -305,7 +305,7 @@ export function createPluginAssetCache(opts: PluginAssetCacheOptions): PluginAss
     const metaPath = `${blobPath}.json`;
     try {
       const [buf, metaRaw] = await Promise.all([readFile(blobPath), readFile(metaPath, 'utf8')]);
-      const meta = JSON.parse(metaRaw) as { contentType?: unknown };
+      const meta = JSON.parse(metaRaw) as { contentType?: any };
       const contentType =
         typeof meta.contentType === 'string' && meta.contentType ? meta.contentType : 'application/octet-stream';
       return { buf, contentType };
@@ -380,9 +380,9 @@ export function createPluginAssetCache(opts: PluginAssetCacheOptions): PluginAss
         // undici-types (bundled with @types/node) vs undici@7 Dispatcher version
         // skew that a typed field would trip over.
         const init: RequestInit = { redirect: 'error', signal: controller.signal };
-        (init as { dispatcher?: unknown }).dispatcher = dispatcher;
+        (init as { dispatcher?: any }).dispatcher = dispatcher;
         response = await fetchImpl(url, init);
-      } catch (err) {
+      } catch (err: any) {
         throw new AssetCacheError(502, `fetch failed: ${err instanceof Error ? err.message : String(err)}`);
       }
       if (!response.ok) {

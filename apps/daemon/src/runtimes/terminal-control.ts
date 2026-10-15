@@ -45,7 +45,7 @@ export function stripTerminalControlSequences(value: string): string {
 export class TerminalControlSequenceStripper {
   #pending = '';
 
-  write(chunk: unknown): string {
+  write(chunk: any): string {
     const value = `${this.#pending}${typeof chunk === 'string' ? chunk : String(chunk)}`;
     this.#pending = '';
     const [ready, pending] = splitIncompleteControlTail(value);

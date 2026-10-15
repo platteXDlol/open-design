@@ -46,20 +46,20 @@ function tokensFile(dataDir: string): string {
   return path.join(dataDir, 'xai-tokens.json');
 }
 
-function isPlainObject(v: unknown): v is Record<string, unknown> {
+function isPlainObject(v: any): v is Record<string, unknown> {
   return Boolean(v) && typeof v === 'object' && !Array.isArray(v);
 }
 
 /** Coerce a freeform JSON blob into the typed shape, dropping anything
  * that doesn't deserialize cleanly. Used both at read time and as a
  * defensive pass when third-party tooling has hand-edited the file. */
-export function sanitizeTokensFile(raw: unknown): XAITokensFile {
+export function sanitizeTokensFile(raw: any): XAITokensFile {
   if (!isPlainObject(raw)) return {};
   const tok = sanitizeToken(raw.token);
   return tok ? { token: tok } : {};
 }
 
-function sanitizeToken(raw: unknown): StoredXAIToken | null {
+function sanitizeToken(raw: any): StoredXAIToken | null {
   if (!isPlainObject(raw)) return null;
   const accessToken =
     typeof raw.accessToken === 'string' ? raw.accessToken.trim() : '';
@@ -95,7 +95,7 @@ export async function readTokensFile(dataDir: string): Promise<XAITokensFile> {
   try {
     const raw = await readFile(tokensFile(dataDir), 'utf8');
     return sanitizeTokensFile(JSON.parse(raw));
-  } catch (err: unknown) {
+  } catch (err: any) {
     const e = err as { code?: string; name?: string; message?: string };
     if (e.code === 'ENOENT') return { ...EMPTY };
     if (e.name === 'SyntaxError') {
@@ -106,7 +106,7 @@ export async function readTokensFile(dataDir: string): Promise<XAITokensFile> {
   }
 }
 
-const writeLocks = new Map<string, Promise<unknown>>();
+const writeLocks = new Map<string, Promise<any>>();
 
 async function withLock<T>(dataDir: string, fn: () => Promise<T>): Promise<T> {
   const prev = writeLocks.get(dataDir) ?? Promise.resolve();
@@ -133,7 +133,7 @@ async function writeTokensFile(
   // owner-only read/write where the OS supports it.
   try {
     await chmod(file, 0o600);
-  } catch (err: unknown) {
+  } catch (err: any) {
     const e = err as { code?: string; message?: string };
     if (e.code !== 'ENOTSUP' && e.code !== 'EPERM') {
       console.warn(

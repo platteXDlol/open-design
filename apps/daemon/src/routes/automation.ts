@@ -20,11 +20,11 @@ export interface RegisterAutomationRoutesDeps {
   };
 }
 
-function errorMessage(err: unknown): string {
-  return String((err as { message?: unknown } | null)?.message || err);
+function errorMessage(err: any): string {
+  return String((err as { message?: any } | null)?.message || err);
 }
 
-function proposalStatus(raw: unknown): AutomationProposalStatus | 'all' {
+function proposalStatus(raw: any): AutomationProposalStatus | 'all' {
   return typeof raw === 'string' ? raw as AutomationProposalStatus | 'all' : 'all';
 }
 
@@ -39,7 +39,7 @@ export function registerAutomationRoutes(app: Express, deps: RegisterAutomationR
         limit === undefined ? {} : { limit },
       );
       res.json({ packets });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: errorMessage(err) });
     }
   });
@@ -49,7 +49,7 @@ export function registerAutomationRoutes(app: Express, deps: RegisterAutomationR
       const body = req.body && typeof req.body === 'object' ? req.body : {};
       const result = await ingestAutomationSource(RUNTIME_DATA_DIR, body);
       res.json(result);
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: errorMessage(err) });
     }
   });
@@ -59,7 +59,7 @@ export function registerAutomationRoutes(app: Express, deps: RegisterAutomationR
       const packet = await getAutomationSourcePacket(RUNTIME_DATA_DIR, req.params.id);
       if (!packet) return res.status(404).json({ error: 'automation source packet not found' });
       res.json({ packet });
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: errorMessage(err) });
     }
   });
@@ -71,7 +71,7 @@ export function registerAutomationRoutes(app: Express, deps: RegisterAutomationR
         status: rawStatus,
       });
       res.json({ proposals });
-    } catch (err) {
+    } catch (err: any) {
       res.status(500).json({ error: errorMessage(err) });
     }
   });
@@ -81,7 +81,7 @@ export function registerAutomationRoutes(app: Express, deps: RegisterAutomationR
       const body = req.body && typeof req.body === 'object' ? req.body : {};
       const proposal = await createAutomationProposal(RUNTIME_DATA_DIR, body);
       res.json({ proposal });
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: errorMessage(err) });
     }
   });
@@ -91,7 +91,7 @@ export function registerAutomationRoutes(app: Express, deps: RegisterAutomationR
       const proposal = await getAutomationProposal(RUNTIME_DATA_DIR, req.params.id);
       if (!proposal) return res.status(404).json({ error: 'automation proposal not found' });
       res.json({ proposal });
-    } catch (err) {
+    } catch (err: any) {
       res.status(400).json({ error: errorMessage(err) });
     }
   });
@@ -100,7 +100,7 @@ export function registerAutomationRoutes(app: Express, deps: RegisterAutomationR
     try {
       const result = await applyAutomationProposal(RUNTIME_DATA_DIR, req.params.id);
       res.json(result);
-    } catch (err) {
+    } catch (err: any) {
       const message = errorMessage(err);
       const status = message.includes('not found') ? 404 : 400;
       res.status(status).json({ error: message });
@@ -116,7 +116,7 @@ export function registerAutomationRoutes(app: Express, deps: RegisterAutomationR
         typeof body.reason === 'string' ? body.reason : undefined,
       );
       res.json({ proposal });
-    } catch (err) {
+    } catch (err: any) {
       const message = errorMessage(err);
       const status = message.includes('not found') ? 404 : 400;
       res.status(status).json({ error: message });

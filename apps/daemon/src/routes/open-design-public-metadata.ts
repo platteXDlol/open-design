@@ -14,7 +14,7 @@ export interface RegisterOpenDesignPublicMetadataRoutesDeps extends RouteDeps<'h
   openDesignPublicMetadata: OpenDesignPublicMetadataService;
 }
 
-function errorMessage(error: unknown): string {
+function errorMessage(error: any): string {
   return error instanceof Error ? error.message : String(error);
 }
 
@@ -34,7 +34,7 @@ export function registerOpenDesignPublicMetadataRoutes(
         stale: stats.stale,
       };
       res.json(payload);
-    } catch (error) {
+    } catch (error: any) {
       res.status(502).json({ error: errorMessage(error) });
     }
   });
@@ -50,7 +50,7 @@ export function registerOpenDesignPublicMetadataRoutes(
         stale: release.stale,
       };
       res.json(payload);
-    } catch (error) {
+    } catch (error: any) {
       res.status(502).json({ error: errorMessage(error) });
     }
   });
@@ -67,7 +67,7 @@ export function registerOpenDesignPublicMetadataRoutes(
         stale: presence.stale,
       };
       res.json(payload);
-    } catch (error) {
+    } catch (error: any) {
       res.status(502).json({ error: errorMessage(error) });
     }
   });

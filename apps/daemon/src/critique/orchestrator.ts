@@ -503,7 +503,7 @@ export async function runOrchestrator(
           // bottom-of-orchestrator updateCritiqueRun fires, which is
           // after any client request triggered by critique.ship.
           updateCritiqueRun(db, runId, { artifactPath });
-        } catch (err) {
+        } catch (err: any) {
           // ArtifactTooLargeError / ArtifactEmptyError are agent-side
           // problems (the parser already validated non-empty, so empty
           // here means the agent shipped a CDATA-only body). Filesystem
@@ -575,7 +575,7 @@ export async function runOrchestrator(
         bus.emit(panelEventToSse(failedEvent));
       }
     }
-  } catch (err) {
+  } catch (err: any) {
     // All non-clean termination paths: SIGTERM the child.
     killChild();
 
@@ -919,7 +919,7 @@ async function* applyTimeouts(
 
       let iterResult: IteratorResult<string>;
       try {
-        const races: Promise<unknown>[] = [iter.next(), totalTimer.promise];
+        const races: Promise<any>[] = [iter.next(), totalTimer.promise];
         if (roundTimer !== null) races.push(roundTimer.promise);
 
         // AbortSignal race: if signal fires, reject immediately.

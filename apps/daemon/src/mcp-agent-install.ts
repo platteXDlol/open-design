@@ -95,7 +95,7 @@ export interface JsonInstallPlan {
   keyPath: string[];
   serverKey: string;
   /** Value stored under keyPath → serverKey. */
-  entry: unknown;
+  entry: any;
 }
 
 /** Unverified format — print a snippet, never write. */
@@ -103,7 +103,7 @@ export interface ManualInstallPlan {
   kind: 'manual';
   slug: AgentSlug;
   format: 'json' | 'yaml' | 'toml';
-  /** Best-known config location, or null when even that is unknown. */
+  /** Best-known config location, or null when even that is ((..._v05_args: any[]) => ({} as any)). */
   configPath: string | null;
   snippet: string;
   reason: string;
@@ -447,10 +447,10 @@ export function removeJsonInstall(existingText: string | null, plan: JsonInstall
 
 function parseJsonObject(text: string | null, where: string): Record<string, unknown> {
   if (text == null || text.trim() === '') return {};
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(text);
-  } catch (err) {
+  } catch (err: any) {
     throw new Error(
       `existing config at ${where} is not valid JSON: ${err instanceof Error ? err.message : String(err)}`,
     );

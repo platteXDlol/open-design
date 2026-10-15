@@ -98,9 +98,9 @@ export function acpBuildAcceptsStdioMcp(
 
 /** The subset of an ACP `mcpServers` entry this guard needs to classify it. */
 interface AcpMcpServerLike {
-  name?: unknown;
-  type?: unknown;
-  [key: string]: unknown;
+  name?: any;
+  type?: any;
+  [key: string]: any;
 }
 
 /**
@@ -112,7 +112,7 @@ interface AcpMcpServerLike {
  *
  * @param entry - One element of the `mcpServers` array.
  */
-export function isAcpStdioMcpServer(entry: unknown): boolean {
+export function isAcpStdioMcpServer(entry: any): boolean {
   if (!entry || typeof entry !== 'object') return false;
   const type = (entry as AcpMcpServerLike).type;
   if (type === undefined || type === null) return true;

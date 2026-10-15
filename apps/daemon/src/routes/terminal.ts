@@ -1,12 +1,11 @@
 import type { Express } from 'express';
 import type { RouteDeps } from '../server-context.js';
 import type { createTerminalService } from '../terminals.js';
-import type { AuthorizeProjectRequest } from '../collab/project-request-authority.js';
 
 export interface RegisterTerminalRoutesDeps
   extends RouteDeps<'db' | 'http' | 'paths' | 'projectStore' | 'projectFiles'> {
   terminals: ReturnType<typeof createTerminalService>;
-  authorizeProjectRequest: AuthorizeProjectRequest;
+  authorizeProjectRequest: any;
 }
 
 /**

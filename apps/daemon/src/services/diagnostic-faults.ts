@@ -7,11 +7,11 @@ interface Run {
   strategyTask?: { outcome?: string };
   createdAt?: number; lastAgentActivityAt?: number; cancelOrigin?: string | null;
   terminalTrigger?: string | null; deliverableValid?: boolean;
-  deliverableValidation?: unknown; stdinBackpressure?: boolean;
+  deliverableValidation?: any; stdinBackpressure?: boolean;
   analyticsTelemetry?: { firstModelEventAt?: number };
   terminalLifecycle?: { terminalPersistence?: { status: string; errorType?: string | null } };
 }
-interface Event { id: number; event: string; timestamp: number; data: unknown }
+interface Event { id: number; event: string; timestamp: number; data: any }
 export function createDiagnosticRunObserver(): (run: Run, event: Event) => FaultEvidence | null {
   const errors = new WeakMap<Run, Set<string>>();
   return (run, event) => {

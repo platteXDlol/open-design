@@ -37,18 +37,18 @@ type Failure = Workspace & {
 export type FailureInput = {
   source: Source;
   operation?: string;
-  requestId?: unknown;
-  error?: unknown;
+  requestId?: any;
+  error?: any;
   timedOut?: boolean;
   status?: number;
-  workspaceId?: unknown;
-  memberId?: unknown;
-  workspaceType?: unknown;
+  workspaceId?: any;
+  memberId?: any;
+  workspaceType?: any;
   /** Already-used child env, only summarized on a new group or once per minute. */
   env?: NodeJS.ProcessEnv;
 };
 
-function workspace(value: { workspaceId?: unknown; memberId?: unknown; workspaceType?: unknown }): Workspace {
+function workspace(value: { workspaceId?: any; memberId?: any; workspaceType?: any }): Workspace {
   return {
     workspaceId: diagnosticId(value.workspaceId),
     memberId: diagnosticId(value.memberId),
@@ -228,12 +228,12 @@ export function createDiagnosticsEvidence(options: {
       scheduleWrite();
       if (!collecting && now() - lastSample >= SAMPLE_INTERVAL_MS) void refresh();
     },
-    observeDirectory(items: readonly { workspaceId?: unknown; memberId?: unknown; workspaceType?: unknown; workspaceMemberId?: unknown }[]): void {
+    observeDirectory(items: readonly { workspaceId?: any; memberId?: any; workspaceType?: any; workspaceMemberId?: any }[]): void {
       if (closed) return;
       directory = { observedAt: new Date(now()).toISOString(), truncated: items.length > MAX_WORKSPACES,
         items: items.slice(0, MAX_WORKSPACES).map((item) => workspace({ ...item, memberId: item.memberId ?? item.workspaceMemberId })) };
     },
-    observeContext(value: { workspaceId?: unknown; memberId?: unknown; workspaceType?: unknown } | null): void {
+    observeContext(value: { workspaceId?: any; memberId?: any; workspaceType?: any } | null): void {
       if (closed) return;
       context = value ? { ...workspace(value), observedAt: new Date(now()).toISOString() } : null;
     },

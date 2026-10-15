@@ -1,0 +1,83 @@
+// AUTO-GENERATED stubs for v0.5 vela/collab removal.
+// DO NOT add new references to these stubs.
+
+export type AuthorizeProjectToolRequest = any;
+export type AuthorizedProactivePullInvocation = any;
+export type AuthorizedProjectToolRequest = any;
+export type AuthorizedTeamProjectPullReceipt = any;
+export type ClassifiedCollabCloudError = any;
+export class CollabCloudUpstreamBlockedError { [key: string]: any; constructor(..._args: any[]) {} }
+export type CollabRuntime = any;
+export type CreateInviteOutcome = any;
+export type CreateWorkspaceInviteInput = any;
+export class CreatedProjectWorkspaceResolutionError { [key: string]: any; constructor(..._args: any[]) {} }
+export type InviteContinueOutcome = any;
+export type PresenceMember = any;
+export type ProactivePullAuthorizationWitness = any;
+export type ProjectContentTransferToken = any;
+export type PromoteAuthorizedTeamProjectStageInput = any;
+export type PublicFilePublicationScope = any;
+export type PublicFilePublicationStore = any;
+export type StageAuthorizedTeamProjectPullInput = any;
+export type StagedAuthorizedTeamProjectPull = any;
+export type TeamResourceKey = any;
+export type TeamResourceKind = any;
+export type TeamResourceShareRecord = any;
+export type TeamResourceStateProvider = any;
+export type TeamShareScopeRefusal = any;
+export type VelaCliPresenceHeartbeatInput = any;
+export type VelaCliPresenceLeaveInput = any;
+export type VelaTeamProjectCatalogClient = any;
+export type VerifiedWorkspaceRequestContextResult = any;
+export type VerifyWorkspaceRequestAuthority = any;
+export class WorkspaceBillingInterestError { [key: string]: any; constructor(..._args: any[]) {} }
+export type WorkspaceBillingRuntimeCoordinator = any;
+export type WorkspaceBillingRuntimeResult = any;
+export type WorkspaceContextProvider = any;
+export type WorkspaceResourceAccessInput = any;
+export type WorkspaceResourceMutationCapability = any;
+export type WorkspaceTypeRegistry = any;
+export const classifyCollabCloudError: (...args: any[]) => any = () => null as any;
+export const classifyVelaCommandFailure: (...args: any[]) => any = () => null as any;
+export const consumeInviteContinuation: (...args: any[]) => any = () => null as any;
+export const contextToResourceHubPrincipal: (...args: any[]) => any = () => null as any;
+export const createAuthorizeProjectRequest: (...args: any[]) => any = () => null as any;
+export const createCreatedProjectWorkspaceResolver: (...args: any[]) => any = () => null as any;
+export const createInMemoryPublicFilePublicationStore: (...args: any[]) => any = () => null as any;
+export const createWorkspaceInvite: (...args: any[]) => any = () => null as any;
+export const enforceLocalProjectDataPlaneRequest: (...args: any[]) => any = () => null as any;
+export const enforceTeamResourceCopyAllowed: (...args: any[]) => any = () => null as any;
+export const enforceVerifiedWorkspaceResourceMutation: (...args: any[]) => any = () => null as any;
+export const enforceVerifiedWorkspaceResourceRead: (...args: any[]) => any = () => null as any;
+export const fetchVelaBillingPreflight: (...args: any[]) => any = () => null as any;
+export const fetchVelaPresetModels: (...args: any[]) => any = () => null as any;
+export const fetchVelaRemoteModelsWithRetry: (...args: any[]) => any = () => null as any;
+export const headerValue: (...args: any[]) => any = () => null as any;
+export const isAuthorizedProactivePullInvocation: (...args: any[]) => any = () => null as any;
+export const isAuthorizedTeamProjectPullReceiptExpired: (...args: any[]) => any = () => null as any;
+export const isAuthorizedTeamProjectPullUnavailable: (...args: any[]) => any = () => null as any;
+export const isBoundProactivePullInvocation: (...args: any[]) => any = () => null as any;
+export const isFreshProactivePullAuthorizationWitness: (...args: any[]) => any = () => null as any;
+export const isRetractedHubResourceError: (...args: any[]) => any = () => null as any;
+export const isUnmaterializedSharedPlaceholder: (...args: any[]) => any = () => null as any;
+export const isWorkspaceLocked: (...args: any[]) => any = () => null as any;
+export const localProjectWorkspaceAttribution: (...args: any[]) => any = () => null as any;
+export const logPublicFileFailure: (...args: any[]) => any = () => null as any;
+export const parseVelaResourceSnapshot: (...args: any[]) => any = () => null as any;
+export const parseWorkspaceCollabContext: (...args: any[]) => any = () => null as any;
+export const promoteAuthorizedTeamProjectStage: (...args: any[]) => any = () => null as any;
+export const refuseTeamShareScope: (...args: any[]) => any = () => null as any;
+export const requestWithWorkspaceNavigationScope: (...args: any[]) => any = () => null as any;
+export const resolveLocalProjectWorkspaceScope: (...args: any[]) => any = () => null as any;
+export const resolveMcpWorkspaceContext: (...args: any[]) => any = () => null as any;
+export const resolveOptionalLocalWorkspaceRequestAuthority: (...args: any[]) => any = () => null as any;
+export const stageAuthorizedTeamProjectPull: (...args: any[]) => any = () => null as any;
+export const teamResourceMaterializationDir: (...args: any[]) => any = () => null as any;
+export const validateAuthorizedTeamProjectPullReceipt: (...args: any[]) => any = () => null as any;
+export const workspaceProjectContext: (...args: any[]) => any = () => null as any;
+export const workspaceProjectContextFromRequest: (...args: any[]) => any = () => null as any;
+export const workspaceResourceAccess: (...args: any[]) => any = () => null as any;
+export const workspaceResourceContextFromVerified: (...args: any[]) => any = () => null as any;
+
+export const renderVelaImage: (...args: any[]) => any = (..._args: any[]) => null as any;
+export const renderVelaVideo: (...args: any[]) => any = (..._args: any[]) => null as any;

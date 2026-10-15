@@ -39,9 +39,9 @@ export function createCodexThreadCleanupOwner() {
               work.started = true;
               result = await cleanupClosedCodexThread({ ...context, receipt });
             }
-            catch (error) { result = { status: 'failed', message: String(error) }; }
+            catch (error: any) { result = { status: 'failed', message: String(error) }; }
             try { report(result); }
-            catch (error) { console.warn('[codex] thread cleanup diagnostic failed', error); }
+            catch (error: any) { console.warn('[codex] thread cleanup diagnostic failed', error); }
           })().finally(finish);
         },
       };

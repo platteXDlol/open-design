@@ -30,7 +30,7 @@ export function readPublicComposioConfig(): PublicComposioConfig {
   };
 }
 
-export function writeComposioConfig(input: unknown): PublicComposioConfig {
+export function writeComposioConfig(input: any): PublicComposioConfig {
   const prior = readComposioConfig();
   const record = input && typeof input === 'object' && !Array.isArray(input)
     ? input as Record<string, unknown>
@@ -72,10 +72,10 @@ export function deleteComposioAuthConfigId(connectorId: string): void {
   writeRawConfig(normalizeComposioConfig({ apiKey: prior.apiKey, authConfigIds }));
 }
 
-function readRawConfig(): unknown {
+function readRawConfig(): any {
   try {
-    return JSON.parse(fs.readFileSync(configFilePath, 'utf8')) as unknown;
-  } catch (error) {
+    return JSON.parse(fs.readFileSync(configFilePath, 'utf8')) as any;
+  } catch (error: any) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') return {};
     throw error;
   }
@@ -89,7 +89,7 @@ function writeRawConfig(config: ComposioConfig): void {
   fs.chmodSync(configFilePath, 0o600);
 }
 
-function normalizeComposioConfig(value: unknown): ComposioConfig {
+function normalizeComposioConfig(value: any): ComposioConfig {
   const raw = value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
     : {};
@@ -99,11 +99,11 @@ function normalizeComposioConfig(value: unknown): ComposioConfig {
   };
 }
 
-function normalizeOptionalString(value: unknown): string | undefined {
+function normalizeOptionalString(value: any): string | undefined {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
 }
 
-function normalizeAuthConfigIds(value: unknown): Record<string, string> {
+function normalizeAuthConfigIds(value: any): Record<string, string> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
   const next: Record<string, string> = {};
   for (const [connectorId, authConfigId] of Object.entries(value as Record<string, unknown>)) {

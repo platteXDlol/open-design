@@ -217,7 +217,7 @@ async function downloadAssets(args: {
     let res: Response;
     try {
       res = await args.fetchFn(url, { headers: { 'Authorization': `Bearer ${args.token}` } });
-    } catch (err) {
+    } catch (err: any) {
       for (const id of chunk) {
         issues.push({ id, type: 'asset', reason: `image fetch error: ${(err as Error).message}` });
       }
@@ -256,7 +256,7 @@ async function downloadAssets(args: {
         const ext = args.assetFormat === 'jpg' ? 'jpg' : args.assetFormat;
         const safeId = id.replace(/[^A-Za-z0-9_:-]+/g, '-');
         await fsp.writeFile(path.join(args.assetsDir, `${safeId}.${ext}`), buf);
-      } catch (err) {
+      } catch (err: any) {
         issues.push({ id, type: 'asset', reason: `download error: ${(err as Error).message}` });
       }
     }
@@ -425,6 +425,6 @@ async function safeText(res: Response): Promise<string> {
   try { return (await res.text()).slice(0, 256); } catch { return ''; }
 }
 
-function digestObject(obj: unknown): string {
+function digestObject(obj: any): string {
   return createHash('sha1').update(JSON.stringify(obj)).digest('hex');
 }

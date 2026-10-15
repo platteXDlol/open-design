@@ -146,7 +146,7 @@ export interface StartBrandExtractionOptions {
   programmaticSyncBudgetMs?: number;
   /** Test/observability hook invoked with the background programmatic-extraction
    *  promise, so callers (tests) can await completion deterministically. */
-  onBackgroundExtraction?: (settled: Promise<unknown>) => void;
+  onBackgroundExtraction?: (settled: Promise<any>) => void;
   /** UI locale used to render static brand.html copy. */
   locale?: string;
   /** Agent identity to show on the programmatic transcript. No tokens are spent,
@@ -180,7 +180,7 @@ export interface ContinueBrandExtractionOptions {
   imageryFallback?: ImageryFallbackFn;
   prefetch?: PrefetchFn;
   programmaticAbortSignal?: AbortSignal;
-  onBackgroundExtraction?: (settled: Promise<unknown>) => void;
+  onBackgroundExtraction?: (settled: Promise<any>) => void;
   locale?: string;
   transcriptAgent?: StartBrandExtractionOptions['transcriptAgent'];
 }
@@ -239,7 +239,7 @@ async function rollbackBrandExtractionStartup(input: {
 }): Promise<void> {
   try {
     deleteDbProject(input.db, input.projectId);
-  } catch (err) {
+  } catch (err: any) {
     if (!isClosedDatabaseError(err)) {
       console.warn(`[brand] failed to roll back project row for ${input.brandId}`, err);
     }
@@ -247,7 +247,7 @@ async function rollbackBrandExtractionStartup(input: {
   try {
     const projectDir = resolveProjectDir(input.projectsRoot, input.projectId, input.metadata);
     fs.rmSync(projectDir, { recursive: true, force: true });
-  } catch (err) {
+  } catch (err: any) {
     console.warn(`[brand] failed to roll back project directory for ${input.brandId}`, err);
   }
   if (input.draftDesignSystemId && input.userDesignSystemsRoot) {
@@ -256,13 +256,13 @@ async function rollbackBrandExtractionStartup(input: {
         input.userDesignSystemsRoot,
         input.draftDesignSystemId,
       );
-    } catch (rollbackErr) {
+    } catch (rollbackErr: any) {
       console.warn(`[brand] failed to roll back draft design system for ${input.brandId}`, rollbackErr);
     }
   }
   try {
     deleteBrandDir(input.brandsRoot, input.brandId);
-  } catch (err) {
+  } catch (err: any) {
     console.warn(`[brand] failed to roll back brand directory for ${input.brandId}`, err);
   }
 }
@@ -390,7 +390,7 @@ export async function startBrandExtraction(
     if (draftDesignSystemId && opts.userDesignSystemsRoot) {
       try {
         await linkUserDesignSystemProject(opts.userDesignSystemsRoot, draftDesignSystemId, projectId);
-      } catch (err) {
+      } catch (err: any) {
         console.warn(`[brand] failed to link draft design system to project for ${id}`, err);
       }
     }
@@ -424,9 +424,9 @@ export async function startBrandExtraction(
         const imagery: ImagerySlot = { samples: [] };
         const noChange = () => ({ changed: false });
         const [logoRes] = await Promise.all([
-          logoFallback(url, path.join(projectDir, 'logos'), logo).catch(noChange),
-          seedFallback(url, seedSlot).catch(noChange),
-          imageryFallback(url, path.join(projectDir, 'imagery'), imagery).catch(noChange),
+          logoFallback(url, path.join(projectDir, 'logos'), logo).catch(() => ({ changed: false })),
+          seedFallback(url, seedSlot).catch(() => ({ changed: false })),
+          imageryFallback(url, path.join(projectDir, 'imagery'), imagery).catch(() => ({ changed: false })),
         ]);
         if (logoRes.changed) seedBrand.logo = logo;
         if (seedSlot.colors && seedSlot.colors.length) seedBrand.colors = seedSlot.colors;
@@ -537,7 +537,7 @@ export async function startBrandExtraction(
       status: meta.status,
       ...(draftDesignSystemId ? { designSystemId: draftDesignSystemId } : {}),
     };
-  } catch (err) {
+  } catch (err: any) {
     await rollbackBrandExtractionStartup({
       db,
       brandsRoot,
@@ -559,7 +559,7 @@ function launchProgrammaticBackgroundExtraction(input: {
   programmaticOptions: RunProgrammaticExtractionOptions;
   programmaticAbortSignal?: AbortSignal | undefined;
   fallbackPrompt: string;
-  onBackgroundExtraction?: ((settled: Promise<unknown>) => void) | undefined;
+  onBackgroundExtraction?: ((settled: Promise<any>) => void) | undefined;
   locale?: string | undefined;
 }): Promise<BrandFinalizeResponse | null> {
   const { programmaticOptions, programmaticAbortSignal, fallbackPrompt, locale } = input;
@@ -1198,7 +1198,7 @@ function brandExtractionTranscriptCopy(locale?: string | null): BrandExtractionT
   }
 }
 
-function isClosedDatabaseError(err: unknown): boolean {
+function isClosedDatabaseError(err: any): boolean {
   return err instanceof Error && err.message.includes('database connection is not open');
 }
 
@@ -1283,7 +1283,7 @@ function throwIfProgrammaticExtractionNotCurrent(input: {
   if (!programmaticExtractionAttemptIsCurrent(input)) throw new ProgrammaticExtractionAbortError();
 }
 
-export function isProgrammaticExtractionAbortError(err: unknown): boolean {
+export function isProgrammaticExtractionAbortError(err: any): boolean {
   return err instanceof ProgrammaticExtractionAbortError;
 }
 
@@ -1339,7 +1339,7 @@ export async function finalizeBrand(
       'brand.json not found in the extraction project — the agent has not written the design system yet.',
     );
   }
-  let parsed: unknown;
+  let parsed: any;
   try {
     parsed = JSON.parse(brandJsonRaw);
   } catch {
@@ -1350,7 +1350,7 @@ export async function finalizeBrand(
   let brand: Brand;
   try {
     brand = validateBrand(parsed, meta.sourceUrl);
-  } catch (err) {
+  } catch (err: any) {
     throw new Error(`brand.json failed validation: ${errorMessage(err)}`);
   }
 
@@ -1421,7 +1421,7 @@ async function finalizeBrandCore(opts: FinalizeBrandCoreOptions): Promise<BrandF
       throwIfProgrammaticExtractionNotCurrent(opts);
       if (result.changed) writeBrand(brandsRoot, id, brand);
     }
-  } catch (err) {
+  } catch (err: any) {
     if (isProgrammaticExtractionAbortError(err)) throw err;
     // Offline / unreachable origin — keep the (empty) logo and continue.
   }
@@ -1441,7 +1441,7 @@ async function finalizeBrandCore(opts: FinalizeBrandCoreOptions): Promise<BrandF
       throwIfProgrammaticExtractionNotCurrent(opts);
       if (result.changed) writeBrand(brandsRoot, id, brand);
     }
-  } catch (err) {
+  } catch (err: any) {
     if (isProgrammaticExtractionAbortError(err)) throw err;
     // Offline / unreachable origin — keep whatever imagery the agent saved.
   }
@@ -1511,7 +1511,7 @@ async function finalizeBrandCore(opts: FinalizeBrandCoreOptions): Promise<BrandF
     skillsRoot: opts.skillsRoot,
     projectsRoot,
     projectId,
-    brand: brand as unknown as Record<string, unknown>,
+    brand: brand as any as Record<string, unknown>,
     status: 'ready',
     metadata: finalizeMetadata,
     locale: opts.locale ?? meta.locale,
@@ -1565,7 +1565,7 @@ async function finalizeBrandCore(opts: FinalizeBrandCoreOptions): Promise<BrandF
       outcome: 'succeeded',
       ...(opts.locale ?? meta.locale ? { locale: opts.locale ?? meta.locale } : {}),
     });
-  } catch (err) {
+  } catch (err: any) {
     if (!isClosedDatabaseError(err)) {
       console.warn(`[brand] failed to reconcile success transcript for ${id}`, err);
     }
@@ -1578,7 +1578,7 @@ async function finalizeBrandCore(opts: FinalizeBrandCoreOptions): Promise<BrandF
   if (opts.dataDir) {
     try {
       await reflowBrandToMemory(opts.dataDir, brand);
-    } catch (err) {
+    } catch (err: any) {
       console.warn(`[brand] memory reflow failed for ${id}`, err);
     }
   }
@@ -1855,7 +1855,7 @@ export async function renderBrandPreviewIntoProject(
   let brand: Record<string, unknown> = { sourceUrl: meta.sourceUrl, colors: [], typography: {} };
   let rendered = false;
   if (raw !== null) {
-    let parsed: unknown = null;
+    let parsed: any = null;
     try {
       parsed = JSON.parse(raw);
     } catch {
@@ -2015,13 +2015,13 @@ function brandExtractionFallbackPrompt(input: {
   ].join('\n');
 }
 
-function errorMessage(err: unknown): string {
+function errorMessage(err: any): string {
   return err instanceof Error ? err.message : String(err);
 }
 
 /** Coerce a loose brand.json `logo` value into a mutable {@link LogoSlot} the
  *  on-disk logo adopter can fill in. Tolerates missing / malformed input. */
-function brandLogoSlot(raw: unknown): LogoSlot {
+function brandLogoSlot(raw: any): LogoSlot {
   const o = (raw ?? {}) as Record<string, unknown>;
   return {
     primary: typeof o.primary === 'string' && o.primary ? o.primary : null,
