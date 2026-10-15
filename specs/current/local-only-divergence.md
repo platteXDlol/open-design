@@ -227,6 +227,39 @@ instance without sharing a Linux account.
 per-user prefix scheme. This is the first divergence from the
 shared-by-Linux-user storage model.
 
+#### 4.2.1 Storage-shape half lands in v0.6 (this slice)
+
+The data-path half of M7 ships in v0.6, separate from the OIDC
+half. v0.6 reshapes `PROJECTS_DIR` from
+`<RUNTIME_DATA_DIR>/projects/<projectId>/` to
+`<RUNTIME_DATA_DIR>/users/<userId>/projects/<projectId>/` while
+the daemon is still single-tenant — `resolveUserId()` returns the
+synthetic `"local"` user id, `OD_USER_ID` overrides for tests and
+packaged builds, no auth surface added.
+
+This means v7 (M7) is now an auth feature, not a storage rewrite.
+The chokepoint is one function in `apps/daemon/src/storage/user-scope.ts`:
+v7 swaps `resolveUserId` to read the OIDC `sub` claim and the rest
+of the code path follows. The SQLite `projects` table gains a
+nullable `user_id` column in the same PR; pre-v0.6 rows surface
+the synthetic id at read time, so a botched backfill of legacy
+data does not strand existing projects.
+
+The boot-time migration (`apps/daemon/src/storage/user-prefix-migration.ts`)
+moves a pre-v0.6 single-tenant `projects/` tree into
+`users/local/projects/` once, leaves a marker file, and no-ops
+thereafter. It is synchronous so it runs before `openDatabase`, and
+it refuses to merge on top of an already-populated target prefix
+so a half-finished migration can never brick a daemon. The escape
+hatch `OD_USER_PREFIX_MIGRATION=0` lets an operator with a
+known-wrong legacy tree keep the daemon starting while they
+clean up by hand.
+
+**What this PR does NOT ship**: OIDC SSO, Authentik/Keycloak
+integration, Postgres migration, share-link comment/edit, audit
+log, per-user quotas, admin settings UI. v0.6 only changes the
+on-disk project layout; the user-facing surface is identical.
+
 ### 4.3 The escape hatch
 
 Any future PR may re-introduce a single removed surface if it

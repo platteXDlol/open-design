@@ -741,6 +741,8 @@ import { observeApiFailures } from './http/api-failure-journal.js';
 import { configureDiagnosticsEvidence } from './services/diagnostics-evidence.js';
 import { beginDaemonHealthSession } from './services/daemon-health.js';
 import { readSqlitePageStats } from './storage/db-inspect.js';
+import { migrateUserPrefixSync } from './storage/user-prefix-migration.js';
+import { resolveUserId, resolveUserProjectsRoot } from './storage/user-scope.js';
 import {
   CHAT_SCROLL_FORENSICS_PATH,
   chatScrollForensicsBodyParser,
@@ -1408,6 +1410,13 @@ migrateLegacyDataDirSync({
   legacyDir: process.env.OD_LEGACY_DATA_DIR,
   dataDir: RUNTIME_DATA_DIR,
 });
+// One-shot pre-v0.6 single-tenant → per-user prefix migration. Lands the
+// storage half of v7's multi-user shape (see claude-design-local-roadmap.md
+// § 2 + local-only-divergence.md § 4.2) without shipping auth. Runs once
+// per data root, leaves a marker, no-ops thereafter. Synchronous for the
+// same reason as the legacy migrator above.
+migrateUserPrefixSync({ dataDir: RUNTIME_DATA_DIR });
+const OD_USER_ID = resolveUserId();
 // Immutable chat-artifact snapshot storage. Derived from the SINGLE resolved
 // data root per the repository "Daemon data directory contract" — the store
 // itself has no default and would throw if handed anything else.
@@ -1418,7 +1427,13 @@ const ARTIFACTS_DIR = path.join(RUNTIME_DATA_DIR, 'artifacts');
 // `/artifacts` tree. The per-run artifact endpoint is the sanctioned
 // read path so project-membership, size, and CSP guards cannot be bypassed.
 const CRITIQUE_ARTIFACTS_DIR = path.join(RUNTIME_DATA_DIR, 'critique-artifacts');
-const PROJECTS_DIR = path.join(RUNTIME_DATA_DIR, 'projects');
+// v0.6 (claude-design-local-roadmap.md § 2): PROJECTS_DIR is per-user.
+// Pre-v0.6 shipped a single shared-by-Linux-user `<RUNTIME_DATA_DIR>/projects`
+// tree; the boot-time `migrateUserPrefixSync` above has either moved those
+// projects into the synthetic user's prefix or written a marker that says
+// the move already happened. v7 swaps the user id for an OIDC-derived one
+// without touching this line.
+const PROJECTS_DIR = resolveUserProjectsRoot(RUNTIME_DATA_DIR, OD_USER_ID);
 const USER_SKILLS_DIR = path.join(RUNTIME_DATA_DIR, 'skills');
 const USER_DESIGN_SYSTEMS_DIR = path.join(RUNTIME_DATA_DIR, 'design-systems');
 // Brand metadata (brand.json + meta.json per brand) lives here; each brand
@@ -8197,6 +8212,7 @@ export async function startServer({
     PROMPT_TEMPLATES_DIR,
     BUNDLED_PETS_DIR,
     OD_BIN,
+    OD_USER_ID,
   };
 
   app.get('/api/health', async (_req, res) => {

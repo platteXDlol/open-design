@@ -39,6 +39,11 @@ export interface PathDeps {
   PROMPT_TEMPLATES_DIR: string;
   RUNTIME_DATA_DIR: string;
   RUNTIME_DATA_DIR_CANONICAL: string;
+  // v0.6: the active user id (today always the synthetic "local"; v7
+  // will swap to an OIDC-derived id). Routes that need a per-user
+  // projects root should read this from the context, never call
+  // `resolveUserId()` directly, so the test harness can pin it.
+  OD_USER_ID: string;
   SKILLS_DIR: string;
   USER_DESIGN_SYSTEMS_DIR: string;
   // Mirror of USER_SKILLS_DIR rooted at DESIGN_TEMPLATES_DIR so user

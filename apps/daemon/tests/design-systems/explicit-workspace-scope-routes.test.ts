@@ -105,6 +105,7 @@ function commonPaths(root: string) {
     USER_DESIGN_SYSTEMS_DIR: path.join(root, 'user-design-systems'),
     USER_DESIGN_TEMPLATES_DIR: path.join(root, 'user-design-templates'),
     USER_SKILLS_DIR: path.join(root, 'user-skills'),
+    OD_USER_ID: 'local',
   };
 }
 

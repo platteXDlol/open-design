@@ -405,6 +405,7 @@ describe('bootstrap route regressions', () => {
       USER_DESIGN_SYSTEMS_DIR: path.join(tempRoot, 'user-design-systems'),
       USER_DESIGN_TEMPLATES_DIR: path.join(tempRoot, 'user-design-templates'),
       USER_SKILLS_DIR: path.join(tempRoot, 'user-skills'),
+      OD_USER_ID: 'local',
     };
     const httpDeps = {
       createSseResponse: () => undefined,

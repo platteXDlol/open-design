@@ -416,6 +416,15 @@ function migrate(db: SqliteDb): void {
   if (!cols.some((c: DbRow) => c.name === 'custom_instructions')) {
     db.exec(`ALTER TABLE projects ADD COLUMN custom_instructions TEXT`);
   }
+  // v0.6 per-user project prefix (claude-design-local-roadmap.md § 2):
+  // every project row carries the user id that owns the on-disk folder.
+  // Today's default is the synthetic "local" user; v7 backfills real
+  // OIDC-derived ids when auth lands. Nullable so an older DB can be
+  // brought forward without rewriting every row in one statement — the
+  // daemon treats NULL the same as the synthetic id at read time.
+  if (!cols.some((c: DbRow) => c.name === 'user_id')) {
+    db.exec(`ALTER TABLE projects ADD COLUMN user_id TEXT`);
+  }
   const workspaceProjectCols = db.prepare(`PRAGMA table_info(workspace_projects)`).all() as DbRow[];
   if (!workspaceProjectCols.some((c: DbRow) => c.name === 'resource_hub_resource_id')) {
     db.exec(`ALTER TABLE workspace_projects ADD COLUMN resource_hub_resource_id TEXT`);
@@ -1067,6 +1076,7 @@ const PROJECT_COLS = `id, name, skill_id AS skillId,
   metadata_json AS metadataJson,
   applied_plugin_snapshot_id AS appliedPluginSnapshotId,
   custom_instructions AS customInstructions,
+  user_id AS userId,
   created_at AS createdAt,
   updated_at AS updatedAt`;
 
@@ -1099,6 +1109,7 @@ export function listUnboundProjects(db: SqliteDb) {
               p.metadata_json AS metadataJson,
               p.applied_plugin_snapshot_id AS appliedPluginSnapshotId,
               p.custom_instructions AS customInstructions,
+              p.user_id AS userId,
               p.created_at AS createdAt,
               p.updated_at AS updatedAt
          FROM projects p
@@ -2009,8 +2020,8 @@ export function insertProject(db: SqliteDb, p: DbRow) {
   db.prepare(
     `INSERT INTO projects
        (id, name, skill_id, design_system_id, pending_prompt,
-        metadata_json, custom_instructions, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        metadata_json, custom_instructions, user_id, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     p.id,
     p.name,
@@ -2019,6 +2030,7 @@ export function insertProject(db: SqliteDb, p: DbRow) {
     p.pendingPrompt ?? null,
     p.metadata ? JSON.stringify(p.metadata) : null,
     p.customInstructions ?? null,
+    p.userId ?? 'local',
     p.createdAt,
     p.updatedAt,
   );
@@ -2078,6 +2090,11 @@ function normalizeProject(row: DbRow) {
     metadata,
     appliedPluginSnapshotId: row.appliedPluginSnapshotId ?? undefined,
     customInstructions: row.customInstructions ?? undefined,
+    // v0.6: a row carried over from a pre-v0.6 database has user_id == NULL.
+    // Today the daemon only ever writes a single user id (the synthetic
+    // "local"), so treating NULL as that id keeps the read path honest
+    // without a one-shot rewrite of every existing row.
+    userId: row.userId ?? 'local',
     createdAt: Number(row.createdAt),
     updatedAt: Number(row.updatedAt),
   };

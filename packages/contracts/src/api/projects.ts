@@ -354,6 +354,15 @@ export interface Project {
   appliedPluginSnapshotId?: string;
   customInstructions?: string;
   /**
+   * v0.6: the user id that owns the on-disk project folder. Today
+   * always the synthetic `"local"` (the fork's single-tenant
+   * `apps/daemon/src/storage/user-scope.ts` resolver); v7 backfills
+   * real OIDC-derived ids when auth lands. Absent on a row carried
+   * over from a pre-v0.6 database — clients must treat absence the
+   * same as the synthetic id (see daemon `db.normalizeProject`).
+   */
+  userId?: string;
+  /**
    * The daemon-authoritative visibility from this project's
    * `workspace_projects` row.
    *
