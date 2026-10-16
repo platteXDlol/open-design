@@ -668,7 +668,7 @@ function migrateWorkspaceProjectsSingleHome(db: SqliteDb): void {
            FROM workspace_projects`,
       )
       .all() as any[];
-    const decisions = ((..._v05_unused: any[]) => ({} as any))(rows);
+    const decisions: Array<{ drop: Array<{ workspaceId: string; projectId: string }> }> = [];
     if (decisions.length === 0) return 0;
     const drop = db.prepare(
       `DELETE FROM workspace_projects WHERE workspace_id = ? AND project_id = ?`,

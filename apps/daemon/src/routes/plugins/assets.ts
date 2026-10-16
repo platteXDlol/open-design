@@ -1,4 +1,3 @@
-import { VerifyWorkspaceRequestAuthority, resolveOptionalLocalWorkspaceRequestAuthority } from '../../v05-stubs.js';
 import type { Express, Request, Response } from 'express';
 import type * as BetterSqlite3 from 'better-sqlite3';
 import path from 'node:path';
@@ -6,7 +5,7 @@ import type { WorkspaceCollabContext } from '@open-design/contracts';
 
 export interface RegisterPluginAssetRoutesDeps {
   db: PluginDbLike;
-  verifyWorkspaceRequestAuthority?: VerifyWorkspaceRequestAuthority;
+  verifyWorkspaceRequestAuthority?: any;
   getWorkspacePlugin?: (
     db: PluginDbLike,
     id: string,
@@ -79,27 +78,12 @@ export function registerPluginAssetRoutes(app: Express, deps: RegisterPluginAsse
     } as Request;
   };
   const resolveWorkspaceAuthority = async (
-    req: Request,
-    res: Response,
+    _req: Request,
+    _res: Response,
   ): Promise<WorkspaceCollabContext | null | undefined> => {
-    const scopedRequest = requestWithNavigationScope(req);
-    if (scopedRequest === 'conflict') {
-      res.status(400).json({
-        error: 'WORKSPACE_CONTEXT_CONFLICT',
-        message: 'workspace header and navigation scope must match',
-      });
-      return undefined;
-    }
-    const authority = resolveOptionalLocalWorkspaceRequestAuthority(scopedRequest);
-    if (!authority.ok) {
-      res.status(authority.status).json({
-        error: authority.code,
-        message: authority.message,
-        ...(authority.retryable ? { retryable: true } : {}),
-      });
-      return undefined;
-    }
-    return authority.context;
+    // The v0.5 vela/collab removal dropped the team plane; the local-only
+    // fork has no workspace authority to enforce on plugin asset routes.
+    return null;
   };
   const resolvePlugin = async (
     id: string,

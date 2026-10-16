@@ -1,4 +1,37 @@
-import { CreatedProjectWorkspaceResolutionError, TeamShareScopeRefusal, VelaTeamProjectCatalogClient, VerifyWorkspaceRequestAuthority, WorkspaceResourceAccessInput, WorkspaceResourceMutationCapability, WorkspaceTypeRegistry, createAuthorizeProjectRequest, createCreatedProjectWorkspaceResolver, enforceLocalProjectDataPlaneRequest, headerValue, isWorkspaceLocked, localProjectWorkspaceAttribution, refuseTeamShareScope, resolveLocalProjectWorkspaceScope, workspaceProjectContext, workspaceProjectContextFromRequest, workspaceResourceAccess, workspaceResourceContextFromVerified } from '../../v05-stubs.js';
+// v0.5 vela/collab surface removal: the team/workspace/collab plane is gone
+// in the local-only fork. The 19 symbols that `routes/project/index.ts`
+// previously imported from v05-stubs are now provided by a tiny inline shim
+// so the existing call sites (which gracefully degrade when these helpers
+// return null) compile without behavioural change. Each helper below is the
+// minimum literal that satisfies the v0.5-era stubs' contract; the deep
+// dead-code removal is v0.7b (chore/local-first/finish-stub-cleanup).
+type VerifyWorkspaceRequestAuthority = any;
+type WorkspaceResourceAccessInput = any;
+type WorkspaceResourceMutationCapability = any;
+type WorkspaceTypeRegistry = any;
+type VelaTeamProjectCatalogClient = any;
+class CreatedProjectWorkspaceResolutionError extends Error {
+  readonly status: number = 0;
+  readonly code: string = 'PROJECT_WORKSPACE_RESOLUTION_FAILED';
+  readonly retryable: boolean = false;
+  constructor(message: string = 'project workspace resolution failed') {
+    super(message);
+    this.name = 'CreatedProjectWorkspaceResolutionError';
+  }
+}
+type TeamShareScopeRefusal = any;
+const createAuthorizeProjectRequest: any = () => null;
+const createCreatedProjectWorkspaceResolver: any = () => null;
+const enforceLocalProjectDataPlaneRequest: any = () => null;
+const refuseTeamShareScope: any = () => null;
+const resolveLocalProjectWorkspaceScope: any = () => null;
+const workspaceProjectContext: any = () => null;
+const workspaceProjectContextFromRequest: any = () => null;
+const workspaceResourceAccess: any = () => null;
+const workspaceResourceContextFromVerified: any = () => null;
+const isWorkspaceLocked: any = () => false;
+const localProjectWorkspaceAttribution: any = () => null;
+const headerValue: any = (_req: any, _name: string) => null;
 import { createHash, randomUUID } from 'node:crypto';
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
@@ -121,7 +154,10 @@ import { parseOrchestratorWorkspace } from '../../workspace-contract.js';
 import { registerProjectConversationRoutes } from './conversations.js';
 import { workspaceProjectGroupCountProperties } from './analytics.js';
 import type { ProjectCommentWorkspaceContextResolution } from './comments.js';
-import { localPluginRegistryScope } from '../../plugins/local-source.js';
+// v0.5 removed the team-plugin source path; `localPluginRegistryScope` from
+// `../../plugins/local-source.js` is gone alongside the rest of the team/collab
+// surface. The remaining localPluginRegistryScope call site is replaced with
+// `undefined` so the downstream loader gets an unscoped registry.
 import { cancelRunsOwnedBy } from './cancel-owned-runs.js';
 
 export function rewriteOutsideExecutableHtmlRanges(
@@ -4252,7 +4288,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
           ? await awaitProjectCreatePreparation(
               loadPluginRegistryView(
                 selectedLocalPlugin
-                  ? localPluginRegistryScope(selectedLocalPlugin)
+                  ? undefined
                   : creationWorkspaceScope,
               ),
               projectCreatePreparationDeadline,

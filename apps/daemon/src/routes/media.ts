@@ -1,4 +1,3 @@
-import { AuthorizeProjectToolRequest } from '../v05-stubs.js';
 import fs from 'node:fs';
 import type { Express } from 'express';
 import type {
@@ -179,7 +178,7 @@ const aihubmixCatalogCache = new Map<string, { at: number; models: Array<{ id: s
 
 export interface RegisterMediaRoutesDeps extends RouteDeps<'db' | 'design' | 'http' | 'paths' | 'ids' | 'auth' | 'media' | 'appConfig' | 'orbit' | 'nativeDialogs' | 'projectStore' | 'projectFiles' | 'conversations' | 'research'> {
   authorizeProjectRequest: any;
-  authorizeProjectToolRequest: AuthorizeProjectToolRequest;
+  authorizeProjectToolRequest: any;
 }
 
 export type LegacyMediaRouteGrantDecision =

@@ -1,4 +1,3 @@
-import { headerValue } from '../v05-stubs.js';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -235,7 +234,7 @@ export function createDesignSystemServerServices({
    *
    * Checking `options.workspaceId === undefined` (not just falsy) matters:
    * `GET /api/skills` always passes the key, with `null` whenever the request
-   * carries no `x-od-workspace-id` header (headerValue never returns
+   * carries no `x-od-workspace-id` header (header extraction never returns
    * `undefined`) — that request DID ask to be scoped, just with no identity,
    * and must still reach `listSkills`'s workspace filter so a claimed skill is
    * hidden from it (spec 04 §10), not silently fall through to the unscoped

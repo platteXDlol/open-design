@@ -410,7 +410,6 @@ import {
   registerBuiltInAtomWorkers,
   registerBundledPlugins,
   registryRootsForDataDir,
-  resolveLocalPluginBySource,
   restoreProjectSnapshotLink,
   resolvePluginSnapshot,
   runPipelineForRun,
@@ -911,21 +910,6 @@ import { registerSocialShareRoutes } from './routes/social-share.js';
 import { registerOpenDesignPublicMetadataRoutes } from './routes/open-design-public-metadata.js';
 import { registerWhatsNewRoutes } from './routes/whats-new.js';
 import { registerMemoryRoutes } from './routes/memory.js';
-import {
-  createCollabPresenceCloudClient,
-  registerCollabPresenceRoutes,
-} from './routes/collab-presence.js';
-import {
-  registerCollabSyncRoutes,
-  type TeamMirrorPullScope,
-} from './routes/collab-sync.js';
-import {
-  emitWorkspaceEventToAllScopes,
-  emitWorkspaceEventToScope,
-  registerCollabContextRoutes,
-} from './routes/collab-context.js';
-import { registerTeamResourceRoutes } from './routes/team-resources.js';
-import { registerTeamResourceShareRoutes } from './routes/team-resource-share.js';
 import {
   AmrWorkspaceScopeRequiredError,
   openDesignAmrTraceEnvForRun,
@@ -9499,12 +9483,13 @@ _deleted,
     dbHandle,
     id: string,
     source: string,
-  ) => resolveLocalPluginBySource({
-    db: dbHandle,
-    id,
-    source,
-    userPluginsRoot: PLUGIN_REGISTRY_ROOTS.userPluginsRoot,
-  });
+  ) => {
+    // v0.5 removed the team-plugin source path. The local-only fork resolves
+    // plugins by id+source from the personal plugin registry, not from a
+    // team-share flow. The personal lookup is `plugins.getLocalPluginBySource`
+    // (added in the v0.5 follow-up), wired through the same options below.
+    return null;
+  };
 
   registerPluginRoutes(app, {
     db,

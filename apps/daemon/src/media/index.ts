@@ -93,7 +93,6 @@ import {
   resolveHyperFramesCliPath,
   resolveHyperFramesNodeBin,
 } from './hyperframes-runtime.js';
-import { renderVelaImage, renderVelaVideo } from '../v05-stubs.js';
 import {
   ensureProject,
   kindFor,
@@ -616,15 +615,23 @@ export async function generateMedia(args: {
       providerNote = result.providerNote;
       suggestedExt = result.suggestedExt;
     } else if (def.provider === 'vela' && surface === 'image') {
-      const result = await renderVelaImage(ctx);
+      // Vela image/video renderers were removed in v0.5 (chore/vela-cleanup).
+      // The local-only fork has no Vela provider; def.provider === 'vela' is
+      // unreachable but kept narrow so a future port picks the seam up.
+      const result: { bytes: Buffer; providerNote: string; suggestedExt: string } = {
+        bytes: Buffer.alloc(0),
+        providerNote: 'vela-renderer-removed-in-v0.5',
+        suggestedExt: 'bin',
+      };
       bytes = result.bytes;
       providerNote = result.providerNote;
       suggestedExt = result.suggestedExt;
     } else if (def.provider === 'vela' && surface === 'video') {
-      const result = await renderVelaVideo({
-        ...ctx,
-        onProgress: args.onProgress,
-      });
+      const result: { bytes: Buffer; providerNote: string; suggestedExt: string } = {
+        bytes: Buffer.alloc(0),
+        providerNote: 'vela-renderer-removed-in-v0.5',
+        suggestedExt: 'bin',
+      };
       bytes = result.bytes;
       providerNote = result.providerNote;
       suggestedExt = result.suggestedExt;
