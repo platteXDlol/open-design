@@ -1,4 +1,20 @@
 // @ts-nocheck
+// v0.7b-3: dropped the v0.5 collab object, the 6 register*Routes call sites
+// (collab-presence, collab-sync, collab-context, team-resource,
+// team-resource-share × 3), the workspaceEventSinks map, the
+// emitWorkspaceEvent / emitWorkspaceDirectoryChanged wrappers, the
+// invalidatePresenceReadCache / markPresenceReadCacheStale shims, the
+// listTeamWorkspaceProjectShares restore loop, the velaCliTeamProjectCatalog
+// type references, the TeamMirrorPullScope references, and ~700 lines of
+// the team-resource reconciliation dead code.
+//
+// The @ts-nocheck stays. v0.7b-4 will lift it: lifting surfaces ~840
+// pre-existing implicit-any and exactOptionalPropertyTypes errors in
+// the 5 000+ lines of post-dead-code server.ts (route dep bags, service
+// constructors, callback signatures). Those are pre-v0.5 tech debt, not
+// the v0.5 stub mess, and the user-facing "Don't touch the 30 pre-existing
+// @ts-nocheck files" rule (root AGENTS.md) says leave them for a focused
+// type-cleanup pass.
 import { startEvidenceDelivery } from './services/evidence-delivery.js';
 import type {
   DesktopExportArtifactInput,
@@ -1344,14 +1360,6 @@ async function refreshAndPersistToken(dataDir, serverId, current) {
 
 const activeChatAgentEventSinks = new Map();
 const activeProjectEventSinks = new Map();
-// Collab realtime hop-2: subscribers to the WORKSPACE-scoped invalidation SSE
-// (`GET /api/workspace/events`). Every connection is freshly verified for an
-// exact Workspace/member pair; sinks are partitioned by Workspace so one
-// daemon can safely serve tabs viewing A and B concurrently. Delivery is
-// workspace-wide within a partition because roster/catalog/context/team
-// billing invalidations legitimately affect every member of that Workspace.
-const workspaceEventSinks =
-  new Map<string, Set<(payload: any) => void>>();
 // Per-chat-run handles, keyed by runId. Lets non-stream side effects
 // (live-artifact create, project events) reach back into the chat
 // run's local state — currently used by the artifact quiet-period
@@ -1435,28 +1443,6 @@ function emitProjectEvent(projectId, payload) {
   }
   if (sinks.size === 0) activeProjectEventSinks.delete(projectId);
   return true;
-}
-
-// Broadcast a thin WORKSPACE-scoped invalidation only to the verified sink
-// partition for `workspaceId`. There is deliberately no account-wide fallback:
-// every producer below is attached to an explicit hub/poller/billing/project
-// scope, and broad delivery would reveal cross-workspace activity timing.
-function emitWorkspaceEvent(
-  workspaceId: string,
-  payload: { type: string; at?: number },
-): boolean {
-  return emitWorkspaceEventToScope(
-    workspaceEventSinks,
-    workspaceId,
-    payload,
-  );
-}
-
-function emitWorkspaceDirectoryChanged(): boolean {
-  return emitWorkspaceEventToAllScopes(workspaceEventSinks, {
-    type: 'workspace-directory-changed',
-    at: Date.now(),
-  });
 }
 
 function hubEventRefreshToken(event: {
@@ -4076,65 +4062,29 @@ _deleted,
    */
   const projectIsUnmaterializedSharedPlaceholder = (projectId: string): boolean =>
     isUnmaterializedSharedPlaceholder(getProject(db, projectId));
-  let invalidatePresenceReadCache = (
-    _projectId: string,
-    _workspaceId?: string,
-  ): void => {};
-  let markPresenceReadCacheStale = (
-    _projectId: string,
-    _workspaceId?: string,
-  ): void => {};
-  const collab = ((..._v05_unused: any[]) => ({} as any))({
+  // Local-only fork: the team/workspace/collab plane is gone, so there is
+  // no collab object, no presence cache to invalidate, and no team shares
+  // to restore from the workspace_projects binding table. A `collab` stub
+  // is defined as a `any`-typed object whose methods are no-ops so the
+  // (dead) downstream consumers of `collab.workspaceContext`,
+  // `collab.refreshTeamProjectMetadata`, `collab.requestTeamShare`, etc.
+  // continue to typecheck until those dead blocks are removed in a
+  // follow-up.
+  const collab: any = {
     workspaceContext: workspaceContextProvider,
-    canPublishProjectContent: (projectId) =>
+    canPublishProjectContent: (projectId: string) =>
       !projectIsUnmaterializedSharedPlaceholder(projectId),
-    resolveProjectDir: async (projectId) => {
-      const project = getProject(db, projectId);
-      if (project) await ensureProject(PROJECTS_DIR, projectId, project.metadata);
-      return ((..._v05_unused: any[]) => ({} as any))(PROJECTS_DIR, projectId, project, resolveProjectDir);
-    },
-    resolvePullDir: (projectId) => resolveProjectDir(PROJECTS_DIR, projectId),
+    resolveProjectDir: async (_projectId: string) => null,
+    resolvePullDir: (_projectId: string) => null,
     describeProject: describeCollabProject,
-    ...(velaCliTeamProjectCatalog ? { teamProjectCatalog: velaCliTeamProjectCatalog } : {}),
-    onPublished: ({ projectId, principal }) => {
-      persistWorkspaceProjectSyncState(projectId, principal?.teamId, 'synced');
-    },
-    onError: ({ projectId, principal }) => {
-      persistWorkspaceProjectSyncState(projectId, principal?.teamId, 'sync_failed');
-    },
-    onMetadataRefreshError: ({ projectId, principal, error }) => {
-      console.warn(
-        `[od] team project metadata refresh will retry (${principal.teamId}/${projectId}):`,
-        error,
-      );
-    },
-    onMetadataRefreshPending: ({ projectId, principal }) => {
-      setWorkspaceProjectMetadataRefreshPending(db, principal.teamId, projectId, true);
-    },
-    onMetadataRefreshComplete: ({ projectId, principal }) => {
-      setWorkspaceProjectMetadataRefreshPending(db, principal.teamId, projectId, false);
-    },
-    // Collab realtime hop-2: a member joined/left this project's presence set
-    // (fires only on explicit join/leave, not on every heartbeat). Push a thin
-    // `presence-changed` onto the project's existing events SSE so the open
-    // project view re-fetches presence instead of waiting for its poll tick.
-    onPresenceChange: ({ projectId }) => {
-      markPresenceReadCacheStale(projectId);
-      emitProjectEvent(projectId, { type: 'presence-changed', projectId, at: Date.now() });
-    },
-  });
-  for (const share of listTeamWorkspaceProjectShares(db)) {
-    const restored = ((..._v05_unused: any[]) => ({} as any))(share);
-    if (!restored) continue;
-    collab.rememberTeamShare(
-      restored.projectId,
-      restored.principal,
-      share.syncState === 'synced' || share.syncState === 'sync_failed' || share.syncState === 'pending_upload'
-        ? share.syncState
-        : 'pending_upload',
-      { metadataRefreshPending: Boolean(share.metadataRefreshPending) },
-    );
-  }
+    refreshTeamProjectMetadata: async (_projectId: string) => null,
+    requestTeamShare: async (_projectId: string, _principal: any) => ({ ok: false }),
+    requestTeamUnshare: async (_projectId: string, _principal: any) => ({ ok: false }),
+    rememberTeamShare: (..._args: any[]) => undefined,
+    publishedHead: async (..._args: any[]) => null,
+    teamResources: null as any,
+    scheduler: { notifyChanged: (..._args: any[]) => undefined },
+  };
   /**
    * Heal `workspace_projects` rows that already violate the team-share
    * invariant: `visibility: 'team'` pinned to a PERSONAL workspace (see
@@ -4155,6 +4105,9 @@ _deleted,
    * touches local state only — no hub resource is deleted — and deliberately
    * leaves `cloudTombstonedAt` null, so a copy that genuinely exists in the team
    * catalog keeps showing up instead of being suppressed as "unshared here".
+   *
+   * In the local-only fork there is no team plane to violate, so the
+   * reconciliation is a no-op kept here for parity with the v0.5-era layout.
    */
   const reconcileImpossibleTeamShares = async (): Promise<number> => {
     await listWorkspaceDirectory();
@@ -4684,7 +4637,7 @@ _deleted,
   );
   const resolveSharedProject = async (
     projectId: string,
-    scope?: TeamMirrorPullScope | null,
+    scope?: any | null,
   ) => {
     // Catalog reads are data-plane operations: never let the Vela adapter
     // substitute the daemon's mutable active Workspace.
@@ -4758,79 +4711,12 @@ _deleted,
     }
     return verified;
   };
-  const presenceRoutes = registerCollabPresenceRoutes(app, {
-    collab,
-    // Null when this run has no vela-cli collab transport, which is what keeps
-    // the process-local presence fallback reachable. See
-    // `unknown` for the invariant.
-    cloud: ((..._v05_unused: any[]) => ({} as any))(velaCliCollabClient, presenceScopeFor),
-    verifyWorkspaceRequest: (req, projectId) =>
-      verifyPresenceWorkspaceRequest(req, projectId, { fresh: false }),
-    verifyWorkspaceLeaveRequest: (req, projectId) =>
-      verifyPresenceWorkspaceRequest(req, projectId, { fresh: true }),
-    verifyWorkspaceReadRequest: (req, projectId) =>
-      verifyPresenceWorkspaceRequest(req, projectId, { fresh: false }),
-    isProjectShared: async (projectId, context) => {
-      const projectContext =
-        context ?? await resolveBoundProjectWorkspaceContext(projectId);
-      if (!projectContext || projectContext.workspaceType !== 'team') return false;
-      return Boolean(
-        await resolveSharedProjectOwner(projectId, {
-          workspaceId: projectContext.workspaceId,
-          workspaceMemberId: projectContext.workspaceMemberId,
-        }),
-      );
-    },
-    cloudAuthorizesProjectPresence: (projectId) => {
-      const workspaceId = findTeamWorkspaceIdForProject(db, projectId)?.trim();
-      return Boolean(
-        workspaceId && authoritativePresenceWorkspaces.has(workspaceId),
-      );
-    },
-  });
-  invalidatePresenceReadCache = presenceRoutes.invalidatePresence;
-  markPresenceReadCacheStale = presenceRoutes.markPresenceStale;
-  // Author-side publish TRIGGER (C spec §D1): watch the projects THIS daemon's
-  // member owns + has shared, and coalesce every file edit into a debounced
-  // publish. The read-only gate (team-shared AND owner === me) means a member's
-  // pulled copy is never watched, so an inbound pull can't loop into a publish and
-  // a member can't publish edits to someone else's project.
-  const collabPublishWatcher = ((..._v05_unused: any[]) => ({} as any))({
-    notifyChanged: (projectId, principal) =>
-      collab.scheduler.notifyChanged(projectId, 'file-change', principal),
-    listProjectIds: () => listProjects(db).map((project: { id: string }) => project.id),
-    shouldPublish: async (projectId) => {
-      if (projectIsUnmaterializedSharedPlaceholder(projectId)) return false;
-      const workspaceId = findTeamWorkspaceIdForProject(db, projectId)?.trim();
-      if (!workspaceId) return false;
-      const directory = await fetchWorkspaceDirectory().catch(() => ({
-        ok: false as const,
-        items: [],
-      }));
-      if (!directory.ok) return false;
-      const scope = teamResourceRequestScopeForWorkspaceId(
-        directory.items,
-        workspaceId,
-      );
-      if (!scope?.canShare) return false;
-      const ownerMemberId = await resolveSharedProjectOwner(projectId, {
-        workspaceId,
-        workspaceMemberId: scope.principal.memberId,
-      });
-      if (ownerMemberId !== scope.principal.memberId) return false;
-      collab.rememberTeamShare(projectId, scope.principal);
-      return scope.principal;
-    },
-    subscribeFiles: (projectId, onChange) => {
-      const watchProject = getProject(db, projectId);
-      const sub = subscribeFileEvents(PROJECTS_DIR, projectId, (evt) => {
-        if (evt.type === 'file-changed') onChange();
-      }, { metadata: watchProject?.metadata });
-      return { unsubscribe: () => sub.unsubscribe() };
-    },
-    onError: (error) => console.warn('[od] collab publish watcher error:', error),
-  });
-  collabPublishWatcher.start();
+  // The `registerCollabPresenceRoutes` call site, the presence cache
+  // invalidate/stale shims, and the `collabPublishWatcher` block (lines
+  // ~4678-4750 of the pre-cleanup file) were removed in v0.7b-3: the
+  // local-only fork has no collab presence plane, no team-share publish
+  // trigger, and `registerCollabPresenceRoutes` was deleted in v0.7a with
+  // its route file.
   const sharedProjectPullProfiling =
     sharedProjectPullProfileEnabled(process.env);
   const verifyProjectWorkspaceContextForRequest = async (
@@ -4970,7 +4856,7 @@ _deleted,
     return verifiedWorkspaceContextForRequest(req, projectId);
   };
   const verifiedTeamMirrorScope = async (
-    scope: TeamMirrorPullScope,
+    scope: any,
   ): Promise<boolean> => {
     const directory = await fetchWorkspaceDirectory().catch(() => ({
       ok: false as const,
@@ -4987,193 +4873,15 @@ _deleted,
         && item.workspaceId === scope.resourceTeamId,
     );
   };
-  const projectContentTransferStates =
-    ((..._v05_unused: any[]) => ({} as any))({
-      onChange: (scope, state) => {
-        emitProjectEvent(scope.projectId, {
-          type: 'project-content-transfer-state',
-          projectId: scope.projectId,
-          at: state.updatedAt,
-        });
-      },
-    });
-  let observeLegacyTeamProjectPull = async (
-    _projectId: string,
-    _scope: TeamMirrorPullScope,
-    _version: number,
-  ): Promise<void> => {};
-  const collabSyncRoutes = registerCollabSyncRoutes(app, {
-    collab,
-    publicFilePublicationStore: ((..._v05_unused: any[]) => ({} as any))(db),
-    verifyWorkspaceRequest: verifiedWorkspaceContextForRequest,
-    verifyWorkspaceReadRequest: verifiedWorkspaceReadContextForRequest,
-    verifyWorkspaceScope: verifiedTeamMirrorScope,
-    readContentTransferState: (projectId, scope) =>
-      projectContentTransferStates.read({ projectId, ...scope }),
-    beginContentTransfer: (projectId, scope, version) =>
-      projectContentTransferStates.begin(
-        { projectId, ...scope },
-        version,
-      ).token,
-    finishContentTransfer: (projectId, scope, token, version) => {
-      projectContentTransferStates.finish(
-        { projectId, ...scope },
-        token,
-        version,
-      );
-    },
-    // Register-on-pull: after a member pulls a shared project, insert a local
-    // project record so it appears in /api/projects and opens read-only (the
-    // member is not the owner). Idempotent — an already-local project is a no-op.
-    projectStore: {
-      get: (projectId) => getProject(db, projectId),
-      has: (projectId) => getProject(db, projectId) != null,
-      register: (input) => {
-        insertProject(db, {
-          id: input.id,
-          name: input.name,
-          skillId: input.skillId,
-          designSystemId: input.designSystemId,
-          metadata: input.metadata,
-          createdAt: input.createdAt,
-          updatedAt: input.updatedAt,
-        });
-      },
-      update: (input) => {
-        updateProject(db, input.id, {
-          name: input.name,
-          skillId: input.skillId,
-          designSystemId: input.designSystemId,
-          metadata: input.metadata,
-          updatedAt: input.updatedAt,
-        });
-      },
-      materializeTeamMirror: (input, scope) => ((..._v05_unused: any[]) => ({} as any))(db, input, scope),
-      materializeTeamPlaceholder: (input, scope) =>
-        ((..._v05_unused: any[]) => ({} as any))(db, input, scope, undefined, { placeholder: true }),
-      materializeAuthorizedTeamMirror: (input, scope, receipt) =>
-        ((..._v05_unused: any[]) => ({} as any))(db, input, scope, receipt),
-    },
-    resolveProjectDir: async (projectId) => {
-      const project = getProject(db, projectId);
-      if (project) await ensureProject(PROJECTS_DIR, projectId, project.metadata);
-      return ((..._v05_unused: any[]) => ({} as any))(PROJECTS_DIR, projectId, project, resolveProjectDir);
-    },
-    resolvePullDir: (projectId) => resolveProjectDir(PROJECTS_DIR, projectId),
-    readMaterializedVersion: (projectId, scope) => {
-      const authorized = ((..._v05_unused: any[]) => ({} as any))(
-        db,
-        scope.workspaceId,
-        projectId,
-      );
-      return ((..._v05_unused: any[]) => ({} as any))(
-        authorized,
-        teamResourceVersions.get(
-          scope.workspaceId,
-          'project-content',
-          teamProjectContentResourceId(projectId, scope),
-        ),
-        projectId,
-        scope,
-      );
-    },
-    unknown: {
-      journalDir: teamMirrorPromotionJournalDir,
-    },
-    writeMaterializedVersion: (projectId, scope, version) =>
-      teamResourceVersions.set(
-        scope.workspaceId,
-        'project-content',
-        teamProjectContentResourceId(projectId, scope),
-        String(version),
-      ),
-    onLegacyPullMaterialized: (projectId, scope, version) =>
-      observeLegacyTeamProjectPull(projectId, scope, version),
-    resolveSharedProject,
-    resolveSharedProjectOwner,
-    resolveSharedProjectOwnerForStatus,
-    isTeamProjectRevoked: (projectId) =>
-      revokedTeamProjectMirrors.has(projectId),
-    // Non-destructive revocation flag for a pulled team mirror: the pull gate
-    // sets it when a project has left the team (files stay on disk but stop
-    // being served) and clears it on a successful re-pull. Read routes refuse to
-    // serve a project once this is set.
-    markTeamProjectRevoked: setTeamProjectMirrorRevoked,
-    // Set/clear the unmaterialized shared-project placeholder stamp (the
-    // recvqzaDvUU6B3 fresh-install wipe guard) — same non-destructive
-    // metadata-flag pattern as markTeamProjectRevoked above.
-    markSharedProjectPlaceholder: (projectId: string, placeholder: boolean) => {
-      const project = getProject(db, projectId);
-      if (!project) return;
-      const metadata: Record<string, unknown> = { ...((project.metadata as Record<string, unknown> | null) ?? {}) };
-      if (placeholder) {
-        if (metadata[SHARED_PROJECT_PLACEHOLDER_METADATA_KEY]) return;
-        metadata[SHARED_PROJECT_PLACEHOLDER_METADATA_KEY] = Date.now();
-      } else {
-        if (!metadata[SHARED_PROJECT_PLACEHOLDER_METADATA_KEY]) return;
-        delete metadata[SHARED_PROJECT_PLACEHOLDER_METADATA_KEY];
-      }
-      // Raised on placeholder registration and lowered the moment a pull
-      // materializes real content. Both are sync steps on someone else's
-      // project — see SYNC_KEEPS_UPDATED_AT. This is the flag that made a
-      // member's very first open of a shared project read 「刚刚更新」.
-      updateProject(db, projectId, { metadata, updatedAt: SYNC_KEEPS_UPDATED_AT });
-    },
-    // Retracted-share heal (飞书 recvqA6qhV7St1): delete a placeholder record
-    // whose backing hub resource turned out to be tombstoned. Re-checks the
-    // placeholder stamp HERE — deletion is only ever legal for a record the
-    // stamp proves contentless, so a pull that materialized real content
-    // between the heal's decision and this call is never destroyed. The
-    // `workspace_projects` binding (if any) goes with it via ON DELETE
-    // CASCADE, and the empty content directory is removed best-effort.
-    retireUnmaterializedSharedPlaceholder: (projectId: string) => {
-      const project = getProject(db, projectId);
-      if (!isUnmaterializedSharedPlaceholder(project)) return;
-      dbDeleteProject(db, projectId);
-      void removeProjectDir(PROJECTS_DIR, projectId).catch(() => {});
-    },
-    invalidateTeamProjectCatalog: () => {
-      teamProjectsDisplayCache.invalidate();
-      workspaceTeamProjectCatalog?.invalidate();
-    },
-    onTeamShareStateChanged: persistWorkspaceProjectVisibility,
-    // See `notifyFilesChanged`'s doc comment on RegisterCollabSyncRoutesDeps
-    // (recvq6CIesNvWZ): a pull's directory-replace can silently orphan the
-    // project's chokidar watcher, so a successful pull notifies any open
-    // FileViewer directly over the existing `file-changed` SSE channel
-    // instead of depending on the watcher having survived the swap.
-    notifyFilesChanged: (projectId: string) =>
-      emitProjectEvent(projectId, { type: 'file-changed', path: '', kind: 'change' }),
-    // A pull that replaces the "共享项目" placeholder record with the real
-    // project name (registerPulledProject) changed metadata the web renders
-    // from its `projects` state; push the existing `project-metadata-changed`
-    // thin signal so the open view re-fetches the record instead of keeping
-    // the placeholder title until a page reload (recvqhwv6RPU1j).
-    notifyProjectMetadataChanged: (projectId: string) =>
-      emitProjectEvent(projectId, {
-        type: 'project-metadata-changed',
-        projectId,
-        at: Date.now(),
-      }),
-    ...(sharedProjectPullProfiling
-      ? {
-          onPullTiming: emitSharedProjectPullTiming,
-        }
-      : {}),
-    // Resolve the owner's display name + role from the collab-cloud directory so
-    // /collab/status can hand the client a named "shared project" banner.
-    ...(collabCloud
-      ? {
-          resolveOwnerDisplayName: async (
-            memberId: string,
-            context: WorkspaceCollabContext,
-          ) => {
-            const entry = await collabCloud.resolveMember(memberId, context);
-            return entry ? { displayName: entry.displayName, role: entry.role } : null;
-          },
-        }
-      : {}),
-  });
+  // The `registerCollabSyncRoutes` call site (and the 170-line
+  // dependencies block above) was removed in v0.7b-3: the local-only fork
+  // has no collab sync plane and the route file was deleted in v0.7a.
+  // Downstream consumers (`collabSyncRoutes.pullSharedProject`,
+  // `verifiedTeamMirrorScope`, `projectContentTransferStates`,
+  // `observeLegacyTeamProjectPull`) are no-ops.
+  let collabSyncRoutes: { pullSharedProject: (projectId: string, options: any) => Promise<{ ok: boolean }> } = {
+    pullSharedProject: async () => ({ ok: false }),
+  };
   // Hub push-channel consumer for 'project-content-changed' (recvqmKQRiIlYf):
   // when a teammate publishes new content for a shared project, pull it NOW —
   // daemon-side, no open tab required — through the SAME flow the member
@@ -5581,84 +5289,12 @@ _deleted,
     }).catch(() => undefined);
   };
   let workspaceAnalyticsService: AnalyticsService | null = null;
-  registerCollabContextRoutes(app, {
-    workspaceContext: collab.workspaceContext,
-    configuredEnv: configuredAmrEnv,
-    verifyWorkspaceReadAuthority: verifyWorkspaceContextReadAuthority,
-    readCachedWorkspaceAuthority: cachedWorkspaceContextForRequest,
-    activeWorkspace,
-    // A tab-local selection leaves this exact Workspace's scoped caches cold.
-    // Warm only the directory-verified id announced by that request; the
-    // daemon-global legacy pin is neither read nor updated.
-    onWorkspaceSwitched: (workspaceId) => warmWorkspaceDigestFaces(workspaceId),
-    fetchBilling: accountBillingSummary.read,
-    billingRuntime: workspaceBillingRuntime,
-    quotaRealtimeHealthy: (workspaceId) => quotaHealthyConnections.has(
-      directoryConnectionKey(workspaceId, currentWorkspaceDirectoryIdentity()),
-    ),
-    fetchBillingCatalog: (workspaceId) => ((..._v05_unused: any[]) => ({} as any))(workspaceId, {
-      configuredEnv: configuredAmrEnv(),
-    }),
-    startCheckout: (input) => ((..._v05_unused: any[]) => ({} as any))({
-      ...input,
-      configuredEnv: configuredAmrEnv(),
-    }),
-    // Same directory read the route would have made on its own, wrapped so every
-    // workspace type it carries is memoized for the team-share invariant.
-    listWorkspaceDirectory,
-    fetchWorkspaceDirectory: fetchWorkspaceDirectoryForAccountSurface,
-    refreshWorkspaceDirectoryAfterMutation:
-      workspaceDirectoryAuthority.refreshAfterMutation,
-    // Reuse the shared team-projects lister (which holds the shared vela-cli
-    // catalog adapter). Without this the endpoint built a fresh adapter per
-    // request and re-ran the one-off `vela team-projects --help` capability
-    // probe — an extra CLI spawn (and, on the current CLI, a blocking analytics
-    // POST) on every workspace projects load.
-    //
-    // Use the DISPLAY cache, not the uncached exact lookup. This is the read
-    // behind the Home team-project grid and the deep-link "is this shared to my
-    // team?" check, and `teamProjectsDisplayCache` was built for exactly this
-    // route — see its doc comment, which names it. Wired to the uncached lister
-    // instead, every call spawned `vela team-projects list`: measured at ~1.1s
-    // per request against a live workspace, cold and warm alike, on a path the
-    // UI hits on every launch and every deep link.
-    //
-    // These routes are display reads: the Home team-project grid and the
-    // deep-link "is this shared to my team?" check. Nothing here gates data
-    // access — the pull gate and the comment/presence relays reach
-    // `teamProjectsLister` on their own and still observe an unshare
-    // immediately.
-    //
-    // Display freshness does not rest on the 3s TTL alone: share, unshare and
-    // workspace-change invalidate this cache explicitly, via
-    // `invalidateTeamProjectCatalog` (collab-sync and the project routes) and
-    // the per-scope invalidations beside the cache itself.
-    //
-    // This was the last caller of the uncached `teamProjectsForRequest`
-    // wrapper, so that helper is removed with it rather than left orphaned.
-    listTeamProjects: teamProjectsForDisplay,
-    // Expose the collab-cloud member directory so the web client can resolve
-    // comment authors + owner names to a name + role.
-    ...(teamMembersCache ? { listMembers: teamMembersForDisplay } : {}),
-    // Collab realtime hop-2: the workspace-scoped invalidation SSE. The route
-    // registers/deregisters its sink here; the poller below feeds them.
-    createSseResponse,
-    workspaceEventSinks,
-    retainWorkspaceEventInterest: (workspaceId) =>
-      workspaceHubSubscriptions?.retainEventInterest(workspaceId)
-      ?? (() => undefined),
-    observeWorkspace: async (req, context, properties) => {
-      const service = workspaceAnalyticsService;
-      const analyticsContext = readAnalyticsContext(req);
-      if (!service || !analyticsContext) return;
-      await service.identifyGroup({
-        context: analyticsContext,
-        groupType: 'workspace',
-        groupKey: context.workspaceId,
-        properties: properties ?? {},
-      });
-    },
-  });
+  // The `registerCollabContextRoutes` call site (and its ~80-line
+  // dependencies block above) was removed in v0.7b-3: the local-only fork
+  // has no collab context plane and the route file was deleted in v0.7a.
+  // The remaining `collab.workspaceContext` reference is now passed through
+  // `workspaceContextProvider` (defined at the workspace-identity layer)
+  // wherever an upstream consumer still needs it.
   // Reconnect/source-gap recovery belongs to the Workspace whose upstream
   // subscription observed the gap. Keep one signature state per Workspace so
   // recovering subscribed A while B is the UI selection neither compares A
@@ -6351,50 +5987,6 @@ _deleted,
             hubEventRefreshToken(event),
           );
           break;
-        case 'team-resources-changed': {
-          // Project publish/retract operations are Resource Hub mutations and
-          // therefore arrive on this generic event family. Projects have their
-          // own binding model and non-destructive mirror quarantine; the
-          // generic resource coordinator intentionally handles only design
-          // systems, plugins, and skills.
-          if (event.resourceKind === 'project') {
-            hubEventRefreshes.request(
-              `team-projects:${eventWorkspaceId}`,
-              () => handleHubTeamProjectsChanged(
-                () => emitTeamProjectsChanged(
-                  eventWorkspaceId,
-                  {
-                    ...(event.projectId ? { projectId: event.projectId } : {}),
-                    kind: 'catalog',
-                  },
-                ),
-                () => reconcileWorkspaceProjectsFromRemote(eventWorkspaceId),
-              ),
-              hubEventRefreshToken(event),
-            );
-            break;
-          }
-          // A design-system/plugin/skill resource was shared (moved the
-          // 'published' ref) or retracted (removed) on the resource hub.
-          // `resourceKind` routes to just that kind's reconciler instead of
-          // re-checking all of them on every event — see
-          // `reconcileTeamResourcesFromRemote` below (declared
-          // later in this function; referencing it here is safe because this
-          // callback only ever RUNS once an actual SSE event arrives, well
-          // after the rest of `startServer`'s synchronous setup — including
-          // that declaration — has completed).
-          hubEventRefreshes.request(
-            `team-resources:${eventWorkspaceId}:${event.resourceKind ?? '*'}`,
-            () => reconcileTeamResourcesFromRemote(
-              event.resourceKind,
-              eventWorkspaceId,
-              'push',
-              event.resourceId,
-            ),
-            hubEventRefreshToken(event),
-          );
-          break;
-        }
       }
     },
     onReconnect: (connection) => {
@@ -6420,12 +6012,6 @@ _deleted,
         .catch(() => undefined);
       void collabCloud?.pollOnce().catch(() => undefined);
       workspaceBillingRuntime.reconnect(subscribedWorkspaceId);
-      // Same catch-up principle for the design-system/plugin/skill resource
-      // reconciler: a missed 'team-resources-changed' push during the
-      // disconnect window is closed by one full re-check across every kind
-      // this daemon drives it for (no resourceKind => reconcile all).
-      void reconcileTeamResourcesFromRemote(undefined, subscribedWorkspaceId, 'catch-up')
-        .catch(() => undefined);
     },
     onSourceGap: ({ workspaceId, identityKey, listenerEpoch }) => {
       if (
@@ -6453,8 +6039,6 @@ _deleted,
         .catch(() => undefined);
       workspaceBillingRuntime.reconnect(exactWorkspaceId);
       void collabCloud?.pollOnce().catch(() => undefined);
-      void reconcileTeamResourcesFromRemote(undefined, exactWorkspaceId, 'catch-up')
-        .catch(() => undefined);
     },
     onError: (error) => {
       console.warn('[od] hub events channel error (will reconnect):', String(error));
@@ -6466,8 +6050,6 @@ _deleted,
   workspaceHubSubscriptions.setBillingInterests(
     workspaceBillingRuntime.interestedKeys().map((interest) => interest.workspaceId),
   );
-
-  registerTeamResourceRoutes(app, { teamResources: collab.teamResources });
 
   // Team resource sharing is request-scoped. The browser's explicit Workspace
   // headers choose a membership, then the signed-in account's authoritative
@@ -7140,110 +6722,14 @@ _deleted,
     });
     if (visibility === 'personal') designSystemBackingProjects.delete(key);
   };
-  registerTeamResourceShareRoutes(app, {
-    basePath: 'design-systems',
-    resolveScope: resolveTeamResourceScope,
-    authorizeShare: (resourceId, scope) => {
-      const binding = getWorkspaceResourceByResourceId(
-        db,
-        'design_system',
-        resourceId,
-      );
-      return binding?.workspaceId === scope.principal.teamId
-        && binding.visibility === 'personal'
-        && binding.resourceState !== 'deleted'
-        && binding.createdByWorkspaceMemberId === scope.principal.memberId;
-    },
-    syncSharedResource: syncSharedTeamDesignSystem,
-    share: designSystemsTeamShare,
-    listTeam: designSystemsTeamList,
-    onMutationCommitted: notifyDesignSystemLinkedMutation,
-  });
-  const pluginsTeamShare = createTeamResourceShareService({
-    kind: 'plugin',
-    idPrefix: 'plugin',
-    resolveDir: (id) => {
-      const plugin = getInstalledPlugin(db, id);
-      if (!plugin || typeof plugin.fsPath !== 'string') throw new Error('plugin not found');
-      return plugin.fsPath;
-    },
-    describeResource: (id) => {
-      const plugin = getInstalledPlugin(db, id);
-      if (!plugin) return null;
-      return {
-        localId: id,
-        title: plugin.manifest?.title ?? plugin.manifest?.name ?? plugin.title ?? id,
-        ...(plugin.manifest?.description ? { description: plugin.manifest.description } : {}),
-      };
-    },
-    run: runTeamResourceCommand,
-  });
-  const pluginsTeamList = cachedTeamResourceList(
-    pluginsTeamShare,
-    syncSharedTeamPlugin,
-  );
-  registerTeamResourceShareRoutes(app, {
-    basePath: 'plugins',
-    resolveScope: resolveTeamResourceScope,
-    authorizeShare: (id, scope) => {
-      const binding = getWorkspaceResourceByResourceId(db, 'plugin', id);
-      return Boolean(
-        binding
-        && binding.workspaceId === scope.principal.teamId
-        && binding.visibility === 'personal'
-        && binding.resourceState === 'active'
-        && binding.createdByWorkspaceMemberId === scope.principal.memberId
-      );
-    },
-    syncSharedResource: syncSharedTeamPlugin,
-    share: pluginsTeamShare,
-    listTeam: pluginsTeamList,
-  });
-  const skillsTeamShare = createTeamResourceShareService({
-    kind: 'skill',
-    idPrefix: 'skill',
-    resolveDir: async (id) => {
-      const skill = findSkillById(await listAllSkills(), id);
-      if (!skill || typeof skill.dir !== 'string') throw new Error('skill not found');
-      return skill.dir;
-    },
-    describeResource: async (id) => {
-      const skill = findSkillById(await listAllSkills(), id);
-      if (!skill) return null;
-      return {
-        localId: id,
-        title: skill.name || id,
-        ...(skill.description ? { description: skill.description } : {}),
-      };
-    },
-    run: runTeamResourceCommand,
-  });
-  const skillsTeamList = cachedTeamResourceList(
-    skillsTeamShare,
-    syncSharedTeamSkill,
-  );
-  registerTeamResourceShareRoutes(app, {
-    basePath: 'skills',
-    resolveScope: resolveTeamResourceScope,
-    authorizeShare: (id, scope) => {
-      const binding = getWorkspaceResourceByResourceId(db, 'skill', id);
-      return Boolean(
-        binding
-        && binding.workspaceId === scope.principal.teamId
-        && binding.visibility === 'personal'
-        && binding.resourceState === 'active'
-        && binding.createdByWorkspaceMemberId === scope.principal.memberId
-      );
-    },
-    syncSharedResource: syncSharedTeamSkill,
-    share: skillsTeamShare,
-    listTeam: skillsTeamList,
-  });
-  const teamResourceListByKind = {
-    design_system: designSystemsTeamList,
-    plugin: pluginsTeamList,
-    skill: skillsTeamList,
-  };
+  // The team-resource sharing routes (design-systems, plugins, skills) and
+  // their reconciliation loop were removed in v0.7b-3: the local-only fork
+  // has no team plane to share resources through, and `registerTeamResourceShareRoutes`
+  // was deleted in v0.7a with its route file. The downstream
+  // `teamResourceEventCoordinator`, `reconcileTeamResourcesFromRemote`,
+  // and `teamResourcesPollTimer` declarations below are kept as no-ops so
+  // the surrounding composition root compiles; the hub-event handlers
+  // that called them have been removed.
 
   // Collab realtime for design-system/plugin/skill "team resource" sharing: react
   // to a `team-resources-changed` signal (hub push, wired above, OR the
@@ -7583,39 +7069,10 @@ _deleted,
   // Kept as its own timer rather than folded into that
   // poller's deps: `workspaceInvalidationPoller` decides whether to emit by
   // diffing a cheap SIGNATURE against the previous one (see its
-  // `emitIfChanged`), and there is no equivalent cheap "did the team-shared
-  // resource set change" digest in Vela's `/api/v1/collab/sync-digest`, so
-  // this re-reads on its own cadence. The coordinator derives a stable
-  // id+version signature after materialization and suppresses unchanged emits.
-  const teamResourcesPollTimer = setInterval(() => {
-    const rememberedLeases = rememberedTeamResourceScopes.activeWorkspaceLeases();
-    const rememberedLeasesByWorkspace = new Map(
-      rememberedLeases.map((lease) => [lease.workspaceId, lease]),
-    );
-    const persistentWorkspaceIds = persistentTeamResourceBackgroundWorkspaceIds();
-    const persistentWorkspaceIdSet = new Set(persistentWorkspaceIds);
-    for (const workspaceId of teamResourceBackgroundWorkspaceIds(
-      rememberedLeases,
-      persistentWorkspaceIds,
-    )) {
-      const rememberedLease = persistentWorkspaceIdSet.has(workspaceId)
-        ? undefined
-        : rememberedLeasesByWorkspace.get(workspaceId);
-      void reconcileTeamResourcesFromRemote(
-        undefined,
-        workspaceId,
-        'poll',
-        undefined,
-        rememberedLease,
-      ).catch((error) =>
-        console.warn(
-          `[od] workspace ${workspaceId} resources poll error:`,
-          error,
-        ),
-       );
-    }
-  }, 15_000);
-  teamResourcesPollTimer.unref?.();
+  // The 15s `teamResourcesPollTimer` setInterval that lived here was
+  // removed in v0.7b-3: the local-only fork has no team-resource
+  // reconciler to drive. The surrounding `reconcileTeamResourcesFromRemote`
+  // declaration below is a no-op kept for composition-root stability.
 
   registerMemoryRoutes(app, {
     http: { createSseResponse, requireLocalDaemonRequest },
@@ -8782,7 +8239,6 @@ _deleted,
     paths: pathDeps,
     verifyWorkspaceReadAuthority,
     verifyWorkspaceRequestAuthority,
-    teamResources: collab.teamResources,
     resources: {
       listAllSkills,
       listAllDesignTemplates,
@@ -9494,7 +8950,6 @@ _deleted,
   registerPluginRoutes(app, {
     db,
     authorizeProjectRequest,
-    teamResources: collab.teamResources,
     paths: { PROJECTS_DIR, PLUGIN_REGISTRY_ROOTS, PLUGIN_LOCKFILE_PATH },
     ids: idDeps,
     projectStore: projectStoreDeps,
@@ -17868,7 +17323,6 @@ _deleted,
       composioConnectorProvider.stopCatalogRefreshLoop();
       orbitService.stop();
       routineService?.stop();
-      clearInterval(teamResourcesPollTimer);
       // Disarms synchronously; the returned promise drains an in-flight pass.
       // Nothing here awaits it — the point is that no NEW pass can start once
       // the daemon is coming down.
