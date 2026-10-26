@@ -30,7 +30,7 @@ Out of scope here:
 
 Three orthogonal cuts, in chronological order, each one its own PR.
 
-### 1.1 v0.4.0 — AMR/Cloud sign-in surfaces (PR #1, web-only)
+### 1.1 v0.4.0 — AMR/Cloud sign-in surfaces (PR #13, web-only)
 
 **Cut**: every UI surface that pointed at the OpenDesign Cloud
 identity.
@@ -58,7 +58,7 @@ identity.
 - New `entry-rail-account-state` test asserts the rail always
   resolves to `'hidden'` across every input shape.
 
-### 1.2 v0.4.1 — `amr` runtime from the agent registry (PR #2, daemon)
+### 1.2 v0.4.1 — `amr` runtime from the agent registry (PR #14, daemon)
 
 **Cut**: the `amr` runtime itself.
 
@@ -85,9 +85,11 @@ beyond the PR review budget. The 8 integrations, the
 `/api/integrations/vela/*` routes, the `collab/vela-cli-*` family
 (5 files), and the `od amr <login|status>` CLI subcommands are
 **still in the tree** as of v0.4.1. They are unreachable from the
-web UI (PR #1) and from the agent registry (v0.4.1), but the daemon
+web UI (PR #13) and from the agent registry (v0.4.1), but the daemon
 still answers the endpoints. A follow-up PR will retire them in a
 single, focused change.
+
+**Landed as v0.5 (PR #17, merged 2026-10-15)** — see §4.1.
 
 ## 2. What was kept (and why)
 
@@ -192,7 +194,14 @@ unlimited.
 
 ## 4. Future work
 
-### 4.1 v0.5 — Finish the daemon-side vela cleanup
+### 4.1 v0.5 — Finish the daemon-side vela cleanup **(landed — PR #17, merged 2026-10-15)**
+
+**Outcome**: landed as one PR as planned — 598 files, +3,603 /
+−103,893 (the largest single deletion in the fork so far). The 14
+files, the `od amr <login|status>` subcommand, and the gutted 33
+consumers went in together; the whole `collab/` service tree (22
+files) came out with them since the consumers spanned it. The plan
+below is kept as the original design.
 
 The 8 vela integrations + 1 vela routes file + 5 collab/vela-cli-*
 files + 1 collab/vela-workspace-context file + the `od amr
@@ -289,10 +298,13 @@ back without the flag will not be merged.
 | 2026-10-12 | Keep BYOK protocols `openai | anthropic | ollama` | (a) keep all 8 upstream protocols, (b) keep only `ollama` | (a) reintroduces the v0.2 problem, (b) the user explicitly wants Anthropic + OpenAI as fallbacks for the local model |
 | 2026-10-12 | No billing / quota layer | (a) implement per-user quota in the daemon, (b) rate-limit at the provider level | (a) is the same complexity as M7's auth, (b) is the user's responsibility (llama-swap) |
 | 2026-10-12 | The escape hatch is a feature flag, not a branch | (a) a long-lived feature branch that is never merged, (b) a runtime config knob in the Settings UI | (a) rots, (b) the Settings UI is the very thing the divergence removes |
+| 2026-10-15 | v0.5 lands as one large PR, not further slices (PR #17) | (a) split by directory across PRs (collab/, integrations/, cli), (b) keep the surface behind a feature flag | (a) the 33 consumers spanned all of those directories, so slicing only added merge-order risk, (b) the Local-First UI never calls any of it and the flag would become dead surface |
+| 2026-10-15 | v0.6 lands the per-user project prefix storage-only, with a synthetic `local` user, before auth exists (PR #18) | (a) ship storage + OIDC in one PR, (b) wait for auth before reshaping storage | (a) entangles the data-path migration with the auth surface, (b) every PR in between would keep touching the old path shape; with the prefix already in, v7 is auth-only |
+| 2026-10-16 | v0.7 removes the v0.5 stub layer and lifts `@ts-nocheck` on `server.ts` (PRs #19–#21) | (a) keep the stub + `@ts-nocheck` as an accepted escape hatch, (b) rewrite `server.ts` from scratch | (a) the nocheck on the largest daemon file was hiding real type errors, (b) the file was healthy once the stubs were gone — lifting the directive was one line |
 
 ## 6. Cross-references
 
-- `claude-design-local-roadmap.md` — the v0.1 / v0.2 / v0.3 history and
+- `claude-design-local-roadmap.md` — the v0.1–v0.7 history and
   the v1 milestone plan.
 - `claude-design-local-risks.md` — the 37-row risk register. The
   risks added by the divergence are tagged `local-only` in column 1.
