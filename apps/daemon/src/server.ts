@@ -1,4 +1,4 @@
-// @ts-nocheck
+// v0.7b-4: @ts-nocheck lifted. See v0.7b-3 / v0.7b-4 commits for history.
 // v0.7b-3: dropped the v0.5 collab object, the 6 register*Routes call sites
 // (collab-presence, collab-sync, collab-context, team-resource,
 // team-resource-share × 3), the workspaceEventSinks map, the
