@@ -399,7 +399,60 @@ Total: ~12 files, ~3000 lines reviewed, ~500 / -2000 line diff expected. The sma
   (`aihubmix/azure/google/senseaudio-compatible.ts` +
   `aihubmix-image-models.ts`) — already touched by the v0.2 surface
   drop, no source-code importers, dead code that is no longer worth
-  its own PR.
+  its own PR. (Landed early inside the arc: deleted in v0.3a, PR #12.)
+
+### v0.4 — Removal of the AMR/Cloud surface (closed 2026-10-14)
+
+- **PR #13 (v0.4.0, web, merged 2026-10-13)**: removed all
+  OpenDesign Cloud identity UI — the onboarding step-0 cloud landing
+  and AMR chooser card, the six provider-gate components, the
+  `entry.sessionExpired` i18n key in all 19 locales, and the three
+  large `EntryShell.amr-*` test files (−1,757 lines). 87 files,
+  +468 / −7,358.
+- **PR #14 (v0.4.1, daemon, merged 2026-10-14)**: dropped the `amr`
+  runtime from `runtimes/registry.ts` (27 → 26 agents), deleted 26
+  cloud test files, and made web + daemon bind to all interfaces by
+  default (`deploy/docker-compose.yml` + pack). 33 files, +29 /
+  −9,111.
+- **Outcome**: the web has zero OpenDesign Cloud references and the
+  daemon no longer registers `amr`. The vela/collab daemon surface was
+  deliberately left for v0.5.
+
+### v0.5 — Removal of the daemon-side vela/collab surface (closed 2026-10-15)
+
+- **PR #17 (merged 2026-10-15)**: the v0.4.2 deferral, landed as one
+  focused PR. Removed: the 8 vela integrations (`integrations/vela.ts`
+  −1,908, `vela-billing` −627, `vela-command` −376, `vela-errors`
+  −332, `vela-wallet` −304, plus four smaller), `routes/vela.ts`
+  (−1,420), the entire `collab/` service tree (22 files incl.
+  `proactive-content-pull.ts` −2,387, `hub-events-subscriber.ts`
+  −797, `collab-cloud-service.ts` −754), the `amr` runtime remnants
+  (`runtimes/defs/amr.ts` −701, model cache/probe, `storage/amr-terminal-report-outbox.ts`
+  −530, `amr-stderr-filter.ts`), the `od amr <login|status>` CLI
+  subcommand (`cli.ts` ±240), and 30+ daemon test files (incl.
+  `tests/integrations/vela.routes.test.ts` −3,624).
+- **Net diff**: 598 files, +3,603 / −103,893 — the largest single
+  deletion in the fork so far.
+- **Outcome**: the daemon no longer answers `/api/integrations/vela/*`
+  and the `collab/` tree is gone. Plan in `local-only-divergence.md`
+  §4.1 executed as written.
+
+### v0.7 — Lift the v0.5 stubs and `@ts-nocheck` (closed 2026-10-26)
+
+- **PR #19 (v0.7a, merged 2026-10-16)**: removed the `v05-stubs.ts`
+  layer (−83) and the collab route files (`routes/collab-sync.ts`
+  −2,511, `routes/collab-context.ts` −1,067, `routes/collab-presence.ts`
+  −971, `routes/team-resource-share.ts` −187). 24 files, +162 /
+  −5,454.
+- **PR #20 (v0.7b-1..3, merged 2026-10-16)**: dropped the
+  `workspace_projects` migration logic, the `routes/project/index.ts`
+  v0.5 shim, and the v0.5 dead code in `server.ts` (−725 lines). 3
+  files, +216 / −1,103.
+- **PR #21 (v0.7b-4, merged 2026-10-26)**: lifted `@ts-nocheck` from
+  `apps/daemon/src/server.ts` — one line; the file now typechecks
+  clean.
+- **Outcome**: the v0.5 migration-era scaffolding is fully gone and
+  the largest daemon file is typed again.
 
 ### Known v0.2 limitations (not bugs, design edges)
 
@@ -431,6 +484,5 @@ rationale and the migration mechanics are recorded in
 
 ### Next concrete steps (in order)
 
-1. **v0.3 cleanup arc** (finish the protocol narrowing).
-2. **Slide deck renderer (Q1, first output type)** — design conversation first, no code in the first turn.
-3. **Per-protocol quirks** — moot (vllm/openai-custom/anthropic-custom labels were rejected in the v0.2 design call).
+1. **Slide deck renderer (Q1, first output type)** — design conversation first, no code in the first turn.
+2. **v7 — OIDC SSO (auth half of M7)** — the storage half already landed in v0.6; see `local-only-divergence.md` §4.2.
