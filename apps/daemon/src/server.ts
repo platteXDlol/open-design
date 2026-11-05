@@ -467,6 +467,7 @@ import {
   strippingConsumedTheWholeFrame,
 } from './panel-grammar-strip.js';
 import { createArtifactFocusMarkerStripper } from './artifact-focus-marker.js';
+import { createDeckArtboardTracker } from './artifacts/deck-artboard-tracker.js';
 import { createNextStepMarkerStripper } from './next-step-marker.js';
 import { createRoleMarkerGuard } from './role-marker-guard.js';
 import { createToolLoopGuard, resolveToolLoopMode, type ToolLoopVerdict } from './tool-loop-guard.js';
@@ -14292,6 +14293,18 @@ _deleted,
       projectRoot: typeof cwd === 'string' && cwd ? cwd : null,
       emit: (selection) => send('agent', { type: 'artifact_focus', ...selection }),
     });
+    // M2 deck artboards: announce each slide as it lands, write manifest v2.
+    const deckArtboardTracker =
+      typeof cwd === 'string' && cwd
+        ? createDeckArtboardTracker({ projectRoot: cwd, emit: (ev) => send('agent', ev) })
+        : null;
+    const settleDeckArtboards = () => {
+      try {
+        deckArtboardTracker?.settle();
+      } catch {
+        // Best-effort: a deck scan must never break the run stream.
+      }
+    };
     const titleMarkerStripper = {
       strip: (delta: string) =>
         nextStepMarkerStripper.strip(
@@ -14335,6 +14348,12 @@ _deleted,
        * Fire-and-forget on purpose; the run must not block on a stat.
        */
       void artifactFocusStripper.settle();
+      settleDeckArtboards();
+      try {
+        deckArtboardTracker?.finalize();
+      } catch {
+        // Best-effort, as above.
+      }
     }
 
     function guardTextDelta(delta) {
@@ -14538,7 +14557,10 @@ _deleted,
        * unless a marker is actually waiting on bytes, and it is idempotent, so
        * calling it on every result costs one branch.
        */
-      if (ev?.type === 'tool_result') void artifactFocusStripper.settle();
+      if (ev?.type === 'tool_result') {
+        void artifactFocusStripper.settle();
+        settleDeckArtboards();
+      }
     }
 
     const sendAgentEvent = (ev) => {

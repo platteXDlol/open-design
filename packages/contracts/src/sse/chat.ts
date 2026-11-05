@@ -210,6 +210,25 @@ export type DaemonAgentPayload =
    * inference exactly as-is — "no event" never means "show nothing".
    */
   | { type: 'artifact_focus'; open?: string; show?: string[] }
+  /**
+   * One deck artboard (`artifacts/<artifactId>/artboards/<artboardId>.html`)
+   * finished writing and ran static validation (M2,
+   * `specs/current/slide-deck-m2-design.md`). Emitted once per write; a
+   * rewrite of the same artboard emits again, so consumers fold last-wins per
+   * `artboardId`. Additive: older clients ignore it.
+   */
+  | {
+      type: 'artboard';
+      artifactId: string;
+      artboardId: string;
+      /** Artifact-relative, e.g. `artboards/01-title.html`. */
+      file: string;
+      /** 0-based position in write order. */
+      index: number;
+      status: 'complete' | 'error';
+      /** Validation finding ids when status is `error`. */
+      findings?: string[];
+    }
   | { type: 'conversation_title'; title: string }
   | { type: 'thinking_delta'; delta: string }
   | { type: 'thinking_start' }

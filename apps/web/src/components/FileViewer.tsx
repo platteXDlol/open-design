@@ -84,6 +84,7 @@ import {
 } from '../analytics/events';
 import { recordFirstLoopStep } from '../onboarding/first-loop';
 import { MarkdownRenderer, artifactRendererRegistry } from '../artifacts/renderer-registry';
+import { DeckArtboardsViewer, deckArtifactDirForFile } from './DeckArtboardsViewer';
 import { renderMarkdownToSafeHtml } from '../artifacts/markdown';
 import {
   artifactExportOriginProps,
@@ -1891,6 +1892,22 @@ export const FileViewer = memo(function FileViewer({
       );
     }
     return <FileViewerLoadingSkeleton />;
+  }
+
+  const deckArtifactDir = deckArtifactDirForFile(file.name);
+  if (deckArtifactDir) {
+    return (
+      <div className="viewer">
+        <div className="viewer-body">
+          <DeckArtboardsViewer
+            projectId={projectId}
+            artifactDir={deckArtifactDir}
+            initialFile={file.name.slice(deckArtifactDir.length + 1)}
+            refreshKey={filesRefreshKey}
+          />
+        </div>
+      </div>
+    );
   }
 
   if (rendererMatch?.renderer.id === 'html' || rendererMatch?.renderer.id === 'deck-html') {
