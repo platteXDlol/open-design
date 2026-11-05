@@ -62,6 +62,7 @@ export * from './api/workspace-invites.js';
 export * from './examples.js';
 export * from './execution-profile.js';
 export * from './artifacts/od-card.js';
+export * from './artifacts/deck-artboards.js';
 export * from './artifacts/chat-protocol-context.js';
 export * from './runtime/deck-stage-fallback.js';
 export * from './runtime/html-injection-points.js';
