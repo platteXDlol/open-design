@@ -200,10 +200,8 @@ describe('OD Next V2 request recipe wiring', () => {
 
     const prompt = composeSystemPrompt({ odNextStrategyRecipe: recipe });
     expect(prompt.match(/^## Task Skill —/gm)).toHaveLength(1);
-    expect(prompt).toContain('OD Deck Protocol v1');
-    expect(prompt).toContain('data-od-deck-protocol="1"');
-    expect(prompt).toContain("type: 'od:deck-ready'");
-    expect(prompt).toContain("type: 'od:slide-state'");
+    expect(prompt).toContain('# Slide deck — one file per slide');
+    expect(prompt).toContain('data-od-artboard="1"');
   });
 
   it('preserves a selected legacy PPT scaffold without injecting Deck Protocol v1', async () => {
@@ -243,10 +241,8 @@ describe('OD Next V2 request recipe wiring', () => {
       odNextStrategyRecipe: recipe,
       freeformDeckSignal: true,
     });
-    expect(prompt).toContain('OD Deck Protocol v1');
-    expect(prompt).toContain('data-od-deck-protocol="1"');
-    expect(prompt).toContain("type: 'od:deck-ready'");
-    expect(prompt).toContain("type: 'od:slide-state'");
+    expect(prompt).toContain('# Slide deck — one file per slide');
+    expect(prompt).toContain('data-od-artboard="1"');
   });
 
   it('composes the real package and atom bodies as one planning/Build-only golden', async () => {

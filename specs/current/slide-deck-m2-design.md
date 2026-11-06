@@ -186,3 +186,6 @@ Steps 4–5 may split into a second PR if the diff gets large.
 | 8 | Prompt variants | Both, one contracts source | Avoids intermittent per-run drift. |
 | 9 | Directive trigger | Artboard directive only when no deck template/seed is bound (blank deck) | Templates stay single-file (D7); no flag needed for the M2 manual check. |
 | 10 | PR split | PR 1 = steps 1–4; PR 2 = step 5 (directive in 3 prompt paths + `od` CLI list/validate + repair loop) | Prompt + CLI diff is large and reviewed separately. |
+| 11 | Existing single-file deck, legacy path | Detect it and keep single-file directive (mirror OD Next `hasExistingDeckArtifact`) | Both paths agree; old decks not reformatted. |
+| 12 | Inferred-deck branch | Artboard directive too | Also a blank deck (D9). |
+| 13 | Repair delivery | Daemon starts ≤2 follow-up runs with findings | Works for all CLI agents + BYOK without a new tool. |

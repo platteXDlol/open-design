@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { composeSystemPrompt, detectDeckIntentSignal } from '../../src/prompts/system.js';
 
 const MAYBE_DECK_HEADING = '## If this brief is a slide deck / keynote / presentation';
-const DECK_FRAMEWORK_HEADING = '# Slide deck — fixed framework';
+const DECK_FRAMEWORK_HEADING = '# Slide deck — ';
 const NESTED_DIAGRAM_HEADING = '## Nested / concentric diagram discipline';
 
 describe('detectDeckIntentSignal', () => {
@@ -82,9 +82,7 @@ describe('composeSystemPrompt — freeform maybe-deck gating', () => {
 
     expect(out).toContain(MAYBE_DECK_HEADING);
     expect(out).toContain(DECK_FRAMEWORK_HEADING);
-    expect(out).toContain('data-od-deck-protocol="1"');
-    expect(out).toContain("type: 'od:deck-ready'");
-    expect(out).toContain("type: 'od:slide-state'");
+    expect(out).toContain('data-od-artboard="1"');
   });
 
   it('does not turn an ordinary prototype turn into a deck prompt', () => {

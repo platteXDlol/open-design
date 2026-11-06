@@ -345,7 +345,7 @@ describe('composeSystemPrompt', () => {
     });
 
     expect(prompt).toContain('## Media generation contract');
-    expect(prompt).not.toContain('# Slide deck — fixed framework');
+    expect(prompt).not.toContain('# Slide deck — ');
   });
 
   it('lets metadata.kind win over conflicting composed skill modes', () => {
@@ -355,12 +355,12 @@ describe('composeSystemPrompt', () => {
       metadata: { kind: 'deck' } as any,
     });
 
-    expect(prompt).toContain('# Slide deck — fixed framework');
+    expect(prompt).toContain('# Slide deck — ');
     expect(prompt).not.toContain('## Media generation contract');
   });
 
   it('pins the data chart discipline inside the deck framework (#907)', () => {
-    const prompt = composeSystemPrompt({ skillMode: 'deck' });
+    const prompt = composeSystemPrompt({ skillMode: 'deck', deckFrameworkMode: 'canonical' });
 
     expect(prompt).toContain('## Data chart discipline');
     expect(prompt).toContain('calc(var(--v) / var(--max)');
@@ -369,7 +369,7 @@ describe('composeSystemPrompt', () => {
   });
 
   it('pins the mermaid theme discipline inside the deck framework (dark decks)', () => {
-    const prompt = composeSystemPrompt({ skillMode: 'deck' });
+    const prompt = composeSystemPrompt({ skillMode: 'deck', deckFrameworkMode: 'canonical' });
 
     expect(prompt).toContain('## Mermaid diagram theme discipline');
     expect(prompt).toContain("theme: 'dark'");
@@ -377,8 +377,17 @@ describe('composeSystemPrompt', () => {
     expect(prompt).toContain('no dark-on-dark labels');
   });
 
-  it('ships new Agent decks with OD Deck Protocol v1', () => {
-    const prompt = composeSystemPrompt({ skillMode: 'deck' });
+  it('gives blank decks the multi-artboard directive and existing single-file decks the framework', () => {
+    const blank = composeSystemPrompt({ skillMode: 'deck' });
+    expect(blank).toContain('# Slide deck — one file per slide');
+    expect(blank).not.toContain('data-od-deck-protocol="1"');
+    const existing = composeSystemPrompt({ skillMode: 'deck', deckFrameworkMode: 'canonical' });
+    expect(existing).toContain('# Slide deck — fixed framework');
+    expect(existing).not.toContain('# Slide deck — one file per slide');
+  });
+
+  it('ships existing single-file Agent decks with OD Deck Protocol v1', () => {
+    const prompt = composeSystemPrompt({ skillMode: 'deck', deckFrameworkMode: 'canonical' });
 
     expect(prompt).toContain('data-od-deck-protocol="1"');
     expect(prompt).toContain("type: 'od:deck-ready'");
@@ -402,7 +411,7 @@ describe('composeSystemPrompt', () => {
   it('injects nested-diagram discipline only through deck surfaces', () => {
     const heading = '## Nested / concentric diagram discipline';
 
-    expect(composeSystemPrompt({ skillMode: 'deck' })).toContain(heading);
+    expect(composeSystemPrompt({ skillMode: 'deck', deckFrameworkMode: 'canonical' })).toContain(heading);
     expect(composeSystemPrompt({ metadata: { kind: 'deck' } as any })).toContain(heading);
     expect(composeSystemPrompt({ metadata: { kind: 'prototype' } as any })).not.toContain(heading);
   });
@@ -593,7 +602,7 @@ describe('composeSystemPrompt', () => {
       // deck-framework.ts:327 ever regresses back to "Emit single <artifact>",
       // a no-args negative assertion is a false negative — exercise the deck
       // path explicitly here.
-      const deckPrompt = composeSystemPrompt({ skillMode: 'deck' });
+      const deckPrompt = composeSystemPrompt({ skillMode: 'deck', deckFrameworkMode: 'canonical' });
       expect(deckPrompt).not.toMatch(/^7\.\s+Emit single <artifact>\s*$/m);
       expect(deckPrompt).not.toContain('Copy the canonical skeleton below as index.html');
       expect(deckPrompt).toContain('semantically named deck HTML file');

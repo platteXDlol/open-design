@@ -467,7 +467,13 @@ import {
   strippingConsumedTheWholeFrame,
 } from './panel-grammar-strip.js';
 import { createArtifactFocusMarkerStripper } from './artifact-focus-marker.js';
-import { createDeckArtboardTracker } from './artifacts/deck-artboard-tracker.js';
+import { createDeckArtboardTracker, type DeckFinalizeResult } from './artifacts/deck-artboard-tracker.js';
+import { buildDeckRepairMessage, deckRepairRound } from './artifacts/deck-repair.js';
+import { isArtboardDeckFile } from '@open-design/contracts';
+
+function isSingleFileHtml(name: string): boolean {
+  return /\.html?$/i.test(name) && !isArtboardDeckFile(name);
+}
 import { createNextStepMarkerStripper } from './next-step-marker.js';
 import { createRoleMarkerGuard } from './role-marker-guard.js';
 import { createToolLoopGuard, resolveToolLoopMode, type ToolLoopVerdict } from './tool-loop-guard.js';
@@ -4947,7 +4953,7 @@ _deleted,
         String(error),
       ),
   });
-  const _deleted_var = createProactiveContentPull({
+  const _deleted_proactive_pull = createProactiveContentPull({
     assessBackgroundContentPull: (target, version) =>
       backgroundPullSizeGuard.assess(target, version),
     getLocalBinding: (projectId) => {
@@ -9769,8 +9775,22 @@ _deleted,
     // object both composes the prompt and feeds section-level drift
     // attribution — a second, hand-maintained copy of these inputs would drift
     // from the real ones and mislabel the telemetry it exists to explain.
+    // Any HTML outside an M2 artboard deck means a single-file deck (or other
+    // page) may own the scaffold, so neither path may swap in artboards.
+    let hasExistingDeckArtifact = false;
+    if (typeof projectId === 'string' && projectId) {
+      try {
+        const files = await listFiles(PROJECTS_DIR, projectId, { metadata });
+        hasExistingDeckArtifact = files.some((file) => isSingleFileHtml(file.name));
+      } catch {
+        // Inventory failure must not authorize replacing a potentially legacy
+        // deck. The later project setup reports the underlying filesystem issue.
+        hasExistingDeckArtifact = true;
+      }
+    }
     const defaultSystemPromptInputs = {
       agentId,
+      deckFrameworkMode: hasExistingDeckArtifact ? ('canonical' as const) : ('artboards' as const),
       skillBody,
       skillName,
       skillMode,
@@ -9881,21 +9901,6 @@ _deleted,
         || selection.files.some((file) => /(?:^|\/)assets\/template\.html$/i.test(file.path)),
       ),
     );
-    let hasExistingDeckArtifact = false;
-    if (
-      odNextStrategyRecipe?.taskType === 'ppt'
-      && typeof projectId === 'string'
-      && projectId
-    ) {
-      try {
-        const files = await listFiles(PROJECTS_DIR, projectId, { metadata });
-        hasExistingDeckArtifact = files.some((file) => /\.html?$/i.test(file.name));
-      } catch {
-        // Inventory failure must not authorize replacing a potentially legacy
-        // deck. The later project setup reports the underlying filesystem issue.
-        hasExistingDeckArtifact = true;
-      }
-    }
     const odNextDeckFrameworkMode = isOdNextDeckRequest && odNextStrategyRecipe
       ? resolveOdNextDeckFrameworkMode({
           taskType: odNextStrategyRecipe.taskType,
@@ -14298,6 +14303,62 @@ _deleted,
       typeof cwd === 'string' && cwd
         ? createDeckArtboardTracker({ projectRoot: cwd, emit: (ev) => send('agent', ev) })
         : null;
+    let deckFinalizeResults: DeckFinalizeResult[] = [];
+    // Spec decision 13: a deck that ends invalid gets up to two daemon-started
+    // follow-up runs in the same conversation carrying the findings.
+    const startDeckRepairRun = () => {
+      const round = deckRepairRound(chatBody);
+      const message = buildDeckRepairMessage(deckFinalizeResults, round);
+      if (!message || !run.conversationId || typeof run.projectId !== 'string') return;
+      const assistantMessageId = `deck-repair-${randomUUID()}`;
+      const repairRun = design.runs.create({
+        projectId: run.projectId,
+        conversationId: run.conversationId,
+        assistantMessageId,
+        clientRequestId: `deck-repair-${randomUUID()}`,
+        agentId: run.agentId,
+        mediaExecution: run.mediaExecution ?? defaultMediaExecutionPolicy(),
+      });
+      const repairBody = {
+        ...chatBody,
+        analyticsHints: {
+          ...(chatBody.analyticsHints ?? {}),
+          ...inheritedRunLineageHints(run, chatBody, round + 1),
+        },
+        assistantMessageId,
+        clientRequestId: repairRun.clientRequestId,
+        message,
+        currentPrompt: message,
+        deckRepairRound: round + 1,
+        titleGeneration: undefined,
+        userMessageId: undefined,
+      };
+      upsertMessage(db, run.conversationId, {
+        id: `deck-repair-user-${repairRun.id}`,
+        role: 'user',
+        content: message,
+      });
+      upsertMessage(db, run.conversationId, {
+        id: assistantMessageId,
+        role: 'assistant',
+        content: '',
+        agentId: run.agentId,
+        agentName: getAgentDef(run.agentId)?.name ?? run.agentId,
+        runId: repairRun.id,
+        runStatus: 'queued',
+        startedAt: Date.now(),
+      });
+      internalRunCreation.start(
+        repairRun,
+        {
+          body: repairBody,
+          requestAnalyticsContext: run.analyticsContext ?? run.analyticsRecovery?.context ?? null,
+          creationKind: 'created',
+          resumed: false,
+        },
+        () => startChatRun(repairBody, repairRun),
+      );
+    };
     const settleDeckArtboards = () => {
       try {
         deckArtboardTracker?.settle();
@@ -14350,7 +14411,7 @@ _deleted,
       void artifactFocusStripper.settle();
       settleDeckArtboards();
       try {
-        deckArtboardTracker?.finalize();
+        deckFinalizeResults = deckArtboardTracker?.finalize() ?? [];
       } catch {
         // Best-effort, as above.
       }
@@ -16441,6 +16502,13 @@ _deleted,
         }
       }
       const retried = finishWithRetryDecision(status, code, signal);
+      if (!retried && !pendingStrategyContinuation && status === 'succeeded') {
+        try {
+          startDeckRepairRun();
+        } catch (error) {
+          console.warn('[od] deck repair run not started:', error);
+        }
+      }
       if (!retried && pendingStrategyContinuation) {
         const continuation = pendingStrategyContinuation;
         // This turn is not over: the daemon is about to run the next stage of

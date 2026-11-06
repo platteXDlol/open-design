@@ -5,6 +5,7 @@
 export {
   DECK_FRAMEWORK_DIRECTIVE,
   DECK_SKELETON_HTML,
+  renderDeckDirective,
   renderDeckFrameworkDirective,
   renderLegacyDeckCompatibilityDirective,
 } from '@open-design/contracts';

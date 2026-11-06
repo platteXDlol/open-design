@@ -34,7 +34,7 @@ import type { ProjectMetadata, ProjectTemplate } from '../api/projects.js';
 import { OFFICIAL_DESIGNER_PROMPT, renderOfficialDesignerPrompt } from './official-system.js';
 import { DISCOVERY_AND_PHILOSOPHY } from './discovery.js';
 import {
-  renderDeckFrameworkDirective,
+  renderDeckDirective,
   type DeckFrameworkMode,
 } from './deck-framework.js';
 import { MEDIA_GENERATION_CONTRACT } from './media-contract.js';
@@ -391,7 +391,10 @@ export function composeSystemPrompt({
   // still composed in — Ask mode is light, not amnesiac. Mirror the daemon
   // composer's `isAskMode` gating.
   const isAskMode = sessionMode === 'chat';
-  const deckFrameworkDirective = renderDeckFrameworkDirective(
+  // Blank decks get the M2 multi-artboard directive unless the caller says an
+  // existing single-file deck or a seed owns the scaffold (`deckFrameworkMode`).
+  const deckFrameworkDirective = renderDeckDirective(
+    deckFrameworkMode ?? 'artboards',
     streamFormat === 'plain' ? 'text_artifact' : 'filesystem',
   );
 

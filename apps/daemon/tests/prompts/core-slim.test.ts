@@ -465,7 +465,7 @@ describe('composeSystemPrompt — promptCoreVariant switch', () => {
     });
     expect(out).toContain('## Active design system — Brand');
     expect(out).toContain('## Active skill — test-skill');
-    expect(out).toContain('# Slide deck — fixed framework');
+    expect(out).toContain('# Slide deck — ');
     expect(out).toContain('## Media generation (if asked)');
   });
 });

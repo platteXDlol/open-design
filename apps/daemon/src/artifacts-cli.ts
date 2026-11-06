@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import type { DeckInspectResponse } from '@open-design/contracts';
 import { postCreateArtifactRequest } from './artifacts/create.js';
 import { resolveDaemonUrl } from './daemon-url.js';
 import { resolveProjectArg, withActiveEcho } from './mcp.js';
@@ -18,6 +19,9 @@ interface ParsedOptions {
   daemonUrl?: string;
   encoding: 'utf8' | 'base64';
   help: boolean;
+  deckCommand?: string;
+  deck?: string;
+  json?: boolean;
 }
 
 const USAGE = `Usage:
@@ -26,6 +30,11 @@ const USAGE = `Usage:
 Creates one normal OpenDesign project artifact entry file through the local daemon.
 When --project is omitted, the active OpenDesign project is used.
 Existing target paths are rejected.
+
+  od artifacts deck list|validate --deck <deck-id> [--project <id-or-name>] [--json] [--daemon-url <url>]
+
+Lists a multi-artboard deck's slides, or validates every slide and the deck
+(exit 1 when anything fails). Same endpoint as the web viewer.
 `;
 
 function writeJson(value: any, stream: NodeJS.WriteStream = process.stdout): void {
@@ -52,9 +61,18 @@ function parseOptions(args: string[]): ParsedOptions | { error: string } {
     help: command === '-h' || command === '--help',
   };
 
+  if (command === 'deck' && rest[0] && !rest[0].startsWith('-')) {
+    options.deckCommand = rest.shift()!;
+  }
   for (let index = 0; index < rest.length; index += 1) {
     const arg = rest[index];
-    if (arg === '--project') {
+    if (arg === '--deck') {
+      const value = rest[++index];
+      if (!value) return { error: '--deck requires a deck id' };
+      options.deck = value;
+    } else if (arg === '--json') {
+      options.json = true;
+    } else if (arg === '--project') {
       const value = rest[++index];
       if (!value) return { error: '--project requires a value' };
       options.project = value;
@@ -110,6 +128,7 @@ export async function runArtifactsCli(args: string[]): Promise<ArtifactCliResult
     process.stdout.write(USAGE);
     return { exitCode: options.command ? 0 : 1 };
   }
+  if (options.command === 'deck') return runDeckCommand(options);
   if (options.command !== 'create') return fail(`unknown artifacts command: ${options.command}`);
   if (!options.name) return fail('create requires --name <path>');
   if (!options.inputPath) return fail('create requires --input <file>');
@@ -148,5 +167,39 @@ export async function runArtifactsCli(args: string[]): Promise<ArtifactCliResult
       ? (error as { status?: number }).status
       : undefined;
     return fail(message, details, status);
+  }
+}
+
+async function runDeckCommand(options: ParsedOptions): Promise<ArtifactCliResult> {
+  if (options.deckCommand !== 'list' && options.deckCommand !== 'validate') {
+    return fail('usage: od artifacts deck list|validate --deck <deck-id>');
+  }
+  if (!options.deck) return fail(`deck ${options.deckCommand} requires --deck <deck-id>`);
+  try {
+    const daemonUrl = await resolveDaemonUrl(
+      options.daemonUrl === undefined ? {} : { flagUrl: options.daemonUrl },
+    );
+    const { id } = await resolveProjectArg(daemonUrl, options.project);
+    const resp = await fetch(
+      `${daemonUrl}/api/projects/${encodeURIComponent(id)}/artifacts/${encodeURIComponent(options.deck)}/deck`,
+    );
+    if (!resp.ok) return fail(`daemon ${resp.status}: ${await resp.text()}`, undefined, resp.status);
+    const deck = (await resp.json()) as DeckInspectResponse;
+    const exitCode = options.deckCommand === 'validate' && !deck.valid ? 1 : 0;
+    if (options.json) {
+      writeJson(deck);
+      return { exitCode };
+    }
+    const lines = deck.artboards.map((a) =>
+      options.deckCommand === 'list' || a.findings.length === 0
+        ? `${a.id}: ${a.file}${a.findings.length ? ' (invalid)' : ''}`
+        : `${a.id}: ${a.findings.map((f) => `[${f.id}] ${f.message}`).join(' ')}`,
+    );
+    for (const f of deck.findings) lines.push(`deck: [${f.id}] ${f.message}`);
+    if (options.deckCommand === 'validate') lines.push(deck.valid ? 'valid' : 'invalid');
+    process.stdout.write(`${lines.join('\n')}\n`);
+    return { exitCode };
+  } catch (error: any) {
+    return fail(error instanceof Error ? error.message : String(error));
   }
 }

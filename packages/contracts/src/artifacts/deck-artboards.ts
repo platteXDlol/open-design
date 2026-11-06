@@ -77,6 +77,12 @@ export function isDeckArtboardPath(
   return artboardId ? { artifactId: m[1]!, artboardId, file: m[2]! } : null;
 }
 
+/** True for any file belonging to an M2 artboard deck (slides, shared assets, manifest). */
+export function isArtboardDeckFile(projectPath: string): boolean {
+  const p = projectPath.replace(/\\/g, '/');
+  return isDeckArtboardPath(p) !== null || /^artifacts\/[^/]+\/(shared\/|manifest\.json$)/.test(p);
+}
+
 export function buildDeckManifestV2(input: {
   title: string;
   /** Artifact-relative artboard files, in slide order. */
@@ -297,3 +303,13 @@ export const ARTBOARD_SKELETON_HTML = `<!doctype html>
 </body>
 </html>
 `;
+
+/** `GET /api/projects/:id/artifacts/:artifactId/deck` — shared by the UI and `od artifacts deck`. */
+export interface DeckInspectResponse {
+  artifactId: string;
+  manifest: DeckManifestV2 | null;
+  artboards: Array<{ id: string; file: string; findings: ArtifactLintFinding[] }>;
+  /** Deck-level findings (slide count, missing files). */
+  findings: ArtifactLintFinding[];
+  valid: boolean;
+}

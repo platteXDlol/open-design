@@ -20,6 +20,7 @@ import {
   validateArtboardDeck,
   validateArtboardHtml,
   type ArtifactLintFinding,
+  type DeckInspectResponse,
   type DeckManifestV2,
 } from '@open-design/contracts';
 
@@ -142,5 +143,40 @@ export function createDeckArtboardTracker(opts: {
       }
       return results;
     },
+  };
+}
+
+/**
+ * Read-only check of one deck on disk: manifest, per-slide and deck findings.
+ * Backs `GET /api/projects/:id/artifacts/:artifactId/deck`. Null when the
+ * artifact id is unsafe or the deck does not exist.
+ */
+export function inspectDeckArtifact(projectRoot: string, artifactId: string): DeckInspectResponse | null {
+  if (!isDeckArtboardPath(`artifacts/${artifactId}/artboards/x.html`)) return null;
+  const dir = path.join(projectRoot, 'artifacts', artifactId);
+  const boardsDir = path.join(dir, 'artboards');
+  if (!existsSync(boardsDir)) return null;
+  let manifest: DeckManifestV2 | null = null;
+  try {
+    manifest = parseDeckManifestV2(JSON.parse(readFileSync(path.join(dir, 'manifest.json'), 'utf8')));
+  } catch {
+    manifest = null;
+  }
+  const files = readdirSync(boardsDir)
+    .map((f) => `artboards/${f}`)
+    .filter((f) => isDeckArtboardPath(`artifacts/${artifactId}/${f}`))
+    .sort();
+  const artboards = files.map((file) => ({
+    id: isDeckArtboardPath(`artifacts/${artifactId}/${file}`)!.artboardId,
+    file,
+    findings: validateArtboardHtml(readFileSync(path.join(dir, file), 'utf8')),
+  }));
+  const findings = validateArtboardDeck(manifest ?? buildDeckManifestV2({ title: artifactId, files }), files);
+  return {
+    artifactId,
+    manifest,
+    artboards,
+    findings,
+    valid: findings.length === 0 && artboards.every((a) => a.findings.length === 0),
   };
 }

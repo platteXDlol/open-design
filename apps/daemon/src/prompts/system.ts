@@ -38,7 +38,7 @@ import {
   SLIM_V2_ROLE_BOUNDARY_GUARD,
 } from './core-slim.js';
 import { renderDirectionIndexBlock, renderDirectionSpecBlock } from './directions.js';
-import { renderDeckFrameworkDirective } from './deck-framework.js';
+import { renderDeckDirective } from './deck-framework.js';
 import {
   MEDIA_USER_REPLY_CONTRACT,
   renderMediaGenerationContract,
@@ -1069,7 +1069,12 @@ export function composeSystemPrompt({
   const resolvedExclusiveSurface = resolveExclusiveSurface({ metadata, skillMode, skillModes });
   const resolvedExecutionProfile =
     executionProfile ?? executionProfileFromStreamFormat(streamFormat);
-  const deckFrameworkDirective = renderDeckFrameworkDirective(resolvedExecutionProfile);
+  // Blank decks get the M2 multi-artboard directive; the caller passes
+  // `deckFrameworkMode` when an existing single-file deck or seed owns it.
+  const deckFrameworkDirective = renderDeckDirective(
+    deckFrameworkMode ?? 'artboards',
+    resolvedExecutionProfile,
+  );
 
   // API/BYOK mode (streamFormat === 'plain'): mirrors the same fix from
   // `@open-design/contracts`'s composer. The daemon hits this path for

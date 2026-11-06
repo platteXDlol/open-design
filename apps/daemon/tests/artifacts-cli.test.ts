@@ -52,6 +52,52 @@ describe('od artifacts CLI', () => {
     return filePath;
   }
 
+  describe('deck', () => {
+    const deckResponse = (valid: boolean) => ({
+      artifactId: 'pitch-v1',
+      manifest: null,
+      artboards: [
+        { id: '01', file: 'artboards/01.html', findings: [] },
+        { id: '02', file: 'artboards/02.html', findings: valid ? [] : [{ severity: 'P0', id: 'placeholder', message: 'Placeholder text.', fix: 'Write real copy.' }] },
+      ],
+      findings: [],
+      valid,
+    });
+    const route = (valid: boolean) => async (url: string) => {
+      if (url.endsWith('/api/projects')) {
+        return new Response(JSON.stringify({ projects: [{ id: 'project-1', name: 'Demo' }] }), { status: 200 });
+      }
+      return new Response(JSON.stringify(deckResponse(valid)), { status: 200 });
+    };
+    const base = ['--daemon-url', 'http://127.0.0.1:17456', '--project', 'project-1', '--deck', 'pitch-v1'];
+
+    it('lists slides over the deck endpoint with --json (AC4)', async () => {
+      fetchMock.mockImplementation(route(true));
+      const result = await runArtifactsCli(['deck', 'list', ...base, '--json']);
+      expect(result.exitCode).toBe(0);
+      expect(fetchMock.mock.calls.at(-1)?.[0]).toBe(
+        'http://127.0.0.1:17456/api/projects/project-1/artifacts/pitch-v1/deck',
+      );
+      expect(JSON.parse(stdoutOutput.join('')).artboards).toHaveLength(2);
+    });
+
+    it('validate exits non-zero and names failing slides', async () => {
+      fetchMock.mockImplementation(route(false));
+      const result = await runArtifactsCli(['deck', 'validate', ...base]);
+      expect(result.exitCode).toBe(1);
+      expect(stdoutOutput.join('')).toContain('02: [placeholder]');
+    });
+
+    it('validate exits zero for a valid deck', async () => {
+      fetchMock.mockImplementation(route(true));
+      expect((await runArtifactsCli(['deck', 'validate', ...base])).exitCode).toBe(0);
+    });
+
+    it('requires --deck', async () => {
+      expect((await runArtifactsCli(['deck', 'list', '--project', 'project-1'])).exitCode).toBe(1);
+    });
+  });
+
   it('creates an artifact in an explicit project', async () => {
     const inputPath = await makeFile('deck.html', '<!doctype html><h1>Deck</h1>');
     fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {

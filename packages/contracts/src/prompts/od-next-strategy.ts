@@ -14,8 +14,7 @@ import {
 import { renderChatTurnHostProtocolInstructions } from './chat-turn-host-protocol.js';
 import type { ChatSessionMode } from '../api/chat.js';
 import {
-  renderDeckFrameworkDirective,
-  renderLegacyDeckCompatibilityDirective,
+  renderDeckDirective,
   type DeckFrameworkMode,
 } from './deck-framework.js';
 import type { OdNextDeviceFrameContextV2 } from './od-next-device-frame.js';
@@ -223,9 +222,11 @@ export function resolveOdNextDeckFrameworkMode(input: {
   if (input.taskType === 'ppt') {
     return input.hasSelectedDeckSeed || input.hasExistingDeckArtifact
       ? 'legacy_compatible'
-      : 'canonical';
+      : 'artboards';
   }
-  return input.deckIntent ? 'canonical' : undefined;
+  if (!input.deckIntent) return undefined;
+  // An existing single-file deck keeps its single-file scaffold.
+  return input.hasExistingDeckArtifact ? 'canonical' : 'artboards';
 }
 
 /**
@@ -581,14 +582,12 @@ export function composeOdNextStrategyStableRequestContextV2(
   // contain post-Build semantics should stop the run rather than ship.
   instructionText('runtime-plan-tool', context.planToolNote ?? undefined);
   const deckFrameworkMode = context.deckFrameworkMode
-    ?? (context.deckIntent ? 'canonical' : undefined);
+    ?? (context.deckIntent ? 'artboards' : undefined);
   if (deckFrameworkMode) {
     // This is static, host-owned protocol text rather than plugin or user
     // input. Its verification steps happen inside Build before handoff, so it
     // deliberately bypasses the guard for untrusted stable instructions.
-    const directive = deckFrameworkMode === 'legacy_compatible'
-      ? renderLegacyDeckCompatibilityDirective(executionProfile)
-      : renderDeckFrameworkDirective(executionProfile);
+    const directive = renderDeckDirective(deckFrameworkMode, executionProfile);
     blocks.push(
       `<od-next-context kind="instruction" name="deck-framework">\n${escaped(directive)}\n</od-next-context>`,
     );
