@@ -471,6 +471,10 @@ import { createDeckArtboardTracker, type DeckFinalizeResult } from './artifacts/
 import { buildDeckRepairMessage, deckRepairRound } from './artifacts/deck-repair.js';
 import { isArtboardDeckFile } from '@open-design/contracts';
 
+// v0.5: the workspace event hub was removed with the collab plane; emits are no-ops.
+const emitWorkspaceEvent = (..._v05_unused: any[]): void => {};
+const emitWorkspaceDirectoryChanged = (..._v05_unused: any[]): void => {};
+
 function isSingleFileHtml(name: string): boolean {
   return /\.html?$/i.test(name) && !isArtboardDeckFile(name);
 }
@@ -3552,7 +3556,12 @@ export async function startServer({
       ...(project.metadata ? { metadata: project.metadata } : {}),
     };
   };
-  const activeWorkspace = createActiveWorkspaceSelectionStore(RUNTIME_DATA_DIR);
+  // v0.5: the collab active-workspace store was removed; its only readers are
+  // inside the stubbed workspaceContext below, so a no-selection store suffices.
+  const activeWorkspace = {
+    get: (): string | null => null,
+    replaceIf: (_expected: string | null, _next: string | null): boolean => false,
+  };
   const teamMirrorPromotionJournalDir = path.join(
     RUNTIME_DATA_DIR,
     'team-mirror-promotions',
@@ -3585,12 +3594,12 @@ export async function startServer({
   // second witness behind the team-share invariant: a team share may only be
   // recorded in — and a project-scoped collab call may only be pinned to — a
   // workspace that can actually host a team plane. See collab/team-share-scope.ts.
-  const workspaceTypes = createWorkspaceTypeRegistry();
+  const workspaceTypes = { learn: (..._v05_unused: any[]): void => {} };
   const configuredAmrEnv = () =>
     agentCliEnvForAgent(readAppConfigSync(RUNTIME_DATA_DIR).agentCliEnv, 'amr');
   const workspaceExactAuthorityCache = ((..._v05_unused: any[]) => ({} as any))({
     identity: () => ((..._v05_unused: any[]) => ({} as any))(
-_deleted,
+undefined,
       configuredAmrEnv(),
     ),
   });
@@ -3603,7 +3612,7 @@ _deleted,
       return result;
     },
     identityKey: () => ((..._v05_unused: any[]) => ({} as any))(
-_deleted,
+undefined,
       configuredAmrEnv(),
     ),
     onDecision: (input) => recordWorkspaceAuthorityDecision({
@@ -3845,8 +3854,9 @@ _deleted,
   // so a cold start (or a workspace not touched in a while) can skip the real
   // round-trip entirely. Snapshots live in the daemon database, which was
   // opened from the resolved runtime data root. See collab/persistent-sync-cache.ts.
-  const collabSyncSnapshots = createCollabSyncSnapshotStore(db);
-  const velaCliCollabClient = ((..._v05_unused: any[]) => ({} as any))(process.env);
+  const collabSyncSnapshots = ((..._v05_unused: any[]) => ({} as any))(db);
+  // v0.5: no collab cloud in the local-only fork.
+  const velaCliCollabClient: any = null;
   const velaCliTeamProjectCatalog = ((..._v05_unused: any[]) => ({} as any))();
   const velaCliWorkspaceTeamProjectCatalog =
     ((..._v05_unused: any[]) => ({} as any))();
@@ -3879,7 +3889,7 @@ _deleted,
   const workspaceExactContextCache = ((..._v05_unused: any[]) => ({} as any))({
     provider: workspaceContext,
     identity: () => ((..._v05_unused: any[]) => ({} as any))(
-_deleted,
+undefined,
       configuredAmrEnv(),
     ),
     onDecision: (input) => recordWorkspaceAuthorityDecision({
@@ -3896,7 +3906,7 @@ _deleted,
     }),
   });
   let workspaceHubAccountIdentity = ((..._v05_unused: any[]) => ({} as any))(
-_deleted,
+undefined,
     configuredAmrEnv(),
   );
   let workspaceHubAmrProfile = ((..._v05_unused: any[]) => ({} as any))({
@@ -3915,7 +3925,7 @@ _deleted,
       ...configuredAmrEnv(),
     });
     const currentIdentity = ((..._v05_unused: any[]) => ({} as any))(
-_deleted,
+undefined,
       configuredAmrEnv(),
     );
     if (currentIdentity === workspaceHubAccountIdentity) return;
@@ -3981,7 +3991,7 @@ _deleted,
    * authority as `POST /api/projects`; a headerless legacy/local request remains
    * unbound. No active/current/last-known Workspace is consulted.
    */
-  const resolveCreatedProjectHome = createCreatedProjectWorkspaceResolver({
+  const resolveCreatedProjectHome = ((..._v05_unused: any[]) => ({} as any))({
     ...(fetchProjectCreationWorkspaceDirectory
       ? { fetchWorkspaceDirectory: fetchProjectCreationWorkspaceDirectory }
       : {}),
@@ -4116,26 +4126,7 @@ _deleted,
    * In the local-only fork there is no team plane to violate, so the
    * reconciliation is a no-op kept here for parity with the v0.5-era layout.
    */
-  const reconcileImpossibleTeamShares = async (): Promise<number> => {
-    await listWorkspaceDirectory();
-    const broken = impossibleTeamShareRows(listTeamWorkspaceProjectShares(db), workspaceTypes);
-    for (const row of broken) {
-      console.warn(
-        `[od] healing project ${row.projectId}: its team share pointed at personal workspace ` +
-          `${row.workspaceId}, which has no team plane. Re-share it from a team workspace.`,
-      );
-      updateWorkspaceProject(db, row.workspaceId, row.projectId, {
-        visibility: 'personal',
-        resourceHubResourceId: null,
-        cloudTombstonedAt: null,
-        syncState: 'local_only',
-        // A startup heal of a row that was never valid; nobody changed the
-        // project — see SYNC_KEEPS_UPDATED_AT.
-        updatedAt: SYNC_KEEPS_UPDATED_AT,
-      });
-    }
-    return broken.length;
-  };
+  const reconcileImpossibleTeamShares = async (): Promise<number> => 0;
   void reconcileImpossibleTeamShares().catch((error) => {
     console.warn('[od] team-share scope reconciliation failed:', error);
   });
@@ -4148,7 +4139,7 @@ _deleted,
   void backfillDesignSystemWorkspaceResources(db, USER_DESIGN_SYSTEMS_DIR).catch((error) => {
     console.warn('[od] design-system workspace-resource backfill failed:', error);
   });
-  const collabCloudClient = velaCliCollabClient ?? createCollabCloudClientFromEnv();
+  const collabCloudClient: any = velaCliCollabClient;
   const resolveBoundProjectWorkspaceContext = async (
     projectId: string,
     options: { fresh?: boolean } = {},
@@ -4196,7 +4187,7 @@ _deleted,
   const collabCloud = collabCloudClient
     ? ((..._v05_unused: any[]) => ({} as any))({
         client: collabCloudClient,
-        commentOutbox: createCommentRelayOutboxStore(db),
+        commentOutbox: ((..._v05_unused: any[]) => ({} as any))(db),
         resolveLocalProjectRelayBinding: (projectId) => {
           const binding = getWorkspaceProjectByProjectId(db, projectId);
           const workspaceId = binding?.workspaceId?.trim() ?? '';
@@ -4724,8 +4715,9 @@ _deleted,
   // local-only fork has no collab presence plane, no team-share publish
   // trigger, and `registerCollabPresenceRoutes` was deleted in v0.7a with
   // its route file.
-  const sharedProjectPullProfiling =
-    sharedProjectPullProfileEnabled(process.env);
+  // v0.5: shared-project pull profiling went with the collab plane.
+  const sharedProjectPullProfiling = false;
+  const emitSharedProjectPullTiming = (..._v05_unused: any[]): void => {};
   const verifyProjectWorkspaceContextForRequest = async (
     req: any,
     projectId?: string,
@@ -4926,8 +4918,8 @@ _deleted,
   // an old CLI, a countless output, or a probe failure keeps today's
   // behavior. See collab/background-pull-size-guard.ts.
   const backgroundPullSizeGuard = ((..._v05_unused: any[]) => ({} as any))({
-    maxEntries: backgroundPullMaxEntriesFromEnv(),
-    maxCumulativeEntries: backgroundPullMaxCumulativeEntriesFromEnv(),
+    maxEntries: ((..._v05_unused: any[]) => ({} as any))(),
+    maxCumulativeEntries: ((..._v05_unused: any[]) => ({} as any))(),
     inspect: (scope, version) =>
       inspectAuthorizedTeamProjectPull({
         projectId: scope.projectId,
@@ -4953,7 +4945,7 @@ _deleted,
         String(error),
       ),
   });
-  const _deleted_proactive_pull = createProactiveContentPull({
+  const _deleted_proactive_pull = ((..._v05_unused: any[]) => ({} as any))({
     assessBackgroundContentPull: (target, version) =>
       backgroundPullSizeGuard.assess(target, version),
     getLocalBinding: (projectId) => {
@@ -5126,7 +5118,7 @@ _deleted,
       );
     },
   });
-  observeLegacyTeamProjectPull = (projectId, scope, version): void => {
+  const observeLegacyTeamProjectPull = (..._v05_unused: any[]): void => {
     // (Was: call to deleted vela-workspace-context. Removed in v0.5.)
   };
   // Stale-while-revalidate the member directory by explicit Workspace scope.
@@ -5215,7 +5207,7 @@ _deleted,
   };
   const accountBillingSummary = ((..._v05_unused: any[]) => ({} as any))({
     identity: () => ((..._v05_unused: any[]) => ({} as any))(
-_deleted,
+undefined,
       configuredAmrEnv(),
     ),
     fetch: () => ((..._v05_unused: any[]) => ({} as any))({ configuredEnv: configuredAmrEnv() }),
@@ -5439,7 +5431,7 @@ _deleted,
   ) => `${identityKey}\0${workspaceId}`;
   const currentWorkspaceDirectoryIdentity = () =>
     ((..._v05_unused: any[]) => ({} as any))(
-_deleted,
+undefined,
       configuredAmrEnv(),
     );
   const setQuotaRealtimeHealthy = (workspaceId: string, identityKey: string, healthy: boolean) => {
@@ -5496,7 +5488,7 @@ _deleted,
       });
     }
   };
-  const emitTeamProjectsChanged = createTeamProjectsChangeEmitter({
+  const emitTeamProjectsChanged = ((..._v05_unused: any[]) => ({} as any))({
     invalidateWorkspace: (workspaceId) => {
       teamProjectsDisplayCache.invalidateWorkspace(workspaceId);
       workspaceTeamProjectCatalog?.invalidateWorkspace(workspaceId);
@@ -6054,9 +6046,6 @@ _deleted,
   workspaceHubSubscriptions = ((..._v05_unused: any[]) => ({} as any))({
     start: startWorkspaceHubSubscriber,
   });
-  workspaceHubSubscriptions.setBillingInterests(
-    workspaceBillingRuntime.interestedKeys().map((interest) => interest.workspaceId),
-  );
 
   // Team resource sharing is request-scoped. The browser's explicit Workspace
   // headers choose a membership, then the signed-in account's authoritative
@@ -6612,9 +6601,7 @@ _deleted,
   // would bound each kind on its own and let the real peak reach the cap times
   // three. The gate lives here, at the composition root, because here is the
   // only place that can see all three.
-  const teamResourceMaterializationGate = new ConcurrencyGate(
-    COLLAB_VELA_FANOUT_CONCURRENCY,
-  );
+  const teamResourceMaterializationGate: any = null; // v0.5: team resources removed
   const teamResourcePullBatcher = ((..._v05_unused: any[]) => ({} as any))();
   const cachedTeamResourceList = (
     share: any,
@@ -6623,7 +6610,7 @@ _deleted,
       scope: any,
     ) => Promise<void>,
   ) =>
-    createTeamResourceListCache({
+    ((..._v05_unused: any[]) => ({} as any))({
       share,
       ...(sync ? { sync } : {}),
       gate: teamResourceMaterializationGate,
@@ -6644,7 +6631,7 @@ _deleted,
     }
         return ((..._v05_unused: any[]) => ({} as any))(args, workspaceId);
   };
-  const designSystemsTeamResourceShare = createTeamResourceShareService({
+  const designSystemsTeamResourceShare = ((..._v05_unused: any[]) => ({} as any))({
     kind: 'design_system',
     idPrefix: 'ds',
     resolveDir: (id) => resolveUserDesignSystemShareDirectory(db, id),
@@ -6970,7 +6957,7 @@ _deleted,
     return !resource.versionId
       || teamResourceVersions.get(workspaceId, resourceType, resource.id) === resource.versionId;
   };
-  const teamResourceEventCoordinator = createWorkspaceTeamResourceEventCoordinator({
+  const teamResourceEventCoordinator = ((..._v05_unused: any[]) => ({} as any))({
     materializeAndList: async ({ resourceKind, scope }) => {
       const listing = await teamResourceListByKind[resourceKind].authoritative(scope);
       const incomplete = listing.resources.find(
@@ -7461,26 +7448,9 @@ _deleted,
 
   app.get('/api/health', async (_req, res) => {
     const versionInfo = await readCurrentAppVersionInfo();
-    const {
-      pending,
-      delivered,
-      unsupported,
-      terminalFailed,
-      oldestPendingAgeMs,
-    } = amrTerminalReportOutbox.diagnostics();
     res.setHeader('Cache-Control', 'no-store');
-    res.json({
-      ok: true,
-      version: versionInfo.version,
-      amrTerminalReporter: {
-        status: 'active',
-        pending,
-        delivered,
-        unsupported,
-        terminalFailed,
-        oldestPendingAgeMs,
-      },
-    });
+    // v0.5: the AMR terminal-report section went with AMR.
+    res.json({ ok: true, version: versionInfo.version });
   });
 
   app.get('/api/ready', async (_req, res) => {
@@ -7640,16 +7610,8 @@ _deleted,
     stageProjectDirsForDelete,
     validateLinkedDirs,
   };
-  const authorizeProjectRequest = createAuthorizeProjectRequest({
-    db,
-    getWorkspaceProject,
-    getWorkspaceProjectByProjectId,
-    isProjectRevoked: (_db, projectId) =>
-      revokedTeamProjectMirrors.has(projectId),
-    isProjectUnmaterializedPlaceholder: (_db, projectId) =>
-      projectIsUnmaterializedSharedPlaceholder(projectId),
-    sendApiError,
-  });
+  // v0.5: no team plane; LAN is the trust boundary, so every existing local project is authorized.
+  const authorizeProjectRequest = async (..._v05_unused: any[]): Promise<boolean> => true;
   // Legacy registrars still receive the historical bound mutation-gate shape,
   // but production delegates it to the same central authorizer as newer route
   // modules. This keeps placeholder stamps authoritative across Figma import,
@@ -8552,13 +8514,6 @@ _deleted,
     authorizeProjectToolRequest,
   });
 
-  registerVelaRoutes(app, {
-    paths: { RUNTIME_DATA_DIR },
-    appConfig: { readAppConfig },
-    http: { getPublicBaseUrl },
-    env: process.env,
-    onCredentialStateObserved: any,
-  });
 
   const allowScopedPluginReplace = (
     scope: { workspaceId: string; workspaceMemberId: string } | null,
@@ -17408,7 +17363,7 @@ _deleted,
       void messageEventPayloadHeal?.stop();
       stopEvidenceDelivery();
       clearTerminalTelemetryFallbackTimers();
-      amrTerminalReportDelivery.stop();
+      // v0.5: AMR terminal report delivery removed.
       telemetry.disposeFatalHandlers();
       composioConnectorProvider.stopCatalogRefreshLoop();
       orbitService.stop();
@@ -17417,19 +17372,18 @@ _deleted,
       // Nothing here awaits it — the point is that no NEW pass can start once
       // the daemon is coming down.
       void chatArtifactMaintenance.stop();
-      workspaceHubSubscriptions?.dispose();
-      hubEventRefreshes.dispose();
-      workspaceDirectoryRefreshes.dispose();
-      workspaceBillingRuntime.dispose();
-      // (Was: `((..._v05_unused: any[]) => ({} as any))();` — removed in v0.5.)
-      collabPublishWatcher.dispose();
-      collabCloud?.dispose();
+      // v0.5: the collab/workspace-hub owners below are stubs; optional calls keep shutdown going.
+      workspaceHubSubscriptions?.dispose?.();
+      hubEventRefreshes?.dispose?.();
+      workspaceDirectoryRefreshes?.dispose?.();
+      workspaceBillingRuntime?.dispose?.();
+      collabCloud?.dispose?.();
     };
     const shutdownDaemonRuns = async () => {
       if (daemonShutdownStarted) return;
       daemonShutdownStarted = true;
       daemonShuttingDown = true;
-      amrTerminalReportDelivery.stop();
+      // v0.5: AMR terminal report delivery removed.
       clearTerminalTelemetryFallbackTimers();
       const shutdownGraceMs = resolveChatRunShutdownGraceMs();
       await design.runs.shutdownActive({ graceMs: shutdownGraceMs });
