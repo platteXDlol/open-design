@@ -92,14 +92,6 @@ describe('/api/version', () => {
     expect(health).toEqual({
       ok: true,
       version: version.version?.version,
-      amrTerminalReporter: {
-        status: 'active',
-        pending: 0,
-        delivered: 0,
-        unsupported: 0,
-        terminalFailed: 0,
-        oldestPendingAgeMs: null,
-      },
     });
   });
 
