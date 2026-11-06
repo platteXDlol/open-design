@@ -2,6 +2,7 @@
 // in the local-only fork. The 19 v05-stubs symbols this file once imported
 // are now inline-replaced at their call sites; the call site replacements
 // match the v0.5 stub contracts (null/false/{ ok: true }).
+import { inspectDeckArtifact } from '../../artifacts/deck-artboard-tracker.js';
 import { createHash, randomUUID } from 'node:crypto';
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
@@ -6493,6 +6494,28 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
       /** @type {import('@open-design/contracts').DeleteProjectFolderResponse} */
       const body = { ok: true };
       res.json(body);
+    } catch (err: any) {
+      sendApiError(res, 400, 'BAD_REQUEST', String(err?.message || err));
+    }
+  });
+
+  // M2 deck: manifest + per-slide and deck findings. Same shape for UI and `od artifacts deck`.
+  app.get('/api/projects/:id/artifacts/:artifactId/deck', async (req, res) => {
+    try {
+      const project = getProject(db, req.params.id);
+      if (!project) {
+        sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'project not found');
+        return;
+      }
+      if (!await authorizeProjectRequest(req, res, project.id, { mode: 'read' })) return;
+      const projectRoot = resolveProjectDir(PROJECTS_DIR, project.id, project.metadata);
+      const deck = inspectDeckArtifact(projectRoot, String(req.params.artifactId));
+      if (!deck) {
+        sendApiError(res, 404, 'NOT_FOUND', 'deck not found');
+        return;
+      }
+      res.setHeader('Cache-Control', 'no-store');
+      res.json(deck);
     } catch (err: any) {
       sendApiError(res, 400, 'BAD_REQUEST', String(err?.message || err));
     }

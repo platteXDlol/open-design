@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ARTBOARD_SKELETON_HTML } from '@open-design/contracts';
-import { createDeckArtboardTracker } from '../../src/artifacts/deck-artboard-tracker.js';
+import { createDeckArtboardTracker, inspectDeckArtifact } from '../../src/artifacts/deck-artboard-tracker.js';
 
 const slide = (body: string) => ARTBOARD_SKELETON_HTML.replace('<!-- SLOT: slide content -->', body);
 
@@ -23,6 +23,17 @@ describe('deck artboard tracker (M2 AC1–AC3)', () => {
     events = [];
   });
   afterEach(() => rmSync(root, { recursive: true, force: true }));
+
+  it('inspects a deck on disk for the API/CLI (AC4)', () => {
+    for (const n of ['01', '02', '03']) write(`artifacts/deck-v1/artboards/${n}.html`, slide(`<h1>Slide ${n}</h1>`));
+    expect(inspectDeckArtifact(root, 'deck-v1')!.valid).toBe(true);
+    write('artifacts/deck-v1/artboards/02.html', slide('<h1>TODO</h1>'));
+    const r = inspectDeckArtifact(root, 'deck-v1')!;
+    expect(r.valid).toBe(false);
+    expect(r.artboards.find((a) => a.id === '02')!.findings.map((f) => f.id)).toContain('placeholder');
+    expect(inspectDeckArtifact(root, '../etc')).toBeNull();
+    expect(inspectDeckArtifact(root, 'missing')).toBeNull();
+  });
 
   it('emits one artboard event per landed slide and writes a streaming manifest (AC2)', () => {
     const t = createDeckArtboardTracker({ projectRoot: root, emit: (e) => events.push(e) });

@@ -62,7 +62,7 @@ const SECTION_MARKERS = [
   ['plugin-block', '## Active plugin'],
   ['active-stage-blocks', '## Active stage:'],
   ['project-metadata', '## Project metadata'],
-  ['deck-framework', '# Slide deck — fixed framework'],
+  ['deck-framework', '# Slide deck — '],
   ['maybe-deck-framework', '## If this brief is a slide deck / keynote / presentation'],
   ['media-generation-contract', '## Media generation contract'],
   ['media-dispatch-hint', '## Media generation (if asked)'],

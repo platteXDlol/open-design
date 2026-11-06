@@ -148,14 +148,14 @@ describe('DISCOVERY_AND_PHILOSOPHY (contracts copy) — prompt routing parity', 
   });
 
   it('does not make index.html the fixed deck-framework destination', () => {
-    const prompt = composeSystemPrompt({ skillMode: 'deck' });
+    const prompt = composeSystemPrompt({ skillMode: 'deck', deckFrameworkMode: 'canonical' });
 
     expect(prompt).not.toContain('Copy the canonical skeleton below as index.html');
     expect(prompt).toContain('semantically named deck HTML file');
   });
 
   it('pins the data chart discipline inside the deck framework (#907)', () => {
-    const prompt = composeSystemPrompt({ skillMode: 'deck' });
+    const prompt = composeSystemPrompt({ skillMode: 'deck', deckFrameworkMode: 'canonical' });
 
     expect(prompt).toContain('## Data chart discipline');
     expect(prompt).toContain('calc(var(--v) / var(--max)');
@@ -164,7 +164,7 @@ describe('DISCOVERY_AND_PHILOSOPHY (contracts copy) — prompt routing parity', 
   });
 
   it('pins the mermaid theme discipline inside the deck framework (dark decks)', () => {
-    const prompt = composeSystemPrompt({ skillMode: 'deck' });
+    const prompt = composeSystemPrompt({ skillMode: 'deck', deckFrameworkMode: 'canonical' });
 
     expect(prompt).toContain('## Mermaid diagram theme discipline');
     expect(prompt).toContain("theme: 'dark'");

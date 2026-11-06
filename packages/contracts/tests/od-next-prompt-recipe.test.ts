@@ -65,7 +65,7 @@ describe('OD Next V2 prompt recipe', () => {
     expect(prompt).toMatch(/blocked[\s\S]{0,400}canceled|canceled[\s\S]{0,400}blocked/);
   });
 
-  it('pins the canonical Deck Protocol v1 framework into PPT requests only', () => {
+  it('pins the multi-artboard deck directive into blank PPT requests only', () => {
     const pptRecipe: OdNextStrategyRequestRecipeV2 = {
       ...recipe,
       taskType: 'ppt',
@@ -76,11 +76,9 @@ describe('OD Next V2 prompt recipe', () => {
     const bundledTaskSkill = composeOdNextStrategyBundleHeadV2(pptRecipe)
       .sessionSkills.taskTypeSkill.body;
 
-    expect(prompt).toContain('OD Deck Protocol v1');
-    expect(prompt).toContain('data-od-deck-protocol="1"');
-    expect(prompt).toContain("type: 'od:deck-ready'");
-    expect(prompt).toContain("type: 'od:slide-state'");
-    expect(prompt).toContain('## Final handoff — filesystem');
+    expect(prompt).toContain('one file per slide');
+    expect(prompt).toContain('data-od-artboard="1"');
+    expect(prompt).not.toContain('data-od-deck-protocol="1"');
     expect(bundledTaskSkill).toBe(pptRecipe.taskSkill);
     expect(bundledTaskSkill).not.toContain('OD Deck Protocol v1');
     expect(prompt.match(/^## Task Skill —/gm)).toHaveLength(1);
@@ -93,14 +91,13 @@ describe('OD Next V2 prompt recipe', () => {
       deckIntent: true,
     });
     expect(prototypeDeckPrompt).toContain('name="deck-framework"');
-    expect(prototypeDeckPrompt).toContain('data-od-deck-protocol="1"');
-    expect(prototypeDeckPrompt).toContain("type: 'od:deck-ready'");
+    expect(prototypeDeckPrompt).toContain('data-od-artboard="1"');
 
     const stableDeckContext = composeOdNextStrategyStableRequestContextV2({
       deckIntent: true,
     });
     expect(stableDeckContext).toContain('name="deck-framework"');
-    expect(stableDeckContext).toContain('data-od-deck-protocol="1"');
+    expect(stableDeckContext).toContain('data-od-artboard="1"');
 
     const textArtifactRecipe: OdNextStrategyRequestRecipeV2 = {
       ...pptRecipe,
@@ -126,7 +123,7 @@ describe('OD Next V2 prompt recipe', () => {
     const pptPromptWithMatchingSignal = composeOdNextStrategyRequestPromptV2(pptRecipe, {
       deckIntent: true,
     });
-    expect(pptPromptWithMatchingSignal.match(/data-od-deck-protocol="1"/g)).toHaveLength(1);
+    expect(pptPromptWithMatchingSignal.match(/# Slide deck — one file per slide/g)).toHaveLength(1);
   });
 
   it('preserves selected and existing deck scaffolds instead of injecting a second runtime', () => {
@@ -151,7 +148,7 @@ describe('OD Next V2 prompt recipe', () => {
       expect(text).not.toContain("type: 'od:slide-state'");
     }
 
-    expect(resolveOdNextDeckFrameworkMode({ taskType: 'ppt' })).toBe('canonical');
+    expect(resolveOdNextDeckFrameworkMode({ taskType: 'ppt' })).toBe('artboards');
     expect(resolveOdNextDeckFrameworkMode({
       taskType: 'ppt',
       hasSelectedDeckSeed: true,

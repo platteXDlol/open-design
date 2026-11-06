@@ -1,4 +1,11 @@
 import { DECK_PROTOCOL_V1_INLINE_RUNTIME } from '../runtime/deck-protocol.js';
+import {
+  ARTBOARD_HEIGHT,
+  ARTBOARD_MAX_BYTES,
+  ARTBOARD_SKELETON_HTML,
+  ARTBOARD_WIDTH,
+  DECK_MIN_ARTBOARDS,
+} from '../artifacts/deck-artboards.js';
 
 /**
  * Stable deck framework injected into the system prompt when the active skill
@@ -359,7 +366,13 @@ ${DECK_PROTOCOL_V1_INLINE_RUNTIME}
 </html>`;
 
 export type DeckFrameworkHandoffProfile = 'filesystem' | 'text_artifact';
-export type DeckFrameworkMode = 'canonical' | 'legacy_compatible';
+/**
+ * `artboards` = M2 multi-file deck (blank deck, filesystem runtime);
+ * `canonical` = single-file scaffold (existing single-file deck, or a runtime
+ * that can only return one text artifact); `legacy_compatible` = a template
+ * seed or legacy deck owns the scaffold.
+ */
+export type DeckFrameworkMode = 'artboards' | 'canonical' | 'legacy_compatible';
 
 const DECK_FRAMEWORK_BODY = `# Slide deck — fixed framework (this is non-negotiable for deck mode)
 
@@ -580,6 +593,63 @@ export function renderLegacyDeckCompatibilityDirective(
   profile: DeckFrameworkHandoffProfile,
 ): string {
   return `${LEGACY_DECK_COMPATIBILITY_BODY}\n\n${renderDeckHandoff(profile)}`;
+}
+
+// Slide-content rules shared with the single-file framework (density, charts,
+// diagrams, Mermaid) so both deck shapes are held to one text.
+const DECK_CONTENT_DISCIPLINE = DECK_FRAMEWORK_BODY.slice(
+  DECK_FRAMEWORK_BODY.indexOf('## Density and overflow discipline'),
+  DECK_FRAMEWORK_BODY.indexOf('## Pre-handoff self-check'),
+).trim();
+
+const ARTBOARD_DECK_BODY = `# Slide deck — one file per slide (multi-artboard deck)
+
+Write this deck as separate slide files, not one HTML document. The host streams each slide into the viewer as it lands and validates every file.
+
+## Files
+
+- Pick a short deck id (letters, digits, \`-\`), e.g. \`pitch-v1\`. Every file lives under \`artifacts/<deck-id>/\`.
+- \`artifacts/<deck-id>/shared/theme.css\` — write this FIRST. All design tokens (colors, fonts, spacing) and shared slide classes live here, once. Use the active design system's tokens when one is provided.
+- \`artifacts/<deck-id>/artboards/NN-<slug>.html\` — one file per slide, zero-padded order prefix (\`01-title.html\`, \`02-problem.html\`, …). Slide order = filename order.
+- Do not write \`manifest.json\`; the host generates it.
+
+## Each slide file
+
+Start every slide from this skeleton and fill only the slot. Keep the \`data-od-artboard="1"\` marker, the \`../shared/theme.css\` link, the single \`<main class="artboard" data-od-slide-root>\` root, and the fit script unchanged.
+
+\`\`\`html
+${ARTBOARD_SKELETON_HTML.trim()}
+\`\`\`
+
+Rules the host checks on every slide:
+- A complete HTML document, at most ${ARTBOARD_MAX_BYTES / 1024} KB.
+- Exactly one \`data-od-slide-root\` element; content designed for a fixed ${ARTBOARD_WIDTH}×${ARTBOARD_HEIGHT} canvas.
+- No placeholder text (TODO, TBD, lorem ipsum, "Your text here").
+- No third-party URLs except Google Fonts / Bunny Fonts. Inline SVG for icons and charts; no remote images or scripts.
+- At least ${DECK_MIN_ARTBOARDS} slides. If the user asked for a number of slides, write exactly that many.
+
+${DECK_CONTENT_DISCIPLINE}
+
+## Before you finish
+
+Run \`od artifacts deck validate --deck <deck-id>\` if the \`od\` CLI is available and fix every finding. Otherwise re-read each slide against the rules above. If the host later sends you validation findings, fix only the named slides and keep the others unchanged.`;
+
+export function renderArtboardDeckDirective(): string {
+  return ARTBOARD_DECK_BODY;
+}
+
+/**
+ * The one entry point every prompt path (legacy, BYOK, OD Next) uses to turn a
+ * deck mode into directive text. Multi-file decks need a filesystem runtime;
+ * a text-artifact runtime gets the single-file scaffold instead.
+ */
+export function renderDeckDirective(
+  mode: DeckFrameworkMode,
+  profile: DeckFrameworkHandoffProfile,
+): string {
+  if (mode === 'legacy_compatible') return renderLegacyDeckCompatibilityDirective(profile);
+  if (mode === 'artboards' && profile === 'filesystem') return renderArtboardDeckDirective();
+  return renderDeckFrameworkDirective(profile);
 }
 
 /**
