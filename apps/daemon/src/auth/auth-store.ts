@@ -45,7 +45,7 @@ export function createAuthStore(db: Db) {
   const userById = (id: string) => toUser(db.prepare(`SELECT * FROM auth_users WHERE id = ?`).get(id));
 
   return {
-    upsertUser(c: { issuer: string; sub: string; email?: string | null; name?: string | null }): AuthUser {
+    upsertUser(c: { issuer: string; sub: string; email?: string | null | undefined; name?: string | null | undefined }): AuthUser {
       const id = userIdFromClaims(c.issuer, c.sub);
       const count = (db.prepare(`SELECT COUNT(*) AS n FROM auth_users`).get() as { n: number }).n;
       db.prepare(`
