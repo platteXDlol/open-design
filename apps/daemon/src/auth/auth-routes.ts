@@ -98,7 +98,10 @@ export function registerAuthRoutes(app: Express, opts: {
       const claims = await adapter.exchange(new URL(req.originalUrl, publicUrl), state, entry.verifier);
       const hadAdmin = store.firstAdmin() !== null;
       const user = store.upsertUser(claims);
-      if (!hadAdmin && user.isAdmin) opts.onFirstAdmin?.(user.id);
+      if (!hadAdmin && user.isAdmin) {
+        // A failed data adoption must not block the admin from signing in.
+        try { opts.onFirstAdmin?.(user.id); } catch (e) { console.warn('[auth] adopting local data failed', e); }
+      }
       setSession(res, user.id);
       res.redirect(302, '/');
     } catch {

@@ -48,6 +48,7 @@ import {
 } from './runtimes/run-event-payload-budget.js';
 import { migrateStrategyTaskStore } from './strategies/task-store.js';
 import { observeRead } from './services/daemon-health.js';
+import { currentRequestUserId, resolveUserId } from './storage/user-scope.js';
 
 type SqliteDb = Database.Database;
 type DbRow = Record<string, any>;
@@ -964,7 +965,13 @@ export function listProjects(db: SqliteDb) {
         ORDER BY updated_at DESC`,
     )
     .all() as DbRow[];
-  return rows.map(normalizeProject);
+  return rows.filter(visibleToRequestUser).map(normalizeProject);
+}
+
+/** v7: inside a request, a user only sees their own projects; background work (no context) sees all. */
+function visibleToRequestUser(row: DbRow): boolean {
+  const user = currentRequestUserId();
+  return user === null || (row.userId ?? 'local') === user;
 }
 
 /**
@@ -994,7 +1001,7 @@ export function listUnboundProjects(db: SqliteDb) {
         ORDER BY p.updated_at DESC`,
     )
     .all() as DbRow[];
-  return rows.map(normalizeProject);
+  return rows.filter(visibleToRequestUser).map(normalizeProject);
 }
 
 export function getWorkspaceProject(db: SqliteDb, workspaceId: string, projectId: string) {
@@ -1889,7 +1896,7 @@ export function getProject(db: SqliteDb, id: string) {
   const row = db
     .prepare(`SELECT ${PROJECT_COLS} FROM projects WHERE id = ?`)
     .get(id) as DbRow | undefined;
-  return row ? normalizeProject(row) : null;
+  return row && visibleToRequestUser(row) ? normalizeProject(row) : null;
 }
 
 export function insertProject(db: SqliteDb, p: DbRow) {
@@ -1906,7 +1913,7 @@ export function insertProject(db: SqliteDb, p: DbRow) {
     p.pendingPrompt ?? null,
     p.metadata ? JSON.stringify(p.metadata) : null,
     p.customInstructions ?? null,
-    p.userId ?? 'local',
+    p.userId ?? resolveUserId(),
     p.createdAt,
     p.updatedAt,
   );

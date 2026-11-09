@@ -12,13 +12,14 @@ afterEach(() => { close?.(); close = null; });
 async function serve(enabled: boolean) {
   const store = createAuthStore(new Database(':memory:'));
   const app = express();
-  app.use(createAuthMiddleware({ store, enabled }));
+  const runOwner = { id: '' };
+  app.use(createAuthMiddleware({ store, enabled, toolTokenOwner: (t) => (t === 'tool-run-1' ? runOwner.id : null) }));
   app.get('/api/health', (_q, r) => { r.json({ ok: true }); });
   app.get('/api/auth/login', (_q, r) => { r.json({ login: true }); });
   app.get('/api/whoami', async (_q, r) => { await new Promise((x) => setTimeout(x, 5)); r.json({ user: resolveUserId({}) }); });
   app.get('/', (_q, r) => { r.send('app'); });
   const s = app.listen(0); close = () => s.close();
-  return { store, url: `http://127.0.0.1:${(s.address() as AddressInfo).port}` };
+  return { store, runOwner, url: `http://127.0.0.1:${(s.address() as AddressInfo).port}` };
 }
 
 describe('auth middleware (v7)', () => {
@@ -48,5 +49,13 @@ describe('auth middleware (v7)', () => {
     const viaBearer = await fetch(`${url}/api/whoami`, { headers: { authorization: `Bearer ${token}` } });
     expect(await viaBearer.json()).toEqual({ user: b.id });
     expect((await fetch(`${url}/api/whoami`, { headers: { authorization: 'Bearer odt_nope' } })).status).toBe(401);
+  });
+
+  it('AC4: a run-scoped tool token acts as the run owner', async () => {
+    const { url, store, runOwner } = await serve(true);
+    runOwner.id = store.upsertUser({ issuer: 'i', sub: 'owner' }).id;
+    const r = await fetch(`${url}/api/whoami`, { headers: { authorization: 'Bearer tool-run-1' } });
+    expect(await r.json()).toEqual({ user: runOwner.id });
+    expect((await fetch(`${url}/api/whoami`, { headers: { authorization: 'Bearer tool-other' } })).status).toBe(401);
   });
 });

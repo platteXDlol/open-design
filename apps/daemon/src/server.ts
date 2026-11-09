@@ -743,6 +743,10 @@ import { configureDiagnosticsEvidence } from './services/diagnostics-evidence.js
 import { beginDaemonHealthSession } from './services/daemon-health.js';
 import { readSqlitePageStats } from './storage/db-inspect.js';
 import { migrateUserPrefixSync } from './storage/user-prefix-migration.js';
+import { createAuthMiddleware } from './auth/auth-middleware.js';
+import { loadOidcConfig, openIdClientAdapter, registerAuthRoutes } from './auth/auth-routes.js';
+import { createAuthStore } from './auth/auth-store.js';
+import { adoptLocalUserData } from './auth/adopt-local-user.js';
 import { currentProjectsRoot, resolveUserId, resolveUserProjectsRoot } from './storage/user-scope.js';
 import {
   CHAT_SCROLL_FORENSICS_PATH,
@@ -2977,7 +2981,7 @@ export async function startServer({
   const apiTokenAuthEnabled = apiToken.length > 0 && !apiAuthDisabled;
   const isApiTokenAuthorization = (authorization: string | undefined): boolean =>
     apiTokenAuthEnabled && apiTokenAuthorizationMatches(authorization, apiToken);
-  if (!isLoopbackHostname(host) && apiToken.length === 0 && !apiAuthDisabled) {
+  if (!isLoopbackHostname(host) && apiToken.length === 0 && !apiAuthDisabled && !loadOidcConfig(process.env)) {
     throw new Error(
       `OD_BIND_HOST=${host} requires OD_API_TOKEN to be set. ` +
       `Generate one with \`openssl rand -hex 32\` and re-launch. ` +
@@ -3005,6 +3009,10 @@ export async function startServer({
       console.warn('[runs] leftover agent process reap failed', error);
     });
 
+  const db = openDatabase(PROJECT_ROOT, { dataDir: RUNTIME_DATA_DIR });
+  // v7 SSO: off unless OD_OIDC_* + OD_PUBLIC_URL are set (malformed values fail boot).
+  const oidcConfig = loadOidcConfig(process.env);
+  const authStore = createAuthStore(db);
   const app = express();
   installRouteRegistrationGuard(app);
   // Clipper page captures are self-contained HTML with inlined images plus a
@@ -3030,6 +3038,25 @@ export async function startServer({
   // `res.ok` and the export continues without the evidence.
   app.use(CHAT_SCROLL_FORENSICS_PATH, chatScrollForensicsBodyParser);
   app.use(express.json({ limit: '4mb' }));
+  app.use(createAuthMiddleware({
+    store: authStore,
+    enabled: oidcConfig !== null,
+    toolTokenOwner: (token) => {
+      const v = toolTokenRegistry.validate(token);
+      return v.ok ? (getProject(db, v.grant.projectId)?.userId ?? null) : null;
+    },
+  }));
+  registerAuthRoutes(app, {
+    store: authStore,
+    enabled: oidcConfig !== null,
+    publicUrl: oidcConfig?.publicUrl ?? 'http://127.0.0.1',
+    adapter: oidcConfig ? openIdClientAdapter(oidcConfig) : null,
+    onFirstAdmin: (adminId) => adoptLocalUserData({ runtimeDataDir: RUNTIME_DATA_DIR, db, adminId }),
+  });
+  if (oidcConfig && process.env.OD_RESET_ADMIN === '1') {
+    const resetUrl = new URL(`/api/auth/admin-reset?token=${authStore.createAdminResetToken(15 * 60_000)}`, oidcConfig.publicUrl);
+    console.warn(`[auth] OD_RESET_ADMIN=1: one-time admin login link (15 min): ${resetUrl.href}`);
+  }
   const projectPreviewScopes = createProjectPreviewScopeRegistry();
 
   // Plan §3.K1 — API-token middleware.
@@ -3045,7 +3072,8 @@ export async function startServer({
   // browser iframes can load HTML/CSS/JS without privileged headers.
   // Rich daemon status stays authenticated because it includes local
   // runtime paths.
-  if (apiTokenAuthEnabled) {
+  // With SSO on, per-user sessions/tokens replace the single shared API token gate.
+  if (apiTokenAuthEnabled && !oidcConfig) {
     const openProbePaths = new Set([
       '/health',
       '/api/health',
@@ -3297,7 +3325,6 @@ export async function startServer({
     dataRoot: RUNTIME_DATA_DIR,
     previousLogPath: resolveDaemonPreviousLogPath(runtime),
   });
-  const db = openDatabase(PROJECT_ROOT, { dataDir: RUNTIME_DATA_DIR });
   daemonHealth?.setStorageProbe(() => readSqlitePageStats({ db, file: db.name }));
   const amrTerminalReportOutbox = ((..._v05_unused: any[]) => ({} as any))(db);
   const amrTerminalReportDelivery = ((..._v05_unused: any[]) => ({} as any))({

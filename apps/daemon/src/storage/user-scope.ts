@@ -31,6 +31,11 @@ function assertSafeUserId(id: string): string {
   return id;
 }
 
+/** The authenticated user of the current request, or null outside a request (background work). */
+export function currentRequestUserId(): string | null {
+  return requestUser.getStore() ?? null;
+}
+
 export function runWithUser<T>(userId: string, fn: () => T): T {
   return requestUser.run(assertSafeUserId(userId), fn);
 }

@@ -14,19 +14,26 @@ export function readCookie(req: Request, name: string): string | null {
   return null;
 }
 
-export function userForRequest(store: AuthStore, req: Request): AuthUser | null {
+/** Resolves a daemon-issued run-scoped tool token to the user who owns the run's project. */
+export type ToolTokenOwner = (token: string) => string | null;
+
+export function userForRequest(store: AuthStore, req: Request, toolTokenOwner?: ToolTokenOwner): AuthUser | null {
   const auth = req.headers.authorization ?? '';
   if (auth.startsWith('Bearer odt_')) return store.userForApiToken(auth.slice(7));
+  if (auth.startsWith('Bearer ') && toolTokenOwner) {
+    const owner = toolTokenOwner(auth.slice(7).trim());
+    return owner ? store.getUser(owner) : null;
+  }
   const sid = readCookie(req, SESSION_COOKIE);
   return sid ? store.userForSession(sid) : null;
 }
 
-export function createAuthMiddleware({ store, enabled }: { store: AuthStore; enabled: boolean }) {
+export function createAuthMiddleware({ store, enabled, toolTokenOwner }: { store: AuthStore; enabled: boolean; toolTokenOwner?: ToolTokenOwner }) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!enabled) return next();
     const p = req.path;
     if (OPEN_API.has(p) || p.startsWith('/api/auth/')) return next();
-    const user = userForRequest(store, req);
+    const user = userForRequest(store, req, toolTokenOwner);
     if (user) {
       (req as Request & { authUser?: AuthUser }).authUser = user;
       return runWithUser(user.id, next);
