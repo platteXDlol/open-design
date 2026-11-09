@@ -41,6 +41,12 @@ describe('validateArtboardHtml (AC3)', () => {
     expect(ids(slide('<p>Price: TBD</p>'))).toContain('placeholder');
   });
 
+  it('ignores placeholder words in markup, styles and scripts (real-model false positive)', () => {
+    expect(ids(slide('<ul><li class="task todo">Ship landing page</li></ul>'))).not.toContain('placeholder');
+    expect(ids(slide('<style>.todo{color:red}</style><p>Done</p>'))).not.toContain('placeholder');
+    expect(ids(slide('<script>const todo = 1;</script><p>Done</p>'))).not.toContain('placeholder');
+  });
+
   it('rejects third-party URLs but allows approved font CDNs and data URIs', () => {
     expect(ids(slide('<img src="https://example.com/a.png">'))).toContain('third-party-url');
     expect(ids(slide('<script src="//cdn.evil.dev/x.js"></script>'))).toContain('third-party-url');

@@ -172,6 +172,15 @@ porting, pan/zoom canvas (M4), tweaks/comments per artboard.
 
 Steps 4–5 may split into a second PR if the diff gets large.
 
+## Manual check (2026-11-09)
+
+Run: isolated tools-dev runtime, `od project create` with `{"kind":"deck"}`, `od run start --agent opencode --model hlc/hlc-coding-5.5`, eval brief `deck-5-saas-pitch`.
+
+- 5 `artboard` events streamed (01-cover … 05-contact) before the run ended; files under `artifacts/shiplane-pitch/artboards/` + `shared/theme.css`; manifest `version: 2`, `renderer: deck-artboards`. Sizes 2.7–8.9 KB (limit 24 KB).
+- mustContain Pricing/Demo/Contact present; no third-party URLs.
+- Finalize flagged `03-demo` as `placeholder` because of a CSS class `task todo` → the daemon started one repair run (same model), after which `od artifacts deck validate` returned valid and the manifest `complete`. The finding was a false positive: the placeholder scan now reads only rendered text (fix + test in `packages/contracts/tests/deck-artboards.test.ts`).
+- The agent never called `od artifacts deck validate` itself; daemon-side finalize + repair covered it.
+
 ## Decision log
 
 | # | Decision | Chosen | Rationale |
