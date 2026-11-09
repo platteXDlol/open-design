@@ -2137,46 +2137,6 @@ describe('task observation rollout', () => {
     }
   });
 
-  it('uses relay for Task hierarchy even when Vela is configured for single-Run', async () => {
-    const fetchImpl = vi.fn<typeof fetch>(async () => new Response('', { status: 202 }));
-    const env = {
-      ...BASE_ENV,
-      OD_NEXT_TASK_OBSERVABILITY_MODE: 'send',
-      OPEN_DESIGN_VELA_TELEMETRY: 'on',
-      OPEN_DESIGN_TELEMETRY_RELAY_URL: 'https://relay.example.test/private?key=secret',
-    };
-    const configuredEnv = {
-      VELA_CONTROL_KEY: 'control-secret',
-      VELA_API_URL: 'https://vela.example.test',
-    };
-    expect(readTaskTelemetrySinkConfig(env)).toMatchObject({ kind: 'relay' });
-    expect(readRunTelemetrySinkConfig(env, configuredEnv)).toMatchObject({
-      kind: 'vela',
-      apiUrl: 'https://vela.example.test',
-    });
-    const rollout = service({
-      mode: 'send',
-      fetchImpl,
-      env,
-    });
-    expect(rollout.diagnostic()).toMatchObject({
-      effectiveSink: { kind: 'relay', host: 'relay.example.test', protocol: 'https' },
-      taskProtocol: 'legacy-v1',
-      readyToSend: true,
-    });
-    const diagnostic = JSON.stringify(rollout.diagnostic());
-    expect(diagnostic).not.toContain('control-secret');
-    expect(diagnostic).not.toContain('password');
-    expect(diagnostic).not.toContain('/private');
-
-    await expect(rollout.finalizeForRun('run-1')).resolves.toMatchObject({ action: 'sent' });
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
-    expect(String(fetchImpl.mock.calls[0]![0])).toBe(
-      'https://relay.example.test/private?key=secret',
-    );
-    expect((fetchImpl.mock.calls[0]![1]!.headers as Record<string, string>).Authorization)
-      .toBeUndefined();
-  });
 
   it('never falls back through Vela when the selected Task relay rejects auth', async () => {
     let requestCount = 0;

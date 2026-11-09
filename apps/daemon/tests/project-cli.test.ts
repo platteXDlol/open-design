@@ -399,33 +399,6 @@ describe('od project CLI', () => {
     });
   });
 
-  it('od project list without --workspace resolves the signed-in workspace automatically (#6679)', async () => {
-    stub = await startProjectStubServer();
-
-    const result = await runCli(['project', 'list', '--json', '--daemon-url', stub.baseUrl]);
-
-    expect(result.code).toBe(0);
-    expect(result.stderr).toBe('');
-    const data = JSON.parse(result.stdout);
-    expect(data.projects).toEqual([
-      { id: 'bound-project-1', name: 'Bound Project One', skillId: 'skill-1' },
-      { id: 'bound-project-2', name: 'Bound Project Two', skillId: 'skill-2' },
-    ]);
-    // Should hit both the directory resolver and the workspace-scoped catalog.
-    expect(stub.requests).toHaveLength(2);
-    expect(stub.requests[0]).toMatchObject({
-      method: 'GET',
-      url: '/api/workspace/directory',
-    });
-    expect(stub.requests[1]).toMatchObject({
-      method: 'GET',
-      url: '/api/workspaces/ws-personal/projects',
-    });
-    expect(stub.requests[1]!.headers).toMatchObject({
-      'x-od-workspace-id': 'ws-personal',
-      'x-od-workspace-member-id': 'mem-personal',
-    });
-  });
 
   it('od project list with explicit --workspace routes to the workspace-scoped catalog (#6679)', async () => {
     stub = await startProjectStubServer();
@@ -515,10 +488,8 @@ describe('od project CLI', () => {
     expect(result.stderr).toBe('');
     const data = JSON.parse(result.stdout);
     expect(data.projects).toEqual([{ id: 'unbound-1', name: 'Unbound One' }]);
-    // Fallback path fires: directory probed then unbound catalog.
-    const dirReq = requests.find((r) => r.method === 'GET' && r.url === '/api/workspace/directory');
+    // v0.5: no workspace directory probe; the CLI reads the unbound catalog directly.
     const catalogReq = requests.find((r) => r.method === 'GET' && r.url === '/api/projects');
-    expect(dirReq).toBeDefined();
     expect(catalogReq).toBeDefined();
   });
 
