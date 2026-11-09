@@ -3,10 +3,12 @@ import { cliAuthToken, withDaemonAuth } from '../src/cli-auth-fetch.js';
 
 describe('od CLI daemon auth (v7 AC4)', () => {
   it('picks --token, then OD_API_TOKEN, then OD_TOOL_TOKEN', () => {
-    expect(cliAuthToken(['x', '--token', 'a'], { OD_API_TOKEN: 'b' })).toBe('a');
+    expect(cliAuthToken(['x', '--token', 'a'], { OD_API_TOKEN: 'odt_b' })).toBe('a');
     expect(cliAuthToken(['x', '--token=a'], {})).toBe('a');
-    expect(cliAuthToken([], { OD_API_TOKEN: 'b', OD_TOOL_TOKEN: 'c' })).toBe('b');
-    expect(cliAuthToken([], { OD_TOOL_TOKEN: 'c' })).toBe('c');
+    expect(cliAuthToken([], { OD_API_TOKEN: 'odt_b', OD_TOOL_TOKEN: 'c' })).toBe('odt_b');
+    expect(cliAuthToken([], { OD_TOOL_TOKEN: 'c' })).toBeNull();
+    // the legacy shared daemon token is not forwarded (keeps tool-token routes working)
+    expect(cliAuthToken([], { OD_API_TOKEN: 'shared-hex' })).toBeNull();
     expect(cliAuthToken([], {})).toBeNull();
   });
 

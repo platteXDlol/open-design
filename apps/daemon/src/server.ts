@@ -10564,11 +10564,15 @@ undefined,
           ...(pluginGrantContext ?? {}),
         })
       : null;
+    // v7 SSO: the agent's `od` calls authenticate as the project owner with a run-scoped API token.
+    const ssoRunOwner = oidcConfig && toolTokenGrant ? getProject(db, projectId)?.userId : null;
+    const ssoRunToken = ssoRunOwner ? authStore.createApiToken(ssoRunOwner, `run:${runId}`, toolTokenTtlMs) : null;
     let toolTokenRevoked = false;
     const revokeToolToken = (reason) => {
       if (toolTokenRevoked || !toolTokenGrant) return;
       toolTokenRevoked = true;
       toolTokenRegistry.revokeToken(toolTokenGrant.token, reason);
+      if (ssoRunToken && ssoRunOwner) authStore.revokeApiToken(ssoRunOwner, ssoRunToken.id);
     };
     // The async startup phase below (compose prompt, prepare prompt file,
     // probe models, …) has many awaits and no blanket try/finally; an
@@ -12637,7 +12641,7 @@ undefined,
             spawnEnvForAgent(
               def.id,
               {
-                ...createAgentRuntimeEnv(process.env, daemonUrl, toolTokenGrant, OD_NODE_BIN, inheritedEnvironment),
+                ...createAgentRuntimeEnv(process.env, daemonUrl, toolTokenGrant, OD_NODE_BIN, inheritedEnvironment), ...(ssoRunToken ? { OD_API_TOKEN: ssoRunToken.token } : {}),
                 ...(def.env || {}),
               },
               configuredAgentEnv,
@@ -13491,7 +13495,7 @@ undefined,
     const agentSpawnEnv = spawnEnvForAgent(
       def.id,
       {
-        ...createAgentRuntimeEnv(process.env, daemonUrl, toolTokenGrant, OD_NODE_BIN, inheritedEnvironment),
+        ...createAgentRuntimeEnv(process.env, daemonUrl, toolTokenGrant, OD_NODE_BIN, inheritedEnvironment), ...(ssoRunToken ? { OD_API_TOKEN: ssoRunToken.token } : {}),
         ...(def.env || {}),
         ...browserUseRuntimeEnv,
       },

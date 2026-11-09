@@ -1,10 +1,12 @@
 // v7: every `od` request to the daemon carries the caller's credential, so the CLI works when SSO is on.
-// Precedence: --token flag, OD_API_TOKEN (per-user token), OD_TOOL_TOKEN (run-scoped, injected for agents).
+// Precedence: --token flag, then OD_API_TOKEN when it is a per-user SSO token (odt_; agents get a run-scoped one).
 
 export function cliAuthToken(argv: string[], env: NodeJS.ProcessEnv): string | null {
   const i = argv.indexOf('--token');
   const flag = i >= 0 ? argv[i + 1] : argv.find((a) => a.startsWith('--token='))?.slice(8);
-  return (flag || env.OD_API_TOKEN || env.OD_TOOL_TOKEN || '').trim() || null;
+  // OD_API_TOKEN doubles as the legacy shared daemon token; only per-user SSO tokens (odt_) are forwarded.
+  const userToken = env.OD_API_TOKEN?.trim().startsWith('odt_') ? env.OD_API_TOKEN.trim() : '';
+  return (flag || userToken || '').trim() || null;
 }
 
 const origin = (v: string | undefined) => { try { return v ? new URL(v).origin : null; } catch { return null; } };
