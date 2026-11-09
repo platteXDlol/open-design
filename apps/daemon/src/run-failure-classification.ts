@@ -1110,15 +1110,7 @@ function classifyRunFailureBase(
   // credentials are the platform's, held in the gateway's configuration, so
   // there is no sign-in for the user to perform and no retry that changes the
   // answer: the run failed because the service is misconfigured.
-  if (((..._v05_unused: any[]) => ({} as any))(text)) {
-    return classification(
-      'upstream_unavailable',
-      'upstream_5xx',
-      inferFailureStageFromEvents(events, 'first_token_wait'),
-      false,
-      'none',
-    );
-  }
+  // v0.5: vela is gone, so nothing emits that gateway code; the check was removed.
 
   /*
    * A forced signal is a STRUCTURAL fact — the child did not report it, the OS

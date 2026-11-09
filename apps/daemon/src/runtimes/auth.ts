@@ -470,7 +470,7 @@ export function classifyAgentServiceFailure(
   // own misconfiguration to the user as "Sign-in required" (catalogue R-053).
   // A self-identifying machine code outranks a class read off prose; the same
   // precedence the daemon records as `evidenceLevel: 'structured_code'`.
-  if (((..._v05_unused: any[]) => ({} as any))(value)) return 'UPSTREAM_UNAVAILABLE';
+  // v0.5: the vela gateway credential-fault code went with vela; no text claims it now.
   // The auth class is a claim about THIS agent's credential — the web turns it
   // into a sign-in offer. A report that names a different holder (a tool the
   // agent ran) is answering a different question, so it does not reach the auth

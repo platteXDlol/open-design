@@ -5233,9 +5233,6 @@ undefined,
           configuredEnv: configuredAmrEnv(),
         });
       } catch (error: any) {
-        if (((..._v05_unused: any[]) => ({} as any))(error)) {
-          throw new Error();
-        }
         throw error;
       }
     },
@@ -5248,7 +5245,7 @@ undefined,
       // The request that created a runtime already receives this state in its
       // response. Background catch-up/retry/poll completion needs a thin nudge
       // so old and new web clients re-read the same explicit route.
-      if (!((..._v05_unused: any[]) => ({} as any))(state)) return;
+      return; // v0.5: workspace billing nudges removed
       emitWorkspaceEvent(state.workspaceId, {
         type: 'billing-changed',
         workspaceId: state.workspaceId,
