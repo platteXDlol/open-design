@@ -218,7 +218,11 @@ export function validateArtboardHtml(html: string): ArtifactLintFinding[] {
     out.push(finding('slide-root-count', `Expected exactly one slide root, found ${roots}.`, 'Put the whole slide inside the single <main data-od-slide-root> element.'));
   }
   const text = trimmed.replace(/<!--[\s\S]*?-->/g, '');
-  const ph = PLACEHOLDER_RE.exec(text);
+  // Only rendered copy counts: class names like `task todo` or a `todo` JS var are not placeholders.
+  const visibleText = text
+    .replace(/<(style|script)\b[\s\S]*?<\/\1\s*>/gi, ' ')
+    .replace(/<[^>]*>/g, ' ');
+  const ph = PLACEHOLDER_RE.exec(visibleText);
   if (ph) {
     out.push(finding('placeholder', 'Artboard contains placeholder text.', 'Replace placeholders with real, specific copy.', ph[0]));
   }
