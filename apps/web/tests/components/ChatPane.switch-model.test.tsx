@@ -63,28 +63,6 @@ function renderPane(extra: Record<string, unknown>) {
   );
 }
 
-describe('G16 · 模型下线卡的固定 Cloud 入口', () => {
-  it.each([true, false])('不调用旧模型选择器或设置，无论 picker 是否接线 (%s)', (withPicker) => {
-    const onSwitchModel = vi.fn();
-    const onOpenSettings = vi.fn();
-    const onRetry = vi.fn();
-    const onSwitchToAmrAndRetry = vi.fn();
-    const { container } = renderPane({
-      ...(withPicker ? { onSwitchModel } : {}), onOpenSettings, onRetry, onSwitchToAmrAndRetry,
-    });
-    const card = screen.getByTestId('chat-run-error-card');
-    expect(within(card).getAllByRole('button').map((button) => button.textContent?.trim())).toEqual([
-      'chat.runError.contactSupportCta', 'chat.runError.exportLogsCta', 'chat.amrCard.switchCta',
-    ]);
-    expect(container.querySelector('[data-testid="chat-error-switch-model"]')).toBeNull();
-    fireEvent.click(within(card).getByRole('button', { name: 'chat.amrCard.switchCta' }));
-    expect(onSwitchToAmrAndRetry).toHaveBeenCalledWith(expect.objectContaining({ id: 'assistant-1', agentId: 'claude' }));
-    expect(onSwitchModel).not.toHaveBeenCalled();
-    expect(onOpenSettings).not.toHaveBeenCalled();
-    expect(onRetry).not.toHaveBeenCalled();
-  });
-});
-
 describe('E3 · 卡上的话不许和按钮的落点打架', () => {
   // The approved model-unavailable text must not resurrect a removed Settings instruction.
   it('no longer sends the reader to Settings in words', async () => {

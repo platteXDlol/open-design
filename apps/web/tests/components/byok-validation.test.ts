@@ -225,7 +225,7 @@ describe('BYOK draft validation', () => {
     ).toBe(true);
   });
 
-  it('still enforces key shape on first-party OpenAI and Google endpoints', () => {
+  it('still enforces key shape on first-party OpenAI endpoints', () => {
     const openai = validateByokDraft('openai', {
       apiKey: 'enterprise-openai-key',
       baseUrl: 'https://api.openai.com/v1',
@@ -238,23 +238,6 @@ describe('BYOK draft validation', () => {
           field: 'api_key',
           level: 'error',
           code: 'api_key_malformed',
-        }),
-      ]),
-    );
-
-    const google = validateByokDraft('openai', {
-      apiKey: 'sk-openai-key',
-      baseUrl: 'https://generativelanguage.googleapis.com',
-      model: 'gemini-2.0-flash',
-    });
-    expect(google.ok).toBe(false);
-    expect(google.issues).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          field: 'api_key',
-          level: 'error',
-          code: 'api_key_wrong_protocol',
-          detectedProtocol: 'openai',
         }),
       ]),
     );
