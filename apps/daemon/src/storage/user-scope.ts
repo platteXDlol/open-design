@@ -18,7 +18,22 @@
 // root; this module extends the same rule to the per-user prefix. Path
 // strings that compose `users/...` outside this module are a regression.
 
+import { AsyncLocalStorage } from 'node:async_hooks';
 import path from 'node:path';
+
+// v7: the auth middleware runs each request inside runWithUser(); no context = env/synthetic user.
+const requestUser = new AsyncLocalStorage<string>();
+
+function assertSafeUserId(id: string): string {
+  if (!id || id === '.' || id === '..' || id.includes('/') || id.includes('\\') || id.includes('\0')) {
+    throw new Error('user id must not be empty or contain path separators or . / ..');
+  }
+  return id;
+}
+
+export function runWithUser<T>(userId: string, fn: () => T): T {
+  return requestUser.run(assertSafeUserId(userId), fn);
+}
 
 export const SYNTHETIC_USER_ID = 'local';
 
@@ -37,12 +52,19 @@ export const DEFAULT_USER_ID_ENV = 'OD_USER_ID';
 export function resolveUserId(
   env: NodeJS.ProcessEnv | { OD_USER_ID?: string | undefined } = process.env,
 ): string {
+  const scoped = requestUser.getStore();
+  if (scoped) return scoped;
   const raw = (env.OD_USER_ID ?? '').toString().trim();
   if (raw.length === 0) return SYNTHETIC_USER_ID;
   if (raw === '.' || raw === '..' || raw.includes('/') || raw.includes('\\') || raw.includes('\0')) {
     throw new Error(`OD_USER_ID must not contain path separators or . / ..`);
   }
   return raw;
+}
+
+/** Projects root for the user of the current request (or the env/synthetic user). */
+export function currentProjectsRoot(runtimeDataDir: string): string {
+  return resolveUserProjectsRoot(runtimeDataDir, resolveUserId());
 }
 
 /**
