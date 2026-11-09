@@ -99,6 +99,8 @@ export function createAuthStore(db: Db) {
       return t;
     },
     consumeAdminResetToken(t: string): AuthUser | null {
+      // Keep the link valid until there is an admin to log in as.
+      if (!this.firstAdmin()) return null;
       const r = db.prepare(`DELETE FROM auth_admin_reset WHERE token_hash = ? AND expires_at > ?`).run(sha(t), Date.now()) ;
       return r.changes > 0 ? this.firstAdmin() : null;
     },
