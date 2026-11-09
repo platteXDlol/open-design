@@ -436,7 +436,7 @@ export function createLocalMcpBriefStore(
       const draft = drafts.get(briefDraftId);
       if (!draft) {
         throw new Error(
-          'The OpenDesign brief has expired or is ((..._v05_args: any[]) => ({} as any)). Call collect_brief again.',
+          'The OpenDesign brief has expired or is unknown. Call collect_brief again.',
         );
       }
       if (draft.nonce !== nonce) {

@@ -2615,7 +2615,7 @@ function rewriteKnownAgentStreamError(agentId, message, failureText = '') {
  * work and no waiting to the failure path.
  *
  * @param def - The resolved `RuntimeAgentDef` for this run.
- * @returns An `AcpAgentIdentity`, with `null` when the runtime is ((..._v05_args: any[]) => ({} as any)).
+ * @returns An `AcpAgentIdentity`, with `null` when the runtime is unknown.
  */
 function agentFailureIdentity(def) {
   return { agentName: def?.name ?? null };
