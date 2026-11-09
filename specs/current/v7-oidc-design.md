@@ -47,3 +47,13 @@ Share links (view/comment/edit), local password users, OIDC group → role mappi
 
 - `apps/daemon/src/mcp-oauth.ts` already has PKCE + `openid-configuration` discovery helpers; decision 3 stands unless reuse proves clearly smaller.
 - How the web app currently reacts to `401` outside the removed collab code.
+
+## Implementation notes (first PR)
+
+- `apps/daemon/src/auth/` — `auth-store.ts` (SQLite tables `auth_users`, `auth_sessions`, `auth_api_tokens`, `auth_admin_reset`; secrets stored as sha256), `auth-middleware.ts`, `auth-routes.ts` (`loadOidcConfig`, `openIdClientAdapter`), `adopt-local-user.ts` (D7).
+- User id = `u_` + 24 hex of sha256(issuer + sub), always path-safe.
+- Isolation: `getProject` / `listProjects` / `listUnboundProjects` filter by the request user; background work (no request context) still sees all projects. `PROJECTS_DIR` resolves per request.
+- With SSO on, the legacy shared `OD_API_TOKEN` gate is skipped and a LAN bind no longer requires it.
+- CLI: `od auth me|token create|list|revoke`; `--token` or an `odt_` `OD_API_TOKEN` is sent to the daemon only (never to other local services). A legacy shared `OD_API_TOKEN` is not forwarded.
+- Agents: with SSO on, each run gets a run-scoped `odt_` token as `OD_API_TOKEN`, revoked with the run's tool token.
+- Web: Settings → Account (user, sign out, tokens); a 401 from `/api/auth/me` on window focus sends the user back through login.
