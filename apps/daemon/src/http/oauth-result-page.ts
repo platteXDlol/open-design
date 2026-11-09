@@ -70,7 +70,7 @@ export function renderOAuthResultPage(opts: OAuthResultPageOptions): string {
         bc.postMessage(payload);
         bc.close();
       }
-    } catch (e: any) { /* ignore postMessage failures */ }
+    } catch (e) { /* ignore postMessage failures */ }
   </script>
 </body>
 </html>`;
