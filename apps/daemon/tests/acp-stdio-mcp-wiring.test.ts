@@ -17,6 +17,7 @@ import { delimiter, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { startServer } from '../src/server.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 const FIXTURE = fileURLToPath(
   new URL('./fixtures/fake-kimi-acp-cli.mjs', import.meta.url),
@@ -107,7 +108,7 @@ describe('ACP stdio MCP servers are withheld from runtimes that reject them', ()
     // startServer() warms detectAgents() in the background. Let that pass
     // settle before any test installs its own fake `kimi`.
     await fetch(`${baseUrl}/api/agents`).catch(() => {});
-  });
+  }, 60_000); // agent detection alone can take ~9s on a cold, loaded host
 
   // Best-effort cleanup against a throwaway data dir. Deleting serially inside
   // the default 10s hook budget times out once this file shares a worker with
@@ -141,7 +142,7 @@ describe('ACP stdio MCP servers are withheld from runtimes that reject them', ()
     await r.json();
     projectsToClean.push(id);
     const projectsBase = process.env.OD_DATA_DIR
-      ? join(process.env.OD_DATA_DIR, 'projects')
+      ? resolveUserProjectsRoot(process.env.OD_DATA_DIR)
       : join(process.cwd(), '.od', 'projects');
     return { id, dir: join(projectsBase, id) };
   }

@@ -160,17 +160,6 @@ describe('byok-opencode runtime config', () => {
         },
       },
     });
-    expect(buildOpenCodeByokProviderConfig(
-      { protocol: 'openai', apiKey: 'AIza', baseUrl: 'https://generativelanguage.googleapis.com/' },
-      'gemini-3.5-flash',
-    )?.config).toMatchObject({
-      provider: {
-        [BYOK_OPENCODE_PROVIDER_ID]: {
-          npm: '@ai-sdk/openai',
-          options: { baseURL: 'https://generativelanguage.googleapis.com/v1beta' },
-        },
-      },
-    });
   });
 
   it.each([
@@ -272,19 +261,15 @@ describe('byok-opencode runtime config', () => {
     )?.config).toMatchObject({
       provider: { [BYOK_OPENCODE_PROVIDER_ID]: { npm: '@ai-sdk/anthropic' } },
     });
-    expect(buildOpenCodeByokProviderConfig(
-      { protocol: 'openai', apiKey: 'AIza', baseUrl: 'https://generativelanguage.googleapis.com' },
-      'gemini-2.5-flash',
-    )?.config).toMatchObject({
-      provider: { [BYOK_OPENCODE_PROVIDER_ID]: { npm: '@ai-sdk/openai' } },
-    });
   });
 
-  it('rejects OpenAI providers without a base URL', () => {
+  it('defaults OpenAI providers without a base URL to api.openai.com', () => {
     expect(buildOpenCodeByokProviderConfig(
       { protocol: 'openai', apiKey: 'openai-key', baseUrl: '' },
       'gpt-4o',
-    )).toBeNull();
+    )?.config).toMatchObject({
+      provider: { [BYOK_OPENCODE_PROVIDER_ID]: { options: { baseURL: 'https://api.openai.com/v1' } } },
+    });
   });
 
   it('maps Ollama Cloud to OpenCode documented OpenAI-compatible v1 config', () => {

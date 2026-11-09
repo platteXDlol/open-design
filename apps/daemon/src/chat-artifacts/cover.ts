@@ -512,7 +512,7 @@ async function withBudget(
     // already owns a failed snapshot; only release the renderer's late temp
     // output, never attach it or announce a ready cover.
     if (timedOut && result?.ok && typeof result.path === 'string' && result.path.length > 0) {
-      await fs.promises.rm(result.path, { force: true }).catch((onLateCleanupFailure: any) => {});
+      await fs.promises.rm(result.path, { force: true }).catch(onLateCleanupFailure);
     }
     return result;
   });

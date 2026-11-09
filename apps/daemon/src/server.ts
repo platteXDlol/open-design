@@ -7206,7 +7206,6 @@ undefined,
           : null;
         if (promptBudget) run.promptBudgetDiagnostics = promptBudget;
       },
-      onTerminal: ((..._v05_unused: any[]) => ({} as any))(amrTerminalReportOutbox),
       beforeFinish: (run, status, _code, _signal, terminalAt) => {
         if (run.deliverableSyntaxValidation?.metrics) {
           run.deliverableSyntaxValidation = {
