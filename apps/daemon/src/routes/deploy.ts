@@ -10,7 +10,7 @@ export interface RegisterDeployRoutesDeps extends RouteDeps<'db' | 'http' | 'pat
 export function registerDeployRoutes(app: Express, ctx: RegisterDeployRoutesDeps) {
   const { db } = ctx;
   const { sendApiError } = ctx.http;
-  const { PROJECTS_DIR } = ctx.paths;
+  
   const { randomUUID } = ctx.ids;
   const { getProject } = ctx.projectStore;
   const { VERCEL_PROVIDER_ID, CLOUDFLARE_PAGES_PROVIDER_ID, isDeployProviderId, publicDeployConfigForProvider, readDeployConfig, writeDeployConfig, listCloudflarePagesZones, DeployError, listDeployments, publicDeployments, getDeployment, buildDeployFileSet, cloudflarePagesProjectNameForDeploy, deployToCloudflarePages, deployToVercel, upsertDeployment, publicDeployment, cloudflarePagesDeploymentMetadata, prepareDeployPreflight } = ctx.deploy;
@@ -144,7 +144,7 @@ export function registerDeployRoutes(app: Express, ctx: RegisterDeployRoutesDeps
 
       const prior = getDeployment(db, req.params.id, fileName, providerId);
       const files = await buildDeployFileSet(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         req.params.id,
         fileName,
         { metadata: deployProject?.metadata, includeProjectFiles: true },
@@ -242,7 +242,7 @@ export function registerDeployRoutes(app: Express, ctx: RegisterDeployRoutesDeps
       if (!await ctx.authorizeProjectRequest(req, res, req.params.id, { mode: 'read' })) return;
       /** @type {import('@open-design/contracts').DeployPreflightResponse} */
       const body = await prepareDeployPreflight(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         req.params.id,
         fileName,
         { metadata: preflightProject?.metadata, providerId, includeProjectFiles: true },

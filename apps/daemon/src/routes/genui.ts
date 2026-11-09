@@ -28,7 +28,7 @@ export interface RegisterGenuiRoutesDeps {
 
 export function registerGenuiRoutes(app: Express, deps: RegisterGenuiRoutesDeps): void {
   const { db, design } = deps;
-  const { PROJECTS_DIR } = deps.paths;
+  
   const authorizeRun = async (
     req: any,
     res: any,
@@ -107,7 +107,7 @@ export function registerGenuiRoutes(app: Express, deps: RegisterGenuiRoutesDeps)
             const metadata = project?.metadata && typeof project.metadata === 'string'
               ? JSON.parse(project.metadata)
               : project?.metadata ?? undefined;
-            const cwd = resolveProjectDir(PROJECTS_DIR, projectId, metadata);
+            const cwd = resolveProjectDir(deps.paths.PROJECTS_DIR, projectId, metadata);
             const bridgeResult = await applyDiffReviewDecisionToCwd({
               cwd,
               value,

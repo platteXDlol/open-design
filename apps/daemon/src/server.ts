@@ -743,7 +743,7 @@ import { configureDiagnosticsEvidence } from './services/diagnostics-evidence.js
 import { beginDaemonHealthSession } from './services/daemon-health.js';
 import { readSqlitePageStats } from './storage/db-inspect.js';
 import { migrateUserPrefixSync } from './storage/user-prefix-migration.js';
-import { resolveUserId, resolveUserProjectsRoot } from './storage/user-scope.js';
+import { currentProjectsRoot, resolveUserId, resolveUserProjectsRoot } from './storage/user-scope.js';
 import {
   CHAT_SCROLL_FORENSICS_PATH,
   chatScrollForensicsBodyParser,
@@ -1251,13 +1251,15 @@ const ARTIFACTS_DIR = path.join(RUNTIME_DATA_DIR, 'artifacts');
 // `/artifacts` tree. The per-run artifact endpoint is the sanctioned
 // read path so project-membership, size, and CSP guards cannot be bypassed.
 const CRITIQUE_ARTIFACTS_DIR = path.join(RUNTIME_DATA_DIR, 'critique-artifacts');
-// v0.6 (claude-design-local-roadmap.md § 2): PROJECTS_DIR is per-user.
+// v0.6 (claude-design-local-roadmap.md § 2): projectsDir() is per-user.
 // Pre-v0.6 shipped a single shared-by-Linux-user `<RUNTIME_DATA_DIR>/projects`
 // tree; the boot-time `migrateUserPrefixSync` above has either moved those
 // projects into the synthetic user's prefix or written a marker that says
 // the move already happened. v7 swaps the user id for an OIDC-derived one
 // without touching this line.
-const PROJECTS_DIR = resolveUserProjectsRoot(RUNTIME_DATA_DIR, OD_USER_ID);
+const BOOT_PROJECTS_DIR = resolveUserProjectsRoot(RUNTIME_DATA_DIR, OD_USER_ID);
+// v7: per-request projects root (request user via runWithUser, else env/synthetic user).
+const projectsDir = () => currentProjectsRoot(RUNTIME_DATA_DIR);
 const USER_SKILLS_DIR = path.join(RUNTIME_DATA_DIR, 'skills');
 const USER_DESIGN_SYSTEMS_DIR = path.join(RUNTIME_DATA_DIR, 'design-systems');
 // Brand metadata (brand.json + meta.json per brand) lives here; each brand
@@ -1291,7 +1293,7 @@ const ALL_SKILL_LIKE_ROOTS = [
 // the clipper / `od library import`. Derived from RUNTIME_DATA_DIR per the
 // daemon data directory contract.
 const LIBRARY_DIR = path.join(RUNTIME_DATA_DIR, 'library');
-fs.mkdirSync(PROJECTS_DIR, { recursive: true });
+fs.mkdirSync(BOOT_PROJECTS_DIR, { recursive: true });
 for (const dir of [USER_SKILLS_DIR, USER_DESIGN_SYSTEMS_DIR, BRANDS_DIR, USER_DESIGN_TEMPLATES_DIR, PLUGIN_REGISTRY_ROOTS.userPluginsRoot, LIBRARY_DIR]) {
   fs.mkdirSync(dir, { recursive: true });
 }
@@ -2727,7 +2729,7 @@ const projectUpload = multer({
         // report each file's true project-relative path.
         const subdir = typeof req.body?.dir === 'string' ? req.body.dir : '';
         const { absDir, relDir } = await ensureProjectSubdir(
-          PROJECTS_DIR,
+          projectsDir(),
           req.params.id,
           subdir,
           meta,
@@ -3112,7 +3114,7 @@ export async function startServer({
     // once the first request that needs it actually arrives.
     getDb: () => db,
     roots: { SKILL_ROOTS, DESIGN_TEMPLATE_ROOTS, ALL_SKILL_LIKE_ROOTS },
-    paths: { PROJECTS_DIR, DESIGN_SYSTEMS_DIR, USER_DESIGN_SYSTEMS_DIR },
+    paths: { get PROJECTS_DIR() { return projectsDir(); }, DESIGN_SYSTEMS_DIR, USER_DESIGN_SYSTEMS_DIR },
     skills: { listSkills, findSkillById },
     designSystems: {
       listDesignSystems,
@@ -3412,7 +3414,7 @@ export async function startServer({
     resolveSourcePath: (projectId, relativePath) => {
       try {
         const project = getProject(db, projectId);
-        const dir = resolveProjectDir(PROJECTS_DIR, projectId, project?.metadata);
+        const dir = resolveProjectDir(projectsDir(), projectId, project?.metadata);
         return path.join(dir, relativePath.split('/').join(path.sep));
       } catch {
         return null;
@@ -3541,7 +3543,7 @@ export async function startServer({
     })
     .catch(() => detectAgents().catch(() => {}));
 
-  await recoverStaleLiveArtifactRefreshes({ projectsRoot: PROJECTS_DIR }).catch((error) => {
+  await recoverStaleLiveArtifactRefreshes({ projectsRoot: projectsDir() }).catch((error) => {
     console.warn('[od] Failed to recover stale live artifact refreshes:', error);
   });
 
@@ -3579,7 +3581,7 @@ export async function startServer({
   );
   await ((..._v05_unused: any[]) => ({} as any))({
     journalDir: teamMirrorPromotionJournalDir,
-    allowedProjectsRoot: PROJECTS_DIR,
+    allowedProjectsRoot: projectsDir(),
     isCommitted: (entry) => {
       const stored = ((..._v05_unused: any[]) => ({} as any))(
         db,
@@ -5026,7 +5028,7 @@ undefined,
         return false;
       }
       const projectDir = ((..._v05_unused: any[]) => ({} as any))(
-        PROJECTS_DIR,
+        projectsDir(),
         projectId,
         project,
         resolveProjectDir,
@@ -7078,7 +7080,7 @@ undefined,
 
   registerMemoryRoutes(app, {
     http: { createSseResponse, requireLocalDaemonRequest },
-    paths: { RUNTIME_DATA_DIR, PROJECT_ROOT, PROJECTS_DIR },
+    paths: { RUNTIME_DATA_DIR, PROJECT_ROOT, get PROJECTS_DIR() { return projectsDir(); } },
     appConfig: { readAppConfig },
   });
 
@@ -7334,7 +7336,7 @@ undefined,
   const runAnalyticsLifecycle = createRunAnalyticsLifecycle({
     db,
     design,
-    paths: { PROJECTS_DIR, RUNTIME_DATA_DIR },
+    paths: { get PROJECTS_DIR() { return projectsDir(); }, RUNTIME_DATA_DIR },
     agents: { detectAgents },
     telemetry: {
       reportRunCompletionTelemetryFallback,
@@ -7433,7 +7435,7 @@ undefined,
   });
   const pathDeps = {
     PROJECT_ROOT,
-    PROJECTS_DIR,
+    get PROJECTS_DIR() { return projectsDir(); },
     ARTIFACTS_DIR,
     LIBRARY_DIR,
     BRANDS_DIR,
@@ -7550,7 +7552,7 @@ undefined,
   registerConnectorRoutes(app, {
     sendApiError,
     authorizeToolRequest,
-    projectsRoot: PROJECTS_DIR,
+    projectsRoot: projectsDir(),
     requireLocalDaemonRequest,
     composio: composioConnectorProvider,
   });
@@ -7912,7 +7914,7 @@ undefined,
           return sendApiError(res, 400, 'BAD_REQUEST', 'file is required');
         }
 
-        const projectRoot = resolveProjectDir(PROJECTS_DIR, req.params.id, project.metadata);
+        const projectRoot = resolveProjectDir(projectsDir(), req.params.id, project.metadata);
         const notes = typeof body.notes === 'string' ? body.notes : undefined;
         const result = await importFigmaFromBytes(req.file.buffer, {
           cwd: projectRoot,
@@ -8346,7 +8348,7 @@ undefined,
         deleteWorkspaceResourceByResourceId: (resourceType, resourceId) =>
           deleteWorkspaceResourceByResourceId(db, resourceType, resourceId),
       }),
-    projectsRoot: PROJECTS_DIR,
+    projectsRoot: projectsDir(),
     skillsRoot: SKILLS_DIR,
     dataDir: RUNTIME_DATA_DIR,
     db,
@@ -8389,7 +8391,7 @@ undefined,
     authorizeProjectToolRequest,
   });
   registerDeliverableSyntaxToolRoutes(app, {
-    projectsRoot: PROJECTS_DIR,
+    projectsRoot: projectsDir(),
     authorizeToolRequest,
     authorizeProjectToolRequest,
     getProject: (id: string) => getProject(db, id),
@@ -8654,7 +8656,7 @@ undefined,
         const actionPluginId = PLUGIN_SHARE_ACTION_PLUGIN_IDS[action];
         const actionPlugin = getInstalledPlugin(db, actionPluginId);
         if (!actionPlugin) return res.status(409).json({ ok: false, code: 'share-action-plugin-missing', message: `The bundled action plugin "${actionPluginId}" is not installed. Restart the daemon so bundled plugins are registered.` });
-        const now = Date.now(); const id = randomId(); const cid = randomId(); const sourceSlug = githubRepoNameFromPluginName(sourcePlugin.id); const stagedPath = `plugin-source/${sourceSlug}`; const prompt = renderPluginSharePrompt({ action, sourcePlugin, stagedPath }); const metadata = { kind: 'prototype' }; const projectRoot = await ensureProject(PROJECTS_DIR, id, metadata); await copyPluginFolderForProjectContext(sourcePlugin.fsPath, path.join(projectRoot, 'plugin-source', sourceSlug));
+        const now = Date.now(); const id = randomId(); const cid = randomId(); const sourceSlug = githubRepoNameFromPluginName(sourcePlugin.id); const stagedPath = `plugin-source/${sourceSlug}`; const prompt = renderPluginSharePrompt({ action, sourcePlugin, stagedPath }); const metadata = { kind: 'prototype' }; const projectRoot = await ensureProject(projectsDir(), id, metadata); await copyPluginFolderForProjectContext(sourcePlugin.fsPath, path.join(projectRoot, 'plugin-source', sourceSlug));
         insertProject(db, { id, name: `${PLUGIN_SHARE_ACTION_LABELS[action]}: ${sourcePlugin.title || sourcePlugin.id}`, skillId: null, designSystemId: null, pendingPrompt: prompt, metadata, createdAt: now, updatedAt: now });
         insertConversation(db, { id: cid, projectId: id, title: null, createdAt: now, updatedAt: now });
         // The share task IS a chat project — it opens with a seeded prompt the
@@ -8702,22 +8704,22 @@ undefined,
       try { const body = req.body && typeof req.body === 'object' ? req.body : {}; const target = body.target === 'od' || body.target === 'claude-plugin' || body.target === 'agent-skill' ? body.target : null; if (!target) return res.status(400).json({ error: 'target must be one of: od, claude-plugin, agent-skill' }); const outDir = typeof body.outDir === 'string' && body.outDir.length > 0 ? body.outDir : null; if (!outDir) return res.status(400).json({ error: 'outDir is required' }); const { exportPlugin, ExportError } = await import('./plugins/export.js'); try { const result = await exportPlugin({ db, target, outDir, ...(typeof body.snapshotId === 'string' ? { snapshotId: body.snapshotId } : {}), ...(typeof body.projectId === 'string' ? { projectId: body.projectId } : {}) }); res.json({ ok: true, ...result }); } catch (err: any) { if (err instanceof ExportError) return res.status(404).json({ error: err.message }); throw err; } } catch (err: any) { res.status(500).json({ error: String(err) }); }
     },
     handleProjectInstallFolder: async (req, res) => {
-      try { const project = getProject(db, req.params.id); if (!project) return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'project not found'); const projectBinding = getWorkspaceProjectByProjectId(db, req.params.id); if (!projectBinding?.workspaceId || !projectBinding.createdByWorkspaceMemberId) return sendApiError(res, 409, 'WORKSPACE_PROJECT_UNBOUND', 'project must have an exact workspace owner before installing a plugin'); const installScope = { workspaceId: String(projectBinding.workspaceId), workspaceMemberId: String(projectBinding.createdByWorkspaceMemberId) }; const body = req.body && typeof req.body === 'object' ? req.body : {}; const relativePath = normalizeProjectPluginFolderPath(body.path); const projectRoot = resolveProjectDir(PROJECTS_DIR, req.params.id, project.metadata); const folder = await resolveProjectChildDirectory(projectRoot, relativePath); const warnings = []; const log = []; let plugin = null; let message = 'Install finished.'; for await (const ev of installPlugin(db, { source: folder, roots: PLUGIN_REGISTRY_ROOTS, allowReplacePlugin: (pluginId) => allowScopedPluginReplace(installScope, pluginId) })) { if (ev.message) log.push(ev.message); if (Array.isArray(ev.warnings)) warnings.splice(0, warnings.length, ...ev.warnings); if (ev.kind === 'success') { plugin = ev.plugin; ensureWorkspaceResource(db, 'plugin', installScope.workspaceId, ev.plugin.id, { visibility: 'personal', resourceState: 'active', createdByWorkspaceMemberId: installScope.workspaceMemberId, updatedByWorkspaceMemberId: installScope.workspaceMemberId }); message = `Installed ${ev.plugin.title}.`; break; } if (ev.kind === 'error') { message = ev.message; break; } } res.status(plugin ? 200 : 400).json({ ok: Boolean(plugin), plugin, warnings, message, log }); } catch (err: any) { const code = err && err.code; const status = code === 'ENOENT' || code === 'ENOTDIR' ? 404 : 400; sendApiError(res, status, status === 404 ? 'PLUGIN_FOLDER_NOT_FOUND' : 'BAD_REQUEST', String(err?.message || err)); }
+      try { const project = getProject(db, req.params.id); if (!project) return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'project not found'); const projectBinding = getWorkspaceProjectByProjectId(db, req.params.id); if (!projectBinding?.workspaceId || !projectBinding.createdByWorkspaceMemberId) return sendApiError(res, 409, 'WORKSPACE_PROJECT_UNBOUND', 'project must have an exact workspace owner before installing a plugin'); const installScope = { workspaceId: String(projectBinding.workspaceId), workspaceMemberId: String(projectBinding.createdByWorkspaceMemberId) }; const body = req.body && typeof req.body === 'object' ? req.body : {}; const relativePath = normalizeProjectPluginFolderPath(body.path); const projectRoot = resolveProjectDir(projectsDir(), req.params.id, project.metadata); const folder = await resolveProjectChildDirectory(projectRoot, relativePath); const warnings = []; const log = []; let plugin = null; let message = 'Install finished.'; for await (const ev of installPlugin(db, { source: folder, roots: PLUGIN_REGISTRY_ROOTS, allowReplacePlugin: (pluginId) => allowScopedPluginReplace(installScope, pluginId) })) { if (ev.message) log.push(ev.message); if (Array.isArray(ev.warnings)) warnings.splice(0, warnings.length, ...ev.warnings); if (ev.kind === 'success') { plugin = ev.plugin; ensureWorkspaceResource(db, 'plugin', installScope.workspaceId, ev.plugin.id, { visibility: 'personal', resourceState: 'active', createdByWorkspaceMemberId: installScope.workspaceMemberId, updatedByWorkspaceMemberId: installScope.workspaceMemberId }); message = `Installed ${ev.plugin.title}.`; break; } if (ev.kind === 'error') { message = ev.message; break; } } res.status(plugin ? 200 : 400).json({ ok: Boolean(plugin), plugin, warnings, message, log }); } catch (err: any) { const code = err && err.code; const status = code === 'ENOENT' || code === 'ENOTDIR' ? 404 : 400; sendApiError(res, status, status === 404 ? 'PLUGIN_FOLDER_NOT_FOUND' : 'BAD_REQUEST', String(err?.message || err)); }
     },
     handleProjectPluginCli: async (req, res, action) => {
-      try { const project = getProject(db, req.params.id); if (!project) return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'project not found'); const body = req.body && typeof req.body === 'object' ? req.body : {}; const relativePath = normalizeProjectPluginFolderPath(body.path); const projectRoot = resolveProjectDir(PROJECTS_DIR, req.params.id, project.metadata); const folder = await resolveProjectChildDirectory(projectRoot, relativePath); const subcommand = action === 'publish-github' ? 'publish-repo' : 'open-design-pr'; const timeout = action === 'publish-github' ? 240_000 : 300_000; const result = await execCommandViaLoginShell(OD_NODE_BIN, [OD_BIN, 'plugin', subcommand, folder, '--json'], { timeout }); const payload = result.stdout ? JSON.parse(result.stdout) : null; if (!result.ok || !payload?.ok) return res.status(500).json({ ok: false, code: payload?.error?.label || (action === 'publish-github' ? 'publish-repo-failed' : 'open-design-pr-failed'), message: payload?.error?.stderr || payload?.error?.stdout || (action === 'publish-github' ? 'GitHub repo publish failed.' : 'OpenDesign PR creation failed.'), log: payload?.steps?.map((step) => step.stderr || step.stdout || step.command).filter(Boolean) ?? [result.stderr || result.stdout || `${subcommand} failed`] }); res.json({ ok: true, message: action === 'publish-github' ? (payload.repoUrl ? `Published plugin to ${payload.repoUrl}.` : 'Published plugin to GitHub.') : (payload.prUrl ? `Opened OpenDesign PR flow at ${payload.prUrl}.` : 'Opened OpenDesign PR flow.'), ...(payload.repoUrl ? { url: payload.repoUrl } : {}), ...(payload.prUrl ? { url: payload.prUrl } : {}), log: payload.steps?.map((step) => step.stderr || step.stdout || step.command).filter(Boolean) ?? [] }); } catch (err: any) { res.status(400).json({ ok: false, message: String(err?.message || err), log: [] }); }
+      try { const project = getProject(db, req.params.id); if (!project) return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'project not found'); const body = req.body && typeof req.body === 'object' ? req.body : {}; const relativePath = normalizeProjectPluginFolderPath(body.path); const projectRoot = resolveProjectDir(projectsDir(), req.params.id, project.metadata); const folder = await resolveProjectChildDirectory(projectRoot, relativePath); const subcommand = action === 'publish-github' ? 'publish-repo' : 'open-design-pr'; const timeout = action === 'publish-github' ? 240_000 : 300_000; const result = await execCommandViaLoginShell(OD_NODE_BIN, [OD_BIN, 'plugin', subcommand, folder, '--json'], { timeout }); const payload = result.stdout ? JSON.parse(result.stdout) : null; if (!result.ok || !payload?.ok) return res.status(500).json({ ok: false, code: payload?.error?.label || (action === 'publish-github' ? 'publish-repo-failed' : 'open-design-pr-failed'), message: payload?.error?.stderr || payload?.error?.stdout || (action === 'publish-github' ? 'GitHub repo publish failed.' : 'OpenDesign PR creation failed.'), log: payload?.steps?.map((step) => step.stderr || step.stdout || step.command).filter(Boolean) ?? [result.stderr || result.stdout || `${subcommand} failed`] }); res.json({ ok: true, message: action === 'publish-github' ? (payload.repoUrl ? `Published plugin to ${payload.repoUrl}.` : 'Published plugin to GitHub.') : (payload.prUrl ? `Opened OpenDesign PR flow at ${payload.prUrl}.` : 'Opened OpenDesign PR flow.'), ...(payload.repoUrl ? { url: payload.repoUrl } : {}), ...(payload.prUrl ? { url: payload.prUrl } : {}), log: payload.steps?.map((step) => step.stderr || step.stdout || step.command).filter(Boolean) ?? [] }); } catch (err: any) { res.status(400).json({ ok: false, message: String(err?.message || err), log: [] }); }
     },
     handleCandidateDraft: async (req, res) => {
       if (!isLocalSameOrigin(req, resolvedPort)) return res.status(403).json({ error: 'cross-origin request rejected' });
-      try { const project = getProject(db, req.params.id); if (!project) return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'project not found'); const projectRoot = resolveProjectDir(PROJECTS_DIR, req.params.id, project.metadata); const result = await generateSkillPluginDraft(db, projectRoot, req.params.id, req.params.candidateId); if (!result) return sendApiError(res, 404, 'NOT_FOUND', 'plugin candidate not found'); res.status(result.ok ? 200 : 422).json(result); } catch (err: any) { res.status(400).json({ ok: false, message: String(err?.message || err) }); }
+      try { const project = getProject(db, req.params.id); if (!project) return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'project not found'); const projectRoot = resolveProjectDir(projectsDir(), req.params.id, project.metadata); const result = await generateSkillPluginDraft(db, projectRoot, req.params.id, req.params.candidateId); if (!result) return sendApiError(res, 404, 'NOT_FOUND', 'plugin candidate not found'); res.status(result.ok ? 200 : 422).json(result); } catch (err: any) { res.status(400).json({ ok: false, message: String(err?.message || err) }); }
     },
     handleCandidateShareTask: async (req, res) => {
       if (!isLocalSameOrigin(req, resolvedPort)) return res.status(403).json({ error: 'cross-origin request rejected' });
-      try { const project = getProject(db, req.params.id); if (!project) return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'project not found'); const body = req.body && typeof req.body === 'object' ? req.body : {}; const action = body.action === 'publish-github' || body.action === 'contribute-open-design' ? body.action : null; if (!action) return sendApiError(res, 400, 'BAD_REQUEST', 'plugin share action is required'); const projectRoot = resolveProjectDir(PROJECTS_DIR, req.params.id, project.metadata); const draft = await generateSkillPluginDraft(db, projectRoot, req.params.id, req.params.candidateId); if (!draft) return sendApiError(res, 404, 'NOT_FOUND', 'plugin candidate not found'); if (!draft.validation.ok) return res.status(422).json({ ok: false, code: 'plugin-draft-invalid', message: 'Generated plugin draft is invalid.', draft }); const task = pluginShareTaskStore.createAndStart(req.params.id, { action, path: draft.draftPath }, draft.folder); res.status(202).json({ taskId: task.id, action, path: draft.draftPath, status: task.status, startedAt: task.startedAt, draft }); } catch (err: any) { res.status(400).json({ ok: false, message: String(err?.message || err) }); }
+      try { const project = getProject(db, req.params.id); if (!project) return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'project not found'); const body = req.body && typeof req.body === 'object' ? req.body : {}; const action = body.action === 'publish-github' || body.action === 'contribute-open-design' ? body.action : null; if (!action) return sendApiError(res, 400, 'BAD_REQUEST', 'plugin share action is required'); const projectRoot = resolveProjectDir(projectsDir(), req.params.id, project.metadata); const draft = await generateSkillPluginDraft(db, projectRoot, req.params.id, req.params.candidateId); if (!draft) return sendApiError(res, 404, 'NOT_FOUND', 'plugin candidate not found'); if (!draft.validation.ok) return res.status(422).json({ ok: false, code: 'plugin-draft-invalid', message: 'Generated plugin draft is invalid.', draft }); const task = pluginShareTaskStore.createAndStart(req.params.id, { action, path: draft.draftPath }, draft.folder); res.status(202).json({ taskId: task.id, action, path: draft.draftPath, status: task.status, startedAt: task.startedAt, draft }); } catch (err: any) { res.status(400).json({ ok: false, message: String(err?.message || err) }); }
     },
     handleProjectShareTask: async (req, res) => {
       if (!isLocalSameOrigin(req, resolvedPort)) return res.status(403).json({ error: 'cross-origin request rejected' });
-      try { const project = getProject(db, req.params.id); if (!project) return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'project not found'); const body = req.body && typeof req.body === 'object' ? req.body : {}; const action: PluginShareAction | null = body.action === 'publish-github' || body.action === 'contribute-open-design' ? body.action : null; if (!action) return sendApiError(res, 400, 'BAD_REQUEST', 'plugin share action is required'); const relativePath = normalizeProjectPluginFolderPath(body.path); const projectRoot = resolveProjectDir(PROJECTS_DIR, req.params.id, project.metadata); const folder = await resolveProjectChildDirectory(projectRoot, relativePath); const task = pluginShareTaskStore.createAndStart(req.params.id, { action, path: relativePath }, folder); res.status(202).json({ taskId: task.id, action, path: relativePath, status: task.status, startedAt: task.startedAt }); } catch (err: any) { const code = err && err.code; const status = code === 'ENOENT' || code === 'ENOTDIR' ? 404 : 400; sendApiError(res, status, status === 404 ? 'PLUGIN_FOLDER_NOT_FOUND' : 'BAD_REQUEST', String(err?.message || err)); }
+      try { const project = getProject(db, req.params.id); if (!project) return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'project not found'); const body = req.body && typeof req.body === 'object' ? req.body : {}; const action: PluginShareAction | null = body.action === 'publish-github' || body.action === 'contribute-open-design' ? body.action : null; if (!action) return sendApiError(res, 400, 'BAD_REQUEST', 'plugin share action is required'); const relativePath = normalizeProjectPluginFolderPath(body.path); const projectRoot = resolveProjectDir(projectsDir(), req.params.id, project.metadata); const folder = await resolveProjectChildDirectory(projectRoot, relativePath); const task = pluginShareTaskStore.createAndStart(req.params.id, { action, path: relativePath }, folder); res.status(202).json({ taskId: task.id, action, path: relativePath, status: task.status, startedAt: task.startedAt }); } catch (err: any) { const code = err && err.code; const status = code === 'ENOENT' || code === 'ENOTDIR' ? 404 : 400; sendApiError(res, status, status === 404 ? 'PLUGIN_FOLDER_NOT_FOUND' : 'BAD_REQUEST', String(err?.message || err)); }
     },
   };
 
@@ -8918,7 +8920,7 @@ undefined,
   registerPluginRoutes(app, {
     db,
     authorizeProjectRequest,
-    paths: { PROJECTS_DIR, PLUGIN_REGISTRY_ROOTS, PLUGIN_LOCKFILE_PATH },
+    paths: { get PROJECTS_DIR() { return projectsDir(); }, PLUGIN_REGISTRY_ROOTS, PLUGIN_LOCKFILE_PATH },
     ids: idDeps,
     projectStore: projectStoreDeps,
     conversations: conversationDeps,
@@ -8979,14 +8981,14 @@ undefined,
   registerGenuiRoutes(app, {
     db,
     design,
-    paths: { PROJECTS_DIR },
+    paths: { get PROJECTS_DIR() { return projectsDir(); } },
     authorizeProjectRequest,
   });
 
   registerProjectPluginRoutes(app, {
     db,
     authorizeProjectRequest,
-    paths: { PROJECTS_DIR, PLUGIN_REGISTRY_ROOTS, PLUGIN_LOCKFILE_PATH },
+    paths: { get PROJECTS_DIR() { return projectsDir(); }, PLUGIN_REGISTRY_ROOTS, PLUGIN_LOCKFILE_PATH },
     ids: idDeps,
     projectStore: projectStoreDeps,
     conversations: conversationDeps,
@@ -9017,7 +9019,7 @@ undefined,
     http: httpDeps,
     uploads: uploadDeps,
     node: nodeDeps,
-    paths: { PROJECTS_DIR },
+    paths: { get PROJECTS_DIR() { return projectsDir(); } },
     projectStore: projectStoreDeps,
     authorizeProjectRequest,
     authorizeProjectToolRequest,
@@ -9741,7 +9743,7 @@ undefined,
     let hasExistingDeckArtifact = false;
     if (typeof projectId === 'string' && projectId) {
       try {
-        const files = await listFiles(PROJECTS_DIR, projectId, { metadata });
+        const files = await listFiles(projectsDir(), projectId, { metadata });
         hasExistingDeckArtifact = files.some((file) => isSingleFileHtml(file.name));
       } catch {
         // Inventory failure must not authorize replacing a potentially legacy
@@ -10008,7 +10010,7 @@ undefined,
 
   const prepareOdNextInitialPromptBundle = createOdNextInitialPromptBundleService({
     db,
-    projectsDir: PROJECTS_DIR,
+    projectsDir: projectsDir(),
     runtimeDataDir: RUNTIME_DATA_DIR,
     daemonUrl,
     sandboxEnabled: SANDBOX_RUNTIME.enabled,
@@ -10384,7 +10386,7 @@ undefined,
         // folders with no managed copy in sandbox mode), so we pass chatMeta
         // through instead of branching on baseDir here.
         assertSandboxProjectRootAvailable(chatMeta);
-        cwd = await ensureProject(PROJECTS_DIR, projectId, chatMeta);
+        cwd = await ensureProject(projectsDir(), projectId, chatMeta);
       } catch (err: any) {
         if (err instanceof SandboxImportedProjectError) {
           return failRun('BAD_REQUEST', err.message);
@@ -10393,14 +10395,14 @@ undefined,
       }
       if (cwd) {
         try {
-          existingProjectFiles = await listFiles(PROJECTS_DIR, projectId, { metadata: chatMeta });
+          existingProjectFiles = await listFiles(projectsDir(), projectId, { metadata: chatMeta });
         } catch {
           // Inventory is advisory prompt context. A concurrent project-tree
           // mutation must not erase the authoritative cwd/session identity.
           existingProjectFiles = [];
         }
         try {
-          existingProjectFolders = await listProjectFolders(PROJECTS_DIR, projectId, { metadata: chatMeta });
+          existingProjectFolders = await listProjectFolders(projectsDir(), projectId, { metadata: chatMeta });
         } catch {
           // Keep cwd stable even when a directory disappears mid-enumeration.
           existingProjectFolders = [];
@@ -11036,7 +11038,7 @@ undefined,
       if (!outcome?.diff || !outcome.projectRoot || !run.projectId) return;
       const promptInfo = latestRunPromptForHtmlVersionSnapshot();
       const result = await snapshotAiHtmlVersionsForRun({
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: projectsDir(),
         projectId: run.projectId,
         projectRoot: outcome.projectRoot,
         diff: outcome.diff,
@@ -12460,7 +12462,7 @@ undefined,
     // spawn so Claude Code auto-loads the user's external MCP servers. Strict
     // gating is essential here:
     //   - cwd must be set (no project → no `.mcp.json` write).
-    //   - cwd must live UNDER PROJECTS_DIR. We never write to a git-linked
+    //   - cwd must live UNDER projectsDir(). We never write to a git-linked
     //     baseDir (= the user's own repo), since that would silently overwrite
     //     a hand-crafted .mcp.json the user already keeps in their source tree.
     // We also unlink a stale `.mcp.json` we previously wrote when the user has
@@ -12475,7 +12477,7 @@ undefined,
     // so the previous silent-failure UX is gone.
     if (
       def.externalMcpInjection === 'claude-mcp-json' &&
-      isManagedProjectCwd(cwd, PROJECTS_DIR)
+      isManagedProjectCwd(cwd, projectsDir())
     ) {
       {
         const target = path.join(cwd, '.mcp.json');
@@ -15889,10 +15891,10 @@ undefined,
         (async () => {
           try {
             const project = getProject(db, run.projectId);
-            const files = await listFiles(PROJECTS_DIR, run.projectId, {
+            const files = await listFiles(projectsDir(), run.projectId, {
               metadata: project?.metadata,
             });
-            const dir = resolveProjectDir(PROJECTS_DIR, run.projectId, project?.metadata);
+            const dir = resolveProjectDir(projectsDir(), run.projectId, project?.metadata);
             for (const f of files) {
               const ext = f.name.slice(f.name.lastIndexOf('.')).toLowerCase();
               if (ext !== '.html' && ext !== '.htm') continue;
@@ -15901,7 +15903,7 @@ undefined,
                 const st = await fs.promises.stat(filePath);
                 if (!isRunTouchedProjectFile(st.mtimeMs, runStartTimeMs)) continue;
                 await reconcileHtmlArtifactManifest(
-                  PROJECTS_DIR,
+                  projectsDir(),
                   run.projectId,
                   f.name,
                   project?.metadata,
@@ -15958,7 +15960,7 @@ undefined,
           try {
             const project = getProject(db, run.projectId);
             const persistedPlainArtifacts = await persistPlainStreamArtifactList({
-              projectsRoot: PROJECTS_DIR,
+              projectsRoot: projectsDir(),
               projectId: run.projectId,
               artifacts: plainArtifacts,
               metadata: project?.metadata,
@@ -16144,7 +16146,7 @@ undefined,
         await resolveRunArtifactOutcomeBeforeFinishAsync();
         const deliverableFinalization = await finalizeSuccessfulRunDeliverable({
           ...(run.artifactOutcome?.diff && baselineEntryFile ? { baselineEntryFile } : {}),
-          projectsRoot: PROJECTS_DIR,
+          projectsRoot: projectsDir(),
           projectId: run.projectId ?? null,
           projectMetadata: projectRecord?.metadata,
           artifactCount: Number.isFinite(run.artifactCount) ? run.artifactCount : 0,
@@ -16174,7 +16176,7 @@ undefined,
             if (
               current?.metadata?.kind === 'prototype'
               && !current.metadata.entryFile
-              && resolveProjectDir(PROJECTS_DIR, current.id, current.metadata) === cwd
+              && resolveProjectDir(projectsDir(), current.id, current.metadata) === cwd
             ) {
               updateProject(db, current.id, {
                 metadata: { ...current.metadata, entryFile: deliverable.entryFile },
@@ -16247,7 +16249,7 @@ undefined,
           ) {
             try {
               const observation = await observeOdNextDeviceShell({
-                projectRoot: resolveProjectDir(PROJECTS_DIR, run.projectId, projectRecord.metadata),
+                projectRoot: resolveProjectDir(projectsDir(), run.projectId, projectRecord.metadata),
                 entryFile: deliverable.entryFile,
                 resolution: resolveOdNextDevicePlatform({
                   metadata: projectRecord.metadata,
@@ -16267,7 +16269,7 @@ undefined,
                 });
               }
               const primitives = await observeOdNextLayoutPrimitives({
-                projectRoot: resolveProjectDir(PROJECTS_DIR, run.projectId, projectRecord.metadata),
+                projectRoot: resolveProjectDir(projectsDir(), run.projectId, projectRecord.metadata),
                 entryFile: deliverable.entryFile,
                 primitivesCss: typeof run.appliedPluginSnapshotId === 'string'
                   ? selectOdNextLayoutPrimitivesCss(await loadOdNextTaskResourcesForSnapshot({
@@ -16681,7 +16683,7 @@ undefined,
     });
 
     if (template?.dir) {
-      const cwd = await ensureProject(PROJECTS_DIR, projectId);
+      const cwd = await ensureProject(projectsDir(), projectId);
       const result = await stageActiveSkill(
         cwd,
         skillCwdAliasSegment(template.dir),
@@ -16733,7 +16735,7 @@ undefined,
       db.prepare(
         `UPDATE messages SET run_status = ?, ended_at = ? WHERE id = ?`,
       ).run(finalStatus.status, Date.now(), assistantMessageId);
-      const artifacts = await listLiveArtifacts({ projectsRoot: PROJECTS_DIR, projectId });
+      const artifacts = await listLiveArtifacts({ projectsRoot: projectsDir(), projectId });
       const artifact = artifacts.find((candidate) => candidate.createdByRunId === run.id);
       const status = finalStatus.status === 'succeeded' && !artifact ? 'failed' : finalStatus.status;
       return {
@@ -16780,7 +16782,7 @@ undefined,
     design,
     resources: { listAllSkillLikeEntries },
     http: httpDeps,
-    paths: { BUNDLED_PLUGINS_DIR, PROJECTS_DIR, RUNTIME_DATA_DIR },
+    paths: { BUNDLED_PLUGINS_DIR, get PROJECTS_DIR() { return projectsDir(); }, RUNTIME_DATA_DIR },
     agents: { detectAgents, getAgentDef },
     chat: { prepareOdNextInitialPromptBundle, startChatRun },
     lifecycle: { isDaemonShuttingDown: () => daemonShuttingDown },

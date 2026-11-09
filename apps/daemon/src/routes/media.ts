@@ -228,7 +228,7 @@ export { mediaTaskErrorFromFailure };
 export function registerMediaRoutes(app: Express, ctx: RegisterMediaRoutesDeps) {
   const { db, design } = ctx;
   const { sendApiError, requireLocalDaemonRequest, isLocalSameOrigin, resolvedPortRef } = ctx.http;
-  const { PROJECT_ROOT, PROJECTS_DIR, RUNTIME_DATA_DIR } = ctx.paths;
+  const { PROJECT_ROOT, RUNTIME_DATA_DIR } = ctx.paths;
   // Derived from the one resolved daemon data root; the store rejects anything
   // else, so there is no second data root to drift.
   const chatArtifactBlobs = createChatArtifactBlobStore({ dataDir: RUNTIME_DATA_DIR });
@@ -418,7 +418,7 @@ export function registerMediaRoutes(app: Express, ctx: RegisterMediaRoutesDeps) 
         try {
           await associateLateRunProducedFile(db, {
             runId,
-            projectRoot: resolveProjectDir(PROJECTS_DIR, projectId),
+            projectRoot: resolveProjectDir(ctx.paths.PROJECTS_DIR, projectId),
             projectRelativePath: name,
           });
         } catch (err: any) {
@@ -440,7 +440,7 @@ export function registerMediaRoutes(app: Express, ctx: RegisterMediaRoutesDeps) 
         getWorkspaceProjectByProjectId(db, projectId)?.workspaceId?.trim() || undefined;
       generateMedia({
         projectRoot: PROJECT_ROOT,
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
         projectId,
         surface: req.body?.surface,
         model: req.body?.model,
@@ -614,7 +614,7 @@ export function registerMediaRoutes(app: Express, ctx: RegisterMediaRoutesDeps) 
     if (typeof body.compositionDir !== 'string' || !body.compositionDir.trim()) {
       return sendApiError(res, 400, 'BAD_REQUEST', 'compositionDir is required');
     }
-    const projectDir = resolveProjectDir(PROJECTS_DIR, project.id, project.metadata);
+    const projectDir = resolveProjectDir(ctx.paths.PROJECTS_DIR, project.id, project.metadata);
     const result: HyperFramesScaffoldResponse = await scaffoldHyperFramesComposition({
       projectDir,
       compositionDir: body.compositionDir,
@@ -1266,7 +1266,7 @@ export function registerMediaRoutes(app: Express, ctx: RegisterMediaRoutesDeps) 
         try {
           confirmedFiles.set(
             task.id,
-            await resolveProjectFilePath(PROJECTS_DIR, projectId, name, project.metadata),
+            await resolveProjectFilePath(ctx.paths.PROJECTS_DIR, projectId, name, project.metadata),
           );
         } catch {
           if (finiteNumber(task.file?.size) !== null && finiteNumber(task.file?.mtime) !== null) {
@@ -1278,7 +1278,7 @@ export function registerMediaRoutes(app: Express, ctx: RegisterMediaRoutesDeps) 
     if (movedCandidates.length > 0) {
       try {
         const projectFiles = await listFiles(
-          PROJECTS_DIR,
+          ctx.paths.PROJECTS_DIR,
           projectId,
           { metadata: project.metadata },
         );

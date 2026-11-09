@@ -299,7 +299,7 @@ function projectHostOpenDir(
 export function registerHostToolsRoutes(app: Express, ctx: RegisterHostToolsRoutesDeps) {
   const { db } = ctx;
   const { sendApiError } = ctx.http;
-  const { PROJECTS_DIR } = ctx.paths;
+  
   const { getProject } = ctx.projectStore;
   const { resolveProjectDir } = ctx.projectFiles;
 
@@ -348,7 +348,7 @@ export function registerHostToolsRoutes(app: Express, ctx: RegisterHostToolsRout
       }
       if (!await ctx.authorizeProjectRequest(req, res, project.id, { mode: 'read' })) return;
       const resolvedDir = projectHostOpenDir(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         project,
         resolveProjectDir,
       );

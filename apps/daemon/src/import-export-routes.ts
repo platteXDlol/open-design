@@ -50,7 +50,7 @@ export function registerImportRoutes(app: Express, ctx: RegisterImportRoutesDeps
   const { importUpload } = ctx.uploads;
   const { fs, path } = ctx.node;
   const { randomId } = ctx.ids;
-  const { PROJECTS_DIR, RUNTIME_DATA_DIR_CANONICAL } = ctx.paths;
+  const { RUNTIME_DATA_DIR_CANONICAL } = ctx.paths;
 
   // A project root (imported folder OR a working-dir rebind) must not point at a
   // system directory or a credential store. Binding it at $HOME / ~/.ssh / etc.
@@ -118,7 +118,7 @@ export function registerImportRoutes(app: Express, ctx: RegisterImportRoutesDeps
         const now = Date.now();
         const baseName =
           originalName.replace(/\.zip$/i, '').trim() || 'Claude Design import';
-        importedProjectDir = projectDir(PROJECTS_DIR, id);
+        importedProjectDir = projectDir(ctx.paths.PROJECTS_DIR, id);
         const imported = await importClaudeDesignZip(
           req.file.path,
           importedProjectDir,
@@ -604,7 +604,7 @@ export interface RegisterProjectExportRoutesDeps extends RouteDeps<'db' | 'http'
 export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectExportRoutesDeps) {
   const { db } = ctx;
   const { sendApiError } = ctx.http;
-  const { PROJECTS_DIR, RUNTIME_DATA_DIR_CANONICAL } = ctx.paths;
+  const { RUNTIME_DATA_DIR_CANONICAL } = ctx.paths;
   const { fs, path } = ctx.node;
   const { randomId } = ctx.ids;
   const { getProject } = ctx.projectStore;
@@ -733,7 +733,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
   ): Promise<string | undefined> {
     if (!versionId) return undefined;
     const result = await readProjectFileVersion(
-      PROJECTS_DIR,
+      ctx.paths.PROJECTS_DIR,
       projectId,
       fileName,
       versionId,
@@ -799,7 +799,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
       let ownerMeta;
       try {
         ownerMeta = await resolveProjectFilePath(
-          PROJECTS_DIR,
+          ctx.paths.PROJECTS_DIR,
           projectId,
           fileName,
           project.metadata,
@@ -832,14 +832,14 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
       }
 
       const ownerFile = await readProjectFile(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         projectId,
         fileName,
         project.metadata,
       );
       const exportSource = await resolveHtmlExportSource({
         projectId,
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
         relPath: fileName,
         html: ownerFile.buffer.toString('utf8'),
         metadata: project.metadata,
@@ -850,7 +850,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
         let meta;
         try {
           meta = await resolveProjectFilePath(
-            PROJECTS_DIR,
+            ctx.paths.PROJECTS_DIR,
             projectId,
             projectPath,
             project.metadata,
@@ -864,7 +864,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
           size: meta.size,
           read: async () => {
             const file = await readProjectFile(
-              PROJECTS_DIR,
+              ctx.paths.PROJECTS_DIR,
               projectId,
               projectPath,
               project.metadata,
@@ -963,7 +963,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
             format,
             metadata,
             projectId,
-            projectsRoot: PROJECTS_DIR,
+            projectsRoot: ctx.paths.PROJECTS_DIR,
             ...(sourceHtml !== undefined ? { sourceHtml } : {}),
             ...(typeof title === 'string' ? { title } : {}),
             ...(typeof body?.deck === 'boolean' ? { deck: body.deck } : {}),
@@ -1039,7 +1039,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
         metadata,
         outputDir,
         projectId,
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
       };
       renderPreviewScope = ctx.projectPreviewScopes.mint(
         projectId,
@@ -1304,7 +1304,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
       if (!await authorizeExportRead(req, res, { allowNavigationQuery: true })) return;
       const project = getProject(db, req.params.id);
       const { stream, baseName } = await createProjectArchiveStream(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         req.params.id,
         root,
         project?.metadata,
@@ -1347,7 +1347,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
       if (!await authorizeExportRead(req, res)) return;
       const project = getProject(db, req.params.id);
       const { stream } = await createBatchArchiveStream(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         req.params.id,
         files,
         project?.metadata,
@@ -1384,7 +1384,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
         return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'project not found');
       }
       if (!await ctx.authorizeProjectRequest(req, res, project.id, { mode: 'read' })) return;
-      const files = await listFiles(PROJECTS_DIR, req.params.id, {
+      const files = await listFiles(ctx.paths.PROJECTS_DIR, req.params.id, {
         metadata: project.metadata,
       });
       /** @type {import('@open-design/contracts').ProjectExportManifestResponse} */
@@ -1427,7 +1427,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
         fileName,
         metadata,
         projectId: req.params.id,
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
         ...(sourceHtml !== undefined ? { sourceHtml } : {}),
         title: typeof title === 'string' ? title : undefined,
       });
@@ -1628,7 +1628,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
         let ownerMeta;
         try {
           ownerMeta = await resolveProjectFilePath(
-            PROJECTS_DIR,
+            ctx.paths.PROJECTS_DIR,
             req.params.id,
             relPath,
             project?.metadata,
@@ -1662,7 +1662,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
         }
 
         try {
-          const file = await readProjectFile(PROJECTS_DIR, req.params.id, relPath, project?.metadata);
+          const file = await readProjectFile(ctx.paths.PROJECTS_DIR, req.params.id, relPath, project?.metadata);
           ownerHtml = file.buffer.toString('utf8');
         } catch (err: any) {
           const status = err && err.code === 'ENOENT' ? 404 : 400;
@@ -1684,7 +1684,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
         let meta;
         try {
           meta = await resolveProjectFilePath(
-            PROJECTS_DIR,
+            ctx.paths.PROJECTS_DIR,
             req.params.id,
             sibling,
             project?.metadata,
@@ -1697,7 +1697,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
           read: async () => {
             try {
               const siblingFile = await readProjectFile(
-                PROJECTS_DIR,
+                ctx.paths.PROJECTS_DIR,
                 req.params.id,
                 sibling,
                 project?.metadata,
@@ -1712,7 +1712,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
 
       const exportSource = await resolveHtmlExportSource({
         projectId: req.params.id,
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
         relPath,
         html: ownerHtml,
         metadata: project?.metadata,
@@ -1975,7 +1975,7 @@ export interface RegisterFinalizeRoutesDeps extends RouteDeps<'db' | 'http' | 'p
 export function registerFinalizeRoutes(app: Express, ctx: RegisterFinalizeRoutesDeps) {
   const { db } = ctx;
   const { sendApiError } = ctx.http;
-  const { PROJECTS_DIR, DESIGN_SYSTEMS_DIR } = ctx.paths;
+  const { DESIGN_SYSTEMS_DIR } = ctx.paths;
   const { getProject } = ctx.projectStore;
   const { isSafeId, validateExternalApiBaseUrl } = ctx.validation;
   const {
@@ -2073,7 +2073,7 @@ export function registerFinalizeRoutes(app: Express, ctx: RegisterFinalizeRoutes
       try {
         result = await finalizeDesignPackage(
           db,
-          PROJECTS_DIR,
+          ctx.paths.PROJECTS_DIR,
           DESIGN_SYSTEMS_DIR,
           req.params.id,
           {

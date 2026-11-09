@@ -164,7 +164,7 @@ export function registerLibraryRoutes(app: Express, ctx: RegisterLibraryRoutesDe
   const { db } = ctx;
   const { sendApiError, createSseResponse, requireLocalDaemonRequest, isLocalSameOrigin, resolvedPortRef } =
     ctx.http;
-  const { LIBRARY_DIR, PROJECTS_DIR, USER_DESIGN_SYSTEMS_DIR } = ctx.paths;
+  const { LIBRARY_DIR, USER_DESIGN_SYSTEMS_DIR } = ctx.paths;
   const {
     getProject,
     insertProject,
@@ -199,13 +199,13 @@ export function registerLibraryRoutes(app: Express, ctx: RegisterLibraryRoutesDe
     dir?: string,
     includeElement = false,
   ): Promise<{ relPath: string; elementRelPath?: string }> {
-    const bytesPath = resolveAssetBytesPath(asset, PROJECTS_DIR);
+    const bytesPath = resolveAssetBytesPath(asset, ctx.paths.PROJECTS_DIR);
     if (!bytesPath) throw new Error('asset bytes not available');
     const project = getProject(db, projectId);
     if (!project) throw new Error('project not found');
     const subdir = dir && dir.trim() ? dir.trim() : 'library';
     const { absDir, relDir } = await ensureProjectSubdir(
-      PROJECTS_DIR,
+      ctx.paths.PROJECTS_DIR,
       projectId,
       subdir,
       project.metadata,
@@ -257,7 +257,7 @@ export function registerLibraryRoutes(app: Express, ctx: RegisterLibraryRoutesDe
     }
     reconcileInFlight = reconcileLibrary(db, {
       LIBRARY_DIR,
-      PROJECTS_DIR,
+      PROJECTS_DIR: ctx.paths.PROJECTS_DIR,
       USER_DESIGN_SYSTEMS_DIR,
     }).finally(() => {
       lastReconcileAt = Date.now();
@@ -533,7 +533,7 @@ export function registerLibraryRoutes(app: Express, ctx: RegisterLibraryRoutesDe
   app.get('/api/library/assets/:id/raw', async (req, res) => {
     const asset = getLibraryAsset(db, req.params.id);
     if (!asset) return sendApiError(res, 404, 'NOT_FOUND', 'asset not found');
-    const abs = resolveAssetBytesPath(asset, PROJECTS_DIR);
+    const abs = resolveAssetBytesPath(asset, ctx.paths.PROJECTS_DIR);
     if (!abs) return sendApiError(res, 404, 'NOT_FOUND', 'asset bytes not available');
     try {
       const info = await stat(abs);
@@ -631,7 +631,7 @@ export function registerLibraryRoutes(app: Express, ctx: RegisterLibraryRoutesDe
     if (!createWorkspace.ok) {
       return ((..._v05_unused: any[]) => ({} as any))(res, createWorkspace);
     }
-    const bytesPath = resolveAssetBytesPath(asset, PROJECTS_DIR);
+    const bytesPath = resolveAssetBytesPath(asset, ctx.paths.PROJECTS_DIR);
     if (!bytesPath) return sendApiError(res, 404, 'NOT_FOUND', 'asset bytes not available');
     try {
       const html = await readFile(bytesPath, 'utf8');
@@ -675,7 +675,7 @@ export function registerLibraryRoutes(app: Express, ctx: RegisterLibraryRoutesDe
       // editable entry file. No artifact manifest — a plain HTML file avoids
       // the publication/stub guards (a captured page is arbitrary markup) while
       // still rendering and editing like any project HTML.
-      await writeProjectFile(PROJECTS_DIR, projectId, 'index.html', Buffer.from(html, 'utf8'), {}, metadata);
+      await writeProjectFile(ctx.paths.PROJECTS_DIR, projectId, 'index.html', Buffer.from(html, 'utf8'), {}, metadata);
       addLibraryAssetSource(db, { assetId: asset.id, sourceKind: 'manual-upload', projectId });
       const body: LibraryEditAsPageResponse = { projectId, conversationId, relPath: 'index.html' };
       res.json(body);

@@ -329,7 +329,7 @@ export function createRunAnalyticsLifecycle(
   deps: RunAnalyticsLifecycleDeps,
 ): RunAnalyticsLifecycle {
   const { db, design } = deps;
-  const { PROJECTS_DIR, RUNTIME_DATA_DIR } = deps.paths;
+  const { RUNTIME_DATA_DIR } = deps.paths;
   const { detectAgents } = deps.agents;
   const {
     reportRunCompletionTelemetryFallback,
@@ -922,7 +922,7 @@ export function createRunAnalyticsLifecycle(
           const deliverable = run.externalPluginAnalytics
             ? await validateChatRunDeliverable({
                 db,
-                projectsRoot: PROJECTS_DIR,
+                projectsRoot: deps.paths.PROJECTS_DIR,
                 run,
                 runStatus: run.status,
                 artifactCount,

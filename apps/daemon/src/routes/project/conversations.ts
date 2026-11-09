@@ -114,7 +114,7 @@ export function registerProjectConversationRoutes(app: Express, ctx: RegisterPro
     upsertMessage,
   } = ctx.conversations;
   const { randomId } = ctx.ids;
-  const { BRANDS_DIR, PROJECTS_DIR } = ctx.paths;
+  const { BRANDS_DIR } = ctx.paths;
   const { readAppConfig } = ctx.appConfig;
   const { getAgentDef } = ctx.agents;
   // Production registration always injects the shared project authority gate.
@@ -376,7 +376,7 @@ export function registerProjectConversationRoutes(app: Express, ctx: RegisterPro
         conversationId: req.params.cid,
         randomId,
         brandsRoot: BRANDS_DIR,
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
         project,
         ...(agentId ? {
           transcriptAgent: {
