@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { register } from 'prom-client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 type StartedServer = {
   url: string;
@@ -107,7 +108,8 @@ describe('project design-system copy route', () => {
     );
   }, 60_000);
 
-  it('fails design-system workspace creation when a source file cannot be copied', async () => {
+  // root ignores file modes, so chmod 000 cannot provoke the read failure.
+  it.skipIf(process.getuid?.() === 0)('fails design-system workspace creation when a source file cannot be copied', async () => {
     dataDir = await mkdtemp(join(tmpdir(), 'od-project-ds-copy-fail-'));
     started = await startIsolatedServer(dataDir);
 
@@ -126,7 +128,7 @@ describe('project design-system copy route', () => {
       name: 'refs/unreadable.md',
       content: '# Hidden evidence\nThis file must not be silently skipped.',
     });
-    await chmod(join(dataDir, 'projects', sourceId, 'refs', 'unreadable.md'), 0o000);
+    await chmod(join(resolveUserProjectsRoot(dataDir), sourceId, 'refs', 'unreadable.md'), 0o000);
 
     const response = await fetch(`${started.url}/api/projects/${sourceId}/design-system-copy`, {
       method: 'POST',

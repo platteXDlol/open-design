@@ -403,7 +403,8 @@ describe('project file version routes', () => {
     expect(await rawResponse.text()).toBe('<html><body>uploaded</body></html>');
   });
 
-  it('returns a typed warning when restore writes the file but cannot append the restore version', async () => {
+  // root ignores file modes, so chmod cannot provoke the write failure.
+  it.skipIf(process.getuid?.() === 0)('returns a typed warning when restore writes the file but cannot append the restore version', async () => {
     const projectId = await createProject();
     await writeProjectFile(projectId, 'brand.html', '<html><body>old</body></html>');
     const createResponse = await fetch(`${baseUrl}/api/projects/${projectId}/files/brand.html/versions`, {

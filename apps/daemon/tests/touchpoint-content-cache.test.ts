@@ -272,7 +272,8 @@ describe('touchpoint content cache', () => {
     expect(cache.held(MODAL)).toBeNull();
   });
 
-  it('survives a data directory it cannot write to', () => {
+  // root ignores file modes, so chmod cannot provoke the write failure.
+  it.skipIf(process.getuid?.() === 0)('survives a data directory it cannot write to', () => {
     const root = path.join(dataDir, 'touchpoint-content-cache');
     fs.mkdirSync(root, { recursive: true });
     fs.chmodSync(root, 0o500);
