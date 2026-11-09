@@ -24,7 +24,7 @@ async function serve(sub = 'alice', onFirstAdmin?: (id: string) => void) {
   app.use(createAuthMiddleware({ store, enabled: true }));
   const s = app.listen(0);
   const url = `http://127.0.0.1:${(s.address() as AddressInfo).port}`;
-  registerAuthRoutes(app, { store, enabled: true, publicUrl: url, adapter: fakeIdp(sub), onFirstAdmin });
+  registerAuthRoutes(app, { store, enabled: true, publicUrl: url, adapter: fakeIdp(sub), ...(onFirstAdmin ? { onFirstAdmin } : {}) });
   close = () => s.close();
   return { store, url };
 }
@@ -46,7 +46,7 @@ describe('auth routes (v7)', () => {
     const cb = await fetch(`${url}/api/auth/callback?code=good&state=${state}`, { redirect: 'manual' });
     expect(cb.headers.get('set-cookie')).toMatch(/HttpOnly/i);
     const cookie = cb.headers.get('set-cookie')!.split(';')[0]!;
-    const me = await (await fetch(`${url}/api/auth/me`, { headers: { cookie } })).json();
+    const me = (await (await fetch(`${url}/api/auth/me`, { headers: { cookie } })).json()) as { user: { id: string } };
     expect(me.user).toMatchObject({ email: 'alice@x', isAdmin: true });
     expect(admin).toBe(me.user.id);
     await fetch(`${url}/api/auth/logout`, { method: 'POST', headers: { cookie } });
@@ -61,11 +61,11 @@ describe('auth routes (v7)', () => {
   it('AC4: token create/list/revoke; token authenticates API calls', async () => {
     const { url } = await serve();
     const cookie = await login(url);
-    const created = await (await fetch(`${url}/api/auth/tokens`, {
+    const created = (await (await fetch(`${url}/api/auth/tokens`, {
       method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: JSON.stringify({ label: 'cli' }),
-    })).json();
+    })).json()) as { id: string; token: string };
     const bearer = { authorization: `Bearer ${created.token}` };
-    expect((await (await fetch(`${url}/api/auth/tokens`, { headers: bearer })).json()).tokens).toHaveLength(1);
+    expect(((await (await fetch(`${url}/api/auth/tokens`, { headers: bearer })).json()) as { tokens: unknown[] }).tokens).toHaveLength(1);
     expect((await fetch(`${url}/api/auth/tokens/${created.id}`, { method: 'DELETE', headers: { cookie } })).status).toBe(200);
     expect((await fetch(`${url}/api/auth/tokens`, { headers: bearer })).status).toBe(401);
   });
