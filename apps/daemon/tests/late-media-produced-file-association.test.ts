@@ -35,6 +35,7 @@ import { delimiter, join, resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { startServer } from '../src/server.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 import { associateLateRunProducedFile } from '../src/runtimes/run-produced-files.js';
 
 /** Open the running server's own database, the way the neighbouring suite does. */
@@ -280,7 +281,7 @@ describe('a media file that lands after the run terminal still reaches its messa
     );
     expect(terminal?.runStatus).toBe('succeeded');
 
-    const outputPath = join(dataDir, 'projects', projectId, outputName);
+    const outputPath = join(resolveUserProjectsRoot(dataDir), projectId, outputName);
     expect(
       existsSync(outputPath),
       'the media file already existed at the run terminal — the ordering premise of this test does not hold',
@@ -388,7 +389,7 @@ describe('a media file that lands after the run terminal still reaches its messa
     const outcome = await withDb((db) =>
       associateLateRunProducedFile(db, {
         runId: merged!.runId!,
-        projectRoot: join(dataDir, 'projects', turn.projectId),
+        projectRoot: join(resolveUserProjectsRoot(dataDir), turn.projectId),
         projectRelativePath: 'late-cover.png',
       }),
     );
@@ -524,7 +525,7 @@ const path = require('node:path');
     );
 
     // Two more outputs of the same run, landing together.
-    const projectDir = join(dataDir, 'projects', turn.projectId);
+    const projectDir = join(resolveUserProjectsRoot(dataDir), turn.projectId);
     await fsp.writeFile(join(projectDir, 'batch-two.png'), Buffer.from(ONE_BY_ONE_PNG_B64, 'base64'));
     await fsp.writeFile(join(projectDir, 'batch-three.mp3'), Buffer.alloc(512, 9));
 

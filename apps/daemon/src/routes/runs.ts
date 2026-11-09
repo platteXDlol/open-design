@@ -1400,7 +1400,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     const binding = ctx.projectStore.getWorkspaceProjectByProjectId(db, projectId);
     if (!binding) return { ok: true, authorizedBoundMutation: false };
 
-    const requestContext = ((..._v05_unused: any[]) => ({} as any))(req);
+    const requestContext: any = null; // v0.5: no workspace request headers in the local fork
     const mustAuthorize = binding.visibility === 'team' || requestContext !== null;
     if (!mustAuthorize) {
       // Headerless local CLI/BYOK calls keep the legacy Personal-project path.
@@ -1458,7 +1458,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
   > {
     if (!ctx.projectStore) return { ok: true, workspaceScope: null };
     const binding = ctx.projectStore.getWorkspaceProjectByProjectId(db, projectId);
-    const requestContext = ((..._v05_unused: any[]) => ({} as any))(req);
+    const requestContext: any = null; // v0.5: no workspace request headers in the local fork
     if (binding) {
       // A shared Team project is a single-writer resource. Billing still uses
       // the persisted Workspace binding below, but starting an agent can write
@@ -1635,7 +1635,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     // the Workspace directory is stale or offline, regardless of which agent
     // created the run. Explicitly asserted identity still goes through the
     // local project gate so conflicting or partial scope cannot be ignored.
-    const requestContext = ((..._v05_unused: any[]) => ({} as any))(req);
+    const requestContext: any = null; // v0.5: no workspace request headers in the local fork
     const carriesNavigationScope =
       options.mode === 'read'
       && options.allowNavigationQuery
@@ -3243,7 +3243,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
       const binding =
         ctx.projectStore?.getWorkspaceProjectByProjectId(db, projectId);
       if (binding) {
-        const requestContext = ((..._v05_unused: any[]) => ({} as any))(req);
+        const requestContext: any = null; // v0.5: no workspace request headers in the local fork
         if (requestContext === null) {
           // Headerless local CLI/MCP callers may list only the runs whose
           // persisted runtime is known not to use AMR's Workspace billing

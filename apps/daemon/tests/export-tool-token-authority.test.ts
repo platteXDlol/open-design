@@ -23,6 +23,7 @@ import {
 } from '../src/db.js';
 import { startServer } from '../src/server.js';
 import { toolTokenRegistry } from '../src/tool-tokens.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 const execFileP = promisify(execFile);
 const daemonRoot = fileURLToPath(new URL('..', import.meta.url));
@@ -95,7 +96,7 @@ describe('od export run-scoped project authority', () => {
       createdByWorkspaceMemberId: 'foreign-member',
     });
     for (const id of [projectId, foreignProjectId, unboundProjectId]) {
-      const projectDir = path.join(dataDir, 'projects', id);
+      const projectDir = path.join(resolveUserProjectsRoot(dataDir), id);
       await mkdir(projectDir, { recursive: true });
       await writeFile(
         path.join(projectDir, 'index.html'),

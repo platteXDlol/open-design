@@ -103,7 +103,7 @@ export interface ManualInstallPlan {
   kind: 'manual';
   slug: AgentSlug;
   format: 'json' | 'yaml' | 'toml';
-  /** Best-known config location, or null when even that is ((..._v05_args: any[]) => ({} as any)). */
+  /** Best-known config location, or null when even that is unknown. */
   configPath: string | null;
   snippet: string;
   reason: string;

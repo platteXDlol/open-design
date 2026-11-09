@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-/** G16 replaces the error-card model-picker/settings actions with the fixed
- * Cloud handoff for a failed local run. Model-unavailable copy remains covered.
+/** G16 removed the error-card model-picker/settings actions; the Local-First
+ * fork (v0.5) also dropped the Cloud handoff, leaving only support + logs.
  */
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ChatPane } from '../../src/components/ChatPane';
@@ -63,25 +63,14 @@ function renderPane(extra: Record<string, unknown>) {
   );
 }
 
-describe('G16 · 模型下线卡的固定 Cloud 入口', () => {
-  it.each([true, false])('不调用旧模型选择器或设置，无论 picker 是否接线 (%s)', (withPicker) => {
-    const onSwitchModel = vi.fn();
-    const onOpenSettings = vi.fn();
-    const onRetry = vi.fn();
-    const onSwitchToAmrAndRetry = vi.fn();
-    const { container } = renderPane({
-      ...(withPicker ? { onSwitchModel } : {}), onOpenSettings, onRetry, onSwitchToAmrAndRetry,
-    });
+describe('G16 · model-unavailable card keeps only fixed actions', () => {
+  it.each([true, false])('never shows the model picker or Settings (picker wired: %s)', (withPicker) => {
+    const { container } = renderPane(withPicker ? { onSwitchModel: vi.fn(), onOpenSettings: vi.fn() } : {});
     const card = screen.getByTestId('chat-run-error-card');
     expect(within(card).getAllByRole('button').map((button) => button.textContent?.trim())).toEqual([
-      'chat.runError.contactSupportCta', 'chat.runError.exportLogsCta', 'chat.amrCard.switchCta',
+      'chat.runError.contactSupportCta', 'chat.runError.exportLogsCta',
     ]);
     expect(container.querySelector('[data-testid="chat-error-switch-model"]')).toBeNull();
-    fireEvent.click(within(card).getByRole('button', { name: 'chat.amrCard.switchCta' }));
-    expect(onSwitchToAmrAndRetry).toHaveBeenCalledWith(expect.objectContaining({ id: 'assistant-1', agentId: 'claude' }));
-    expect(onSwitchModel).not.toHaveBeenCalled();
-    expect(onOpenSettings).not.toHaveBeenCalled();
-    expect(onRetry).not.toHaveBeenCalled();
   });
 });
 

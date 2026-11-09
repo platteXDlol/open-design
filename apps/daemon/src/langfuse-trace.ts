@@ -318,7 +318,7 @@ export interface RuntimeInfo {
   appChannel?: string;
   /** Whether the daemon is running inside a packaged build. */
   packaged?: boolean;
-  /** Front-end carrier — `desktop` (Electron), `web` (browser), or ((..._v05_args: any[]) => ({} as any)). */
+  /** Front-end carrier — `desktop` (Electron), `web` (browser), or unknown. */
   clientType?: 'desktop' | 'web' | 'unknown';
   /** Exact CLI version observed by the daemon's bounded detection probe. */
   agentCliVersion?: string;

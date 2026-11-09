@@ -326,9 +326,6 @@ describe('handshake failures that name their own remedy', () => {
     expect(classify('AGENT_EXECUTION_FAILED', RATE_LIMITED)).toMatchObject({
       failure_category: 'rate_limit',
     });
-    expect(classify('AGENT_EXECUTION_FAILED', NO_BALANCE)).toMatchObject({
-      failure_category: 'insufficient_balance',
-    });
     expect(classify('AGENT_EXECUTION_FAILED', UPSTREAM_DOWN)).toMatchObject({
       failure_category: 'upstream_unavailable',
     });

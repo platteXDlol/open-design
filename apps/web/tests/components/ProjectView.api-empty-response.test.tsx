@@ -925,7 +925,7 @@ describe('ProjectView API empty response handling', () => {
     expect(screen.queryByText(/Refused to save artifact/i)).toBeNull();
   });
 
-  it('passes audio media execution policy and catalog media defaults to BYOK OpenCode runs', async () => {
+  it('passes audio media execution policy to BYOK OpenCode runs', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url === '/api/media/providers/elevenlabs/voices?limit=100') {
@@ -978,10 +978,8 @@ describe('ProjectView API empty response handling', () => {
         baseUrl: 'https://api.deepseek.com',
         model: 'deepseek-chat',
       }),
-      byokMediaDefaults: {
-        imageModel: 'gpt-image-2',
-        speechModel: 'gpt-4o-mini-tts',
-      },
+      // Local-First fork: no catalog media-model defaults (options are empty).
+      byokMediaDefaults: {},
       mediaExecution: {
         mode: 'enabled',
         allowedSurfaces: ['audio'],

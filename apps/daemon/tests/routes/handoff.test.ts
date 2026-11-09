@@ -11,6 +11,7 @@ import * as http from 'node:http';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { resolveUserProjectsRoot } from '../../src/storage/user-scope.js';
 
 const PROJECT_ID = 'handoff-route-fixture';
 
@@ -38,7 +39,7 @@ describe('POST /api/projects/:id/handoff — HTTP layer', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: PROJECT_ID, name: 'Handoff fixture' }),
     });
-    const projectDir = path.join(dataDir, 'projects', PROJECT_ID);
+    const projectDir = path.join(resolveUserProjectsRoot(dataDir), PROJECT_ID);
     await mkdir(projectDir, { recursive: true });
 
     // Seed a conversation with one message so transcript export succeeds.
@@ -323,7 +324,7 @@ describe('POST /api/projects/:id/handoff — HTTP layer', () => {
     // 409 CONFLICT with the shared ApiErrorCode value.
     const dataDir = process.env.OD_DATA_DIR;
     if (!dataDir) throw new Error('OD_DATA_DIR is required for daemon route tests');
-    const lockPath = path.join(dataDir, 'projects', PROJECT_ID, '.transcript.lock');
+    const lockPath = path.join(resolveUserProjectsRoot(dataDir), PROJECT_ID, '.transcript.lock');
 
     let lockFd: number | null = null;
     try {

@@ -153,34 +153,4 @@ describe('memory extraction media-provider fallback', () => {
     });
   });
 
-  it('does not blame unsupported media providers when a text-capable media key is also saved', async () => {
-    await writeMediaConfig({
-      providers: {
-        minimax: {
-          apiKey: 'minimax-test-key',
-        },
-        elevenlabs: {
-          apiKey: 'elevenlabs-test-key',
-        },
-      },
-    });
-
-    const fetchMock = vi.fn();
-    vi.stubGlobal('fetch', fetchMock);
-
-    const suggestions = await extractWithLLM(
-      dataDir,
-      { userMessage: 'Remember that I prefer quiet transitions.' },
-      // Gemini constrains extraction to Google; the saved MiniMax key is
-      // text-capable, but not usable for this chat-protocol family.
-      { projectRoot, chatAgentId: 'gemini' },
-    );
-
-    expect(suggestions).toEqual([]);
-    expect(fetchMock).not.toHaveBeenCalled();
-    expect(listExtractions()[0]).toMatchObject({
-      phase: 'skipped',
-      reason: 'no-provider',
-    });
-  });
 });

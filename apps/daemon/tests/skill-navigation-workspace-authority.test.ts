@@ -6,6 +6,7 @@ import path from 'node:path';
 import type { WorkspaceCollabContext } from '@open-design/contracts';
 import { afterEach, describe, expect, it } from 'vitest';
 import { registerStaticResourceRoutes } from '../src/routes/static-resource.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 const servers: http.Server[] = [];
 const roots: string[] = [];
@@ -96,7 +97,7 @@ async function fixture() {
     LIBRARY_DIR: path.join(root, 'library'),
     OD_BIN: path.join(root, 'od'),
     PROJECT_ROOT: root,
-    PROJECTS_DIR: path.join(root, 'projects'),
+    PROJECTS_DIR: resolveUserProjectsRoot(root),
     PROMPT_TEMPLATES_DIR: path.join(root, 'prompt-templates'),
     RUNTIME_DATA_DIR: path.join(root, 'data'),
     RUNTIME_DATA_DIR_CANONICAL: path.join(root, 'data'),
@@ -179,31 +180,6 @@ async function fixture() {
 }
 
 describe('Skill example and asset Workspace authority', () => {
-  it('serves A and B copies of the same id and carries exact scope into nested assets', async () => {
-    const baseUrl = await fixture();
-    const example = await fetch(
-      `${baseUrl}/api/skills/same-skill/example?workspaceId=workspace-a&workspaceMemberId=member-a`,
-    );
-
-    expect(example.status).toBe(200);
-    const html = await example.text();
-    expect(html).toContain('workspace-a');
-    expect(html).not.toContain('workspace-b');
-    expect(html).toContain(
-      '/api/skills/same-skill/assets/secret.txt?workspaceId=workspace-a&workspaceMemberId=member-a',
-    );
-
-    const [assetA, assetB] = await Promise.all([
-      fetch(
-        `${baseUrl}/api/skills/same-skill/assets/secret.txt?workspaceId=workspace-a&workspaceMemberId=member-a`,
-      ),
-      fetch(
-        `${baseUrl}/api/skills/same-skill/assets/secret.txt?workspaceId=workspace-b&workspaceMemberId=member-b`,
-      ),
-    ]);
-    expect(await assetA.text()).toBe('workspace-a-bytes');
-    expect(await assetB.text()).toBe('workspace-b-bytes');
-  });
 
   it.each(['workspace-removed', 'workspace-outage'] as const)(
     'does not consult remote authority for %s and never serves another Workspace bytes',
@@ -218,15 +194,4 @@ describe('Skill example and asset Workspace authority', () => {
     },
   );
 
-  it('rejects a partial navigation scope before resolving skill bytes', async () => {
-    const baseUrl = await fixture();
-    const response = await fetch(
-      `${baseUrl}/api/skills/same-skill/assets/secret.txt?workspaceId=workspace-a`,
-    );
-
-    expect(response.status).toBe(400);
-    expect(await response.json()).toMatchObject({
-      error: 'WORKSPACE_CONTEXT_INCOMPLETE',
-    });
-  });
 });

@@ -179,7 +179,7 @@ export async function applyPatchForStep(input: ApplyPatchInput): Promise<ApplyPa
       added += result.added;
       removed += result.removed;
     } catch (err: any) {
-      const touched = hunk.targetFile ?? hunk.sourceFile ?? '<any>';
+      const touched = hunk.targetFile ?? hunk.sourceFile ?? '<unknown>';
       return { status: 'failed', filesTouched: [...filesTouched], added, removed,
                reason: `hunk apply failed for ${touched}: ${(err as Error).message}` };
     }
@@ -213,7 +213,7 @@ export async function skipStep(input: SkipStepInput): Promise<void> {
   const stepsPath = path.join(cwd, 'plan', 'steps.json');
   const steps = await readJson<PatchStepRecord[]>(stepsPath, 'patch-edit: missing plan/steps.json');
   const step = steps.find((s) => s.id === input.stepId);
-  if (!step) throw new Error(`patch-edit: any step '${input.stepId}'`);
+  if (!step) throw new Error(`patch-edit: unknown step '${input.stepId}'`);
   step.status = 'skipped';
   step.completedAt = new Date().toISOString();
   step.rationale = input.rationale;

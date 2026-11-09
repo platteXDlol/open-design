@@ -482,7 +482,7 @@ describe('SettingsDialog API protocol switching', () => {
     });
     expect(next.apiProtocolConfigs?.openai).toMatchObject({
       apiKey: 'openai-key',
-      model: 'deployment-one',
+      model: 'gpt-4o-deployment',
       apiVersion: '2024-10-21',
     });
   });

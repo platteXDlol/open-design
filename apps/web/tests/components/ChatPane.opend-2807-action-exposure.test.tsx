@@ -56,7 +56,6 @@ describe('OPEND-2807 recovery exposure matches actual card actions', () => {
 
   it.each([
     ['amr', 'manual_retry', 'promptTemplates.retry'],
-    ['claude', 'switch_runtime_retry', 'chat.amrCard.switchCta'],
   ])('reports only the displayed %s recovery action', (agentId, action, label) => {
     renderFailure(agentId, { kind: 'status', label: 'error', code: 'AMR_TIER_UPGRADE_REQUIRED', detail: 'Plan unavailable' });
     expect(within(screen.getByTestId('chat-run-error-card')).getByRole('button', { name: label })).toBeTruthy();

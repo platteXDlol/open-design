@@ -474,6 +474,17 @@ import { isArtboardDeckFile } from '@open-design/contracts';
 // v0.5: the workspace event hub was removed with the collab plane; emits are no-ops.
 const emitWorkspaceEvent = (..._v05_unused: any[]): void => {};
 const emitWorkspaceDirectoryChanged = (..._v05_unused: any[]): void => {};
+// v0.5 local-only replacements for deleted collab/workspace helpers that are
+// still reached on ordinary local requests. No team plane: nothing is a
+// shared placeholder, requests carry no workspace context, presence has no cache.
+const isUnmaterializedSharedPlaceholder = (..._v05_unused: any[]): boolean => false;
+const resolveOptionalLocalWorkspaceRequestAuthority = (..._v05_unused: any[]) =>
+  ({ ok: true as const, context: null as any });
+const invalidatePresenceReadCache = (..._v05_unused: any[]): void => {};
+const markPresenceReadCacheStale = (..._v05_unused: any[]): void => {};
+const WORKSPACE_DIRECTORY_EVENTS_CAPABILITY = 'v05-removed:workspace-directory-events';
+const CODING_PLAN_USAGE_EVENTS_CAPABILITY = 'v05-removed:coding-plan-usage-events';
+const AUTHORITATIVE_PROJECT_PRESENCE_CAPABILITY = 'v05-removed:project-presence';
 
 function isSingleFileHtml(name: string): boolean {
   return /\.html?$/i.test(name) && !isArtboardDeckFile(name);
@@ -2604,7 +2615,7 @@ function rewriteKnownAgentStreamError(agentId, message, failureText = '') {
  * work and no waiting to the failure path.
  *
  * @param def - The resolved `RuntimeAgentDef` for this run.
- * @returns An `AcpAgentIdentity`, with `null` when the runtime is ((..._v05_args: any[]) => ({} as any)).
+ * @returns An `AcpAgentIdentity`, with `null` when the runtime is unknown.
  */
 function agentFailureIdentity(def) {
   return { agentName: def?.name ?? null };
@@ -3657,7 +3668,7 @@ undefined,
     // Local/dev has no signed membership directory. Its explicit request
     // headers are the complete, static authority; still never consult the
     // daemon's mutable active-workspace context.
-    const claimed = ((..._v05_unused: any[]) => ({} as any))(input.req);
+    const claimed: any = null; // v0.5: no workspace request headers in the local fork
     if (claimed === null) {
       return {
         ok: false as const,
@@ -3775,7 +3786,7 @@ undefined,
   async function resolveDesignSystemWorkspaceContext(
     req: any,
   ): Promise<any | null> {
-    const claimed = ((..._v05_unused: any[]) => ({} as any))(req);
+    const claimed: any = null; // v0.5: no workspace request headers in the local fork
     // A completely headerless local/signed-out request is the explicit legacy
     // lane: built-ins plus unclaimed local resources, and new resources remain
     // unbound. A half-specified identity is never that lane and is rejected by
@@ -3950,7 +3961,7 @@ undefined,
     requestedWorkspaceId?: string,
   ): WorkspaceCollabContext | null => {
     ((..._v05_unused: any[]) => ({} as any))();
-    const claimed = ((..._v05_unused: any[]) => ({} as any))(req);
+    const claimed: any = null; // v0.5: no workspace request headers in the local fork
     if (!claimed || claimed === 'missing') return null;
     if (
       requestedWorkspaceId &&
@@ -3968,7 +3979,7 @@ undefined,
   };
   const verifyWorkspaceContextReadAuthority = async (req: any) => {
     ((..._v05_unused: any[]) => ({} as any))();
-    const claimed = ((..._v05_unused: any[]) => ({} as any))(req);
+    const claimed: any = null; // v0.5: no workspace request headers in the local fork
     if (claimed && claimed !== 'missing') {
       const cached = workspaceExactAuthorityCache.cached(
         claimed.workspaceId,
@@ -5222,9 +5233,6 @@ undefined,
           configuredEnv: configuredAmrEnv(),
         });
       } catch (error: any) {
-        if (((..._v05_unused: any[]) => ({} as any))(error)) {
-          throw new Error();
-        }
         throw error;
       }
     },
@@ -5237,7 +5245,7 @@ undefined,
       // The request that created a runtime already receives this state in its
       // response. Background catch-up/retry/poll completion needs a thin nudge
       // so old and new web clients re-read the same explicit route.
-      if (!((..._v05_unused: any[]) => ({} as any))(state)) return;
+      return; // v0.5: workspace billing nudges removed
       emitWorkspaceEvent(state.workspaceId, {
         type: 'billing-changed',
         workspaceId: state.workspaceId,
@@ -7198,7 +7206,6 @@ undefined,
           : null;
         if (promptBudget) run.promptBudgetDiagnostics = promptBudget;
       },
-      onTerminal: ((..._v05_unused: any[]) => ({} as any))(amrTerminalReportOutbox),
       beforeFinish: (run, status, _code, _signal, terminalAt) => {
         if (run.deliverableSyntaxValidation?.metrics) {
           run.deliverableSyntaxValidation = {
@@ -8257,7 +8264,7 @@ undefined,
       // and `syncSharedTeamDesignSystem` kept re-stamping `markTeamSynced()`
       // onto every teammate forever.
       unshareTeamDesignSystemIfShared: async (id, req) => {
-        const requestContext = ((..._v05_unused: any[]) => ({} as any))(req);
+        const requestContext: any = null; // v0.5: no workspace request headers in the local fork
         const hasWorkspaceContextHeaders = Object.keys(req.headers ?? {}).some(
           (name) => name.startsWith('x-od-workspace-') || name === 'x-od-app-user-id',
         );
@@ -8902,11 +8909,10 @@ undefined,
     id: string,
     source: string,
   ) => {
-    // v0.5 removed the team-plugin source path. The local-only fork resolves
-    // plugins by id+source from the personal plugin registry, not from a
-    // team-share flow. The personal lookup is `plugins.getLocalPluginBySource`
-    // (added in the v0.5 follow-up), wired through the same options below.
-    return null;
+    // v0.5 dropped the team-plugin source path; only the local registry record
+    // with the exact source remains.
+    const installed = getInstalledPlugin(dbHandle, id);
+    return installed?.source === source ? installed : null;
   };
 
   registerPluginRoutes(app, {
@@ -13538,7 +13544,12 @@ undefined,
     let jsonEventStreamHandler: ReturnType<typeof createJsonEventStreamHandler> | null = null;
     let agentStdoutTail = '';
     let agentStderrTail = '';
-    const agentStderrFilter = createAgentStderrVisibilityFilter(agentId);
+    // v0.5: the AMR stderr filter was removed with AMR; every remaining agent passes stderr through.
+    const agentStderrFilter = {
+      write: (chunk: unknown): string =>
+        typeof chunk === 'string' ? chunk : Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk ?? ''),
+      flush: (): string => '',
+    };
     const emitVisibleAgentStderr = (chunk: any) => {
       const visibleChunk = agentStderrFilter.write(chunk);
       if (!visibleChunk) return;
@@ -14083,7 +14094,7 @@ undefined,
     // time before deciding whether to forward it. The auth-prompt guard
     // in the close handler suppresses the buffer when the output is an
     // OAuth prompt; otherwise the flush below sends the chunks in order.
-    const plaintextStdoutBuffer: BufferedStdoutChunk[] = [];
+    const plaintextStdoutBuffer: { text: string; receivedAt: number }[] = [];
     // Arrival time of the first buffered plain-text stdout chunk
     // (antigravity). First-token timing is stamped from this value only
     // when the buffer is actually flushed to the client at close time. If

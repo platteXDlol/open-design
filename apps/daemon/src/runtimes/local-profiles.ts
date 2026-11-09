@@ -142,7 +142,7 @@ function createLocalAgentDef(
   if (!base) {
     if (hasExplicitBaseAgent) {
       console.warn(
-        `[agents] skipping local profile "${id}": any baseAgent "${baseId}"`,
+        `[agents] skipping local profile "${id}": unknown baseAgent "${baseId}"`,
       );
     }
     return null;

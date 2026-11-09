@@ -11,6 +11,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { closeDatabase, insertProject, openDatabase } from '../src/db.js';
 import { startServer, type StartServerResult } from '../src/server.js';
 import { PROJECT_EXPORT_TOOL_ENDPOINT, toolTokenRegistry } from '../src/tool-tokens.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 const execFileP = promisify(execFile);
 const daemonRoot = fileURLToPath(new URL('..', import.meta.url));
@@ -92,7 +93,7 @@ describe('od export non-loopback run-scoped authority', () => {
       updatedAt: now,
     });
     for (const id of [projectId, foreignProjectId]) {
-      const projectDir = path.join(dataDir, 'projects', id);
+      const projectDir = path.join(resolveUserProjectsRoot(dataDir), id);
       await mkdir(projectDir, { recursive: true });
       await writeFile(path.join(projectDir, 'index.html'), `<main>${id}</main>`);
     }

@@ -42,18 +42,6 @@ describe('Task-owned feedback', () => {
     expect(repeated).toEqual(bodies.map(body => body.id));
   });
 
-  it('uses the same Task relay even when Vela credentials are configured', async () => {
-    expect(readFeedbackTelemetrySinkConfig()?.kind).toBe('vela');
-    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(new Response('{}', { status: 202 }));
-    const dataDir = await mkdtemp(path.join(os.tmpdir(), 'od-task-feedback-'));
-    try {
-    expect(await reportRunFeedbackFromDaemon({ dataDir, ...context(), fetchImpl })).toMatchObject({ deliveryStatus: 'queued' });
-    await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(1));
-    expect(fetchImpl.mock.calls[0]?.[0]).toBe('https://relay.example/api/langfuse');
-    const payload = JSON.parse(String(fetchImpl.mock.calls[0]?.[1]?.body));
-    expect(payload.batch[0].body.traceId).toBe(taskId);
-    } finally { (await evidenceStore(dataDir)).close(); await rm(dataDir, { recursive: true, force: true }); }
-  });
 
   it('keeps legacy Run feedback IDs and respects content consent', async () => {
     const { traceId: _traceId, ...legacy } = context();

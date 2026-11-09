@@ -152,7 +152,7 @@ export async function* readTranscript(
 ): AsyncIterable<PanelEvent> {
   if (!fileName.endsWith('.ndjson') && !fileName.endsWith('.ndjson.gz')) {
     throw new RangeError(
-      `readTranscript: any extension on "${fileName}", expected .ndjson or .ndjson.gz`,
+      `readTranscript: unknown extension on "${fileName}", expected .ndjson or .ndjson.gz`,
     );
   }
 

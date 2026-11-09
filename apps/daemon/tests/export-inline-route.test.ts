@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { inlineRelativeAssets, type InlineAssetReader } from '../src/inline-assets.js';
 import { startServer } from '../src/server.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 // ---------------------------------------------------------------------------
 // Unit — inlineRelativeAssets pure helper
@@ -485,7 +486,7 @@ describe('GET /api/projects/:id/export/*?inline=1 route', () => {
     });
     expect(createProject.status).toBe(200);
 
-    projectsRoot = path.join(process.env.OD_DATA_DIR!, 'projects');
+    projectsRoot = resolveUserProjectsRoot(process.env.OD_DATA_DIR!);
     const dir = path.join(projectsRoot, projectId);
     const pages = path.join(dir, 'pages');
     const shared = path.join(dir, 'shared');
@@ -780,7 +781,7 @@ describe('POST /api/projects/:id/export/html route', () => {
     });
     expect(created.status).toBe(200);
 
-    projectsRoot = path.join(process.env.OD_DATA_DIR!, 'projects');
+    projectsRoot = resolveUserProjectsRoot(process.env.OD_DATA_DIR!);
     const root = path.join(projectsRoot, projectId);
     await Promise.all([
       mkdir(path.join(root, 'pages'), { recursive: true }),

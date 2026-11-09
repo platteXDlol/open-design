@@ -19,6 +19,7 @@ import { delimiter, join } from 'node:path';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { insertConversation } from '../src/db.js';
 import { startServer } from '../src/server.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 async function withFakeClaude<T>(run: () => Promise<T>): Promise<T> {
   const dir = await fsp.mkdtemp(join(tmpdir(), 'od-mcp-spawn-bin-'));
@@ -132,7 +133,7 @@ describe('spawn writes external MCP config for Claude Code', () => {
     // having the daemon return the upload root, then composing path manually.
     // Use the same path the daemon's `ensureProject` uses.
     const projectsBase = process.env.OD_DATA_DIR
-      ? join(process.env.OD_DATA_DIR, 'projects')
+      ? resolveUserProjectsRoot(process.env.OD_DATA_DIR)
       : join(process.cwd(), '.od', 'projects');
     return { id, dir: join(projectsBase, id), conversationId: body.conversationId };
   }
@@ -155,7 +156,7 @@ describe('spawn writes external MCP config for Claude Code', () => {
     const body = (await r.json()) as { project: { id: string }; conversationId: string };
     projectsToClean.push(body.project.id);
     const projectsBase = process.env.OD_DATA_DIR
-      ? join(process.env.OD_DATA_DIR, 'projects')
+      ? resolveUserProjectsRoot(process.env.OD_DATA_DIR)
       : join(process.cwd(), '.od', 'projects');
     return {
       id: body.project.id,

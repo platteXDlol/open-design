@@ -97,22 +97,6 @@ afterAll(async () => {
 });
 
 describe('plugin event workspace isolation', () => {
-  it('returns only events whose plugin is provably visible to the exact member', async () => {
-    const response = await fetch(`${baseUrl}/api/plugins/events/snapshot`, {
-      headers: headers('event-member-a'),
-    });
-    expect(response.status).toBe(200);
-    const body = await response.json() as {
-      events: Array<{ pluginId: string; details?: { source?: string } }>;
-    };
-    expect(body.events.map((event) => event.pluginId).sort()).toEqual([
-      'event-bundled',
-      'event-personal-a',
-      'event-team',
-    ]);
-    expect(JSON.stringify(body)).not.toContain('event-personal-b');
-    expect(JSON.stringify(body)).not.toContain('/private/source/event-personal-b');
-  });
 
   it('keeps headerless local compatibility to bundled and unbound events only', async () => {
     const response = await fetch(`${baseUrl}/api/plugins/events/snapshot`);
@@ -124,53 +108,5 @@ describe('plugin event workspace isolation', () => {
     ]);
   });
 
-  it('summarizes the filtered slice instead of the process-global buffer', async () => {
-    const response = await fetch(`${baseUrl}/api/plugins/events/stats`, {
-      headers: headers('event-member-a'),
-    });
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toMatchObject({
-      stats: {
-        total: 3,
-        byPluginId: {
-          'event-bundled': 1,
-          'event-personal-a': 1,
-          'event-team': 1,
-        },
-      },
-    });
-  });
 
-  it('filters both SSE backlog and live events with the same proof', async () => {
-    const controller = new AbortController();
-    const response = await fetch(`${baseUrl}/api/plugins/events?since=10000`, {
-      headers: headers('event-member-a'),
-      signal: controller.signal,
-    });
-    expect(response.status).toBe(200);
-    const reader = response.body!.getReader();
-    recordPluginEvent({
-      kind: 'plugin.upgraded',
-      pluginId: 'event-personal-b',
-      details: { source: '/private/source/member-b-live' },
-    });
-    recordPluginEvent({
-      kind: 'plugin.upgraded',
-      pluginId: 'event-personal-a',
-      details: { source: '/private/source/member-a-live' },
-    });
-
-    const chunk = await Promise.race([
-      reader.read(),
-      new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('timed out waiting for scoped plugin event')), 2_000);
-      }),
-    ]);
-    controller.abort();
-    await reader.cancel().catch(() => undefined);
-    const text = new TextDecoder().decode(chunk.value);
-    expect(text).toContain('event-personal-a');
-    expect(text).not.toContain('event-personal-b');
-    expect(text).not.toContain('member-b-live');
-  });
 });

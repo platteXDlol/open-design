@@ -103,10 +103,7 @@ export function registerImportRoutes(app: Express, ctx: RegisterImportRoutesDeps
       try {
         if (!req.file)
           return res.status(400).json({ error: 'zip file required' });
-        const createWorkspace = await ((..._v05_unused: any[]) => ({} as any))(
-          req,
-          ctx.fetchProjectCreationWorkspaceDirectory,
-        );
+        const createWorkspace = { ok: true as const } as any /* v0.5: no workspaces; local creation is always allowed */;
         if (!createWorkspace.ok) {
           fs.promises.unlink(req.file.path).catch(() => {});
           return ((..._v05_unused: any[]) => ({} as any))(res, createWorkspace);
@@ -333,10 +330,7 @@ export function registerImportRoutes(app: Express, ctx: RegisterImportRoutesDeps
 
   app.post('/api/import/folder', async (req, res) => {
     try {
-      const createWorkspace = await ((..._v05_unused: any[]) => ({} as any))(
-        req,
-        ctx.fetchProjectCreationWorkspaceDirectory,
-      );
+      const createWorkspace = { ok: true as const } as any /* v0.5: no workspaces; local creation is always allowed */;
       if (!createWorkspace.ok) {
         return ((..._v05_unused: any[]) => ({} as any))(res, createWorkspace);
       }
@@ -698,7 +692,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
         : { mode: 'read' },
     );
     if (!authorized) return null;
-    const requestWorkspace = ((..._v05_unused: any[]) => ({} as any))(req);
+    const requestWorkspace: any = null; // v0.5: no workspace request headers in the local fork
     return {
       previewWorkspace: requestWorkspace === null || requestWorkspace === 'missing'
         ? null

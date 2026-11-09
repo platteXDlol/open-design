@@ -52,7 +52,7 @@ describe('public MCP get_project', () => {
       project: projectId,
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(2); // v0.5: no workspace-directory probe
     expect(firstJson(result)).toMatchObject({
       id: projectId,
       name: 'Demo',

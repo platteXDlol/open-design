@@ -37,7 +37,8 @@ afterEach(() => {
 });
 
 describe('OPEND-2807 actions in the real side-chat host', () => {
-  it.each(['amr', 'claude'])('provides the fixed actions for a failed %s run', (agentId) => {
+  it.each(['amr'])  // v0.5: the claude → Cloud switch action was removed
+  ('provides the fixed actions for a failed %s run', (agentId) => {
     const failed: ChatMessage = {
       id: 'side-failed', role: 'assistant', content: '', agentId,
       createdAt: 1000, endedAt: 2000, runId: 'side-failed-run', runStatus: 'failed',

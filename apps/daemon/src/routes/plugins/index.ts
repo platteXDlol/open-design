@@ -656,10 +656,7 @@ export function registerPluginRoutes(app: Express, deps: RegisterPluginRoutesDep
       // personal project. Removed in v0.5 (chore/vela-cleanup); the local-only
       // fork has no team-resource plane so plugin duplication is always
       // allowed at this gate.
-      const createWorkspace = await ((..._v05_unused: any[]) => ({} as any))(
-        req,
-        deps.fetchProjectCreationWorkspaceDirectory,
-      );
+      const createWorkspace = { ok: true as const } as any /* v0.5: no workspaces; local creation is always allowed */;
       if (!createWorkspace.ok) {
         return ((..._v05_unused: any[]) => ({} as any))(res, createWorkspace);
       }

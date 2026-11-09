@@ -13,6 +13,7 @@ import {
   signDesktopImportToken,
   startServer,
 } from '../src/server.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 describe('POST /api/import/folder', () => {
   let server: http.Server;
@@ -122,49 +123,6 @@ describe('POST /api/import/folder', () => {
     expect(typeof tabs.updatedAt).toBe('number');
   });
 
-  it('atomically binds a folder import to the exact request workspace and not workspace B', async () => {
-    const folder = makeFolder();
-    await writeFile(path.join(folder, 'index.html'), '<!doctype html>');
-    const headersA = workspaceHeaders('workspace-folder-a', 'member-folder-a');
-
-    const resp = await importFolder({ baseDir: folder }, headersA);
-    expect(resp.status).toBe(200);
-    const body = (await resp.json()) as { project: { id: string } };
-
-    const detail = await fetch(
-      `${baseUrl}/api/projects/${body.project.id}`,
-      { headers: headersA },
-    );
-    expect(detail.status).toBe(200);
-    await expect(detail.json()).resolves.toMatchObject({
-      project: {
-        id: body.project.id,
-        workspaceId: 'workspace-folder-a',
-      },
-    });
-
-    const workspaceA = await fetch(
-      `${baseUrl}/api/workspaces/workspace-folder-a/projects?view=drafts`,
-      { headers: headersA },
-    );
-    expect(workspaceA.status).toBe(200);
-    const projectsA = (await workspaceA.json()) as {
-      projects: Array<{ project: { id: string } }>;
-    };
-    expect(projectsA.projects.map((item) => item.project.id)).toContain(body.project.id);
-
-    const headersB = workspaceHeaders('workspace-folder-b', 'member-folder-b');
-    const workspaceB = await fetch(
-      `${baseUrl}/api/workspaces/workspace-folder-b/projects?view=drafts`,
-      { headers: headersB },
-    );
-    expect(workspaceB.status).toBe(200);
-    const projectsB = (await workspaceB.json()) as {
-      projects: Array<{ project: { id: string } }>;
-    };
-    expect(projectsB.projects.map((item) => item.project.id)).not.toContain(body.project.id);
-  });
-
   it('validates an imported project skill inside the exact request workspace before inserting rows', async () => {
     const folder = makeFolder();
     await writeFile(path.join(folder, 'index.html'), '<!doctype html>');
@@ -194,39 +152,6 @@ describe('POST /api/import/folder', () => {
       projects: Array<{ project: { id: string } }>;
     };
     expect(after.projects).toEqual(before.projects);
-  });
-
-  it('atomically binds a Claude Design import to the exact request workspace', async () => {
-    const zip = new JSZip();
-    zip.file('index.html', '<!doctype html><title>Claude import</title>');
-    const archive = await zip.generateAsync({ type: 'uint8array' });
-    const form = new FormData();
-    form.append(
-      'file',
-      new Blob([archive], { type: 'application/zip' }),
-      'claude-workspace.zip',
-    );
-    const headers = workspaceHeaders('workspace-claude-a', 'member-claude-a');
-
-    const resp = await fetch(`${baseUrl}/api/import/claude-design`, {
-      method: 'POST',
-      headers,
-      body: form,
-    });
-    expect(resp.status).toBe(200);
-    const body = (await resp.json()) as { project: { id: string } };
-
-    const detail = await fetch(
-      `${baseUrl}/api/projects/${body.project.id}`,
-      { headers },
-    );
-    expect(detail.status).toBe(200);
-    await expect(detail.json()).resolves.toMatchObject({
-      project: {
-        id: body.project.id,
-        workspaceId: 'workspace-claude-a',
-      },
-    });
   });
 
   it('rejects folder imports in sandbox mode', async () => {
@@ -485,56 +410,6 @@ describe('POST /api/import/folder', () => {
     expect(replaceResp.status).toBe(400);
     const body = (await replaceResp.json()) as { error?: { message?: string } };
     expect(body.error?.message).toMatch(/unsupported field: source_reference/i);
-  });
-
-  it('requires the exact explicit Workspace member before replacing a bound project working directory', async () => {
-    const originalFolder = makeFolder();
-    await writeFile(path.join(originalFolder, 'index.html'), '<!doctype html><title>original</title>');
-    const ownerHeaders = workspaceHeaders('workspace-working-dir', 'member-working-dir-owner');
-    const importResp = await importFolder({ baseDir: originalFolder }, ownerHeaders);
-    expect(importResp.status).toBe(200);
-    const { project } = (await importResp.json()) as {
-      project: { id: string; metadata?: { baseDir?: string } };
-    };
-
-    const unauthorizedFolder = makeFolder();
-    await writeFile(path.join(unauthorizedFolder, 'index.html'), '<!doctype html><title>denied</title>');
-    const deniedResp = await fetch(`${baseUrl}/api/projects/${project.id}/working-dir`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...workspaceHeaders('workspace-working-dir', 'member-working-dir-teammate'),
-      },
-      body: JSON.stringify({ baseDir: unauthorizedFolder }),
-    });
-    expect(deniedResp.status).toBe(403);
-    await expect(deniedResp.json()).resolves.toMatchObject({
-      error: { code: 'WORKSPACE_PROJECT_PERMISSION_DENIED' },
-    });
-
-    const afterDenied = await fetch(
-      `${baseUrl}/api/projects/${project.id}`,
-      { headers: ownerHeaders },
-    );
-    expect(afterDenied.status).toBe(200);
-    await expect(afterDenied.json()).resolves.toMatchObject({
-      project: {
-        id: project.id,
-        metadata: { baseDir: project.metadata?.baseDir },
-      },
-    });
-
-    const ownerFolder = makeFolder();
-    await writeFile(path.join(ownerFolder, 'index.html'), '<!doctype html><title>owner</title>');
-    const allowedResp = await fetch(`${baseUrl}/api/projects/${project.id}/working-dir`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...ownerHeaders },
-      body: JSON.stringify({ baseDir: ownerFolder }),
-    });
-    expect(allowedResp.status).toBe(200);
-    await expect(allowedResp.json()).resolves.toMatchObject({
-      project: { id: project.id, metadata: { baseDir: await realpath(ownerFolder) } },
-    });
   });
 
   it('clears scratch provenance when replacing a working directory without new provenance', async () => {
@@ -1065,7 +940,7 @@ describe('POST /api/import/folder', () => {
 
     const dataDir = process.env.OD_DATA_DIR;
     if (!dataDir) throw new Error('OD_DATA_DIR is required for daemon route tests');
-    await expect(stat(path.join(dataDir, 'projects', project.id, 'generated.html'))).rejects.toMatchObject({
+    await expect(stat(path.join(resolveUserProjectsRoot(dataDir), project.id, 'generated.html'))).rejects.toMatchObject({
       code: 'ENOENT',
     });
   });

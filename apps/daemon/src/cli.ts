@@ -416,7 +416,6 @@ const SUBCOMMAND_MAP = {
   skill: runSkills,
   skills: runSkills,
   'design-systems': runDesignSystems,
-  resource: runResource,
   craft: runCraft,
   diagnostics: runDiagnostics,
   export: runExport,
@@ -7086,7 +7085,7 @@ Common options:
           { headers: scopeHeaders },
         );
       } else {
-        const ctx = await resolveMcpWorkspaceContext(base);
+        const ctx: any = null; // v0.5: no workspace context in the local-only fork
         if (ctx) {
           scopeHeaders = ctx.headers;
           listResp = await fetch(

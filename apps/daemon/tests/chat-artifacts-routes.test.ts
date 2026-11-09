@@ -9,6 +9,7 @@ import { closeDatabase, openDatabase } from '../src/db.js';
 import { createChatArtifactBlobStore } from '../src/chat-artifacts/blob-store.js';
 import { captureChatArtifactSnapshotFromBytes } from '../src/chat-artifacts/capture.js';
 import { replaceMessageArtifacts } from '../src/chat-artifacts/store.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 // ---------------------------------------------------------------------------
 // GET /api/projects/:id/chat-artifact-snapshots/* and the message-refs route.
@@ -51,7 +52,7 @@ describe('chat artifact snapshot routes', () => {
     }
 
     const dataDir = process.env.OD_DATA_DIR!;
-    const dir = path.join(dataDir, 'projects', projectId);
+    const dir = path.join(resolveUserProjectsRoot(dataDir), projectId);
     await mkdir(dir, { recursive: true });
     // The workspace file has ALREADY moved on to different bytes.
     await writeFile(path.join(dir, 'hero.png'), bytes('a-newer-overwriting-image'));

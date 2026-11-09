@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { startServer } from '../../src/server.js';
 import { connectorService, ConnectorServiceError } from '../../src/connectors/service.js';
 import { CHAT_TOOL_ENDPOINTS, CHAT_TOOL_OPERATIONS, toolTokenRegistry } from '../../src/tool-tokens.js';
+import { resolveUserProjectsRoot } from '../../src/storage/user-scope.js';
 
 type StartedServer = { server: http.Server; url: string };
 type JsonObject = Record<string, any>;
@@ -51,7 +52,7 @@ afterEach(async () => {
   const cleanupProjectIds = projectIds.splice(0);
   await Promise.all(
     cleanupProjectIds.map((projectId) =>
-      rm(path.join(serverRuntimeDataRoot, 'projects', projectId), { recursive: true, force: true }),
+      rm(path.join(resolveUserProjectsRoot(serverRuntimeDataRoot), projectId), { recursive: true, force: true }),
     ),
   );
 });
@@ -134,7 +135,7 @@ async function rawHttpJsonFetch<TBody extends JsonObject = JsonObject>(
 }
 
 async function writeProjectJson(projectId: string, name: string, value: JsonObject): Promise<void> {
-  const candidates = [path.join(serverRuntimeDataRoot, 'projects', projectId)];
+  const candidates = [path.join(resolveUserProjectsRoot(serverRuntimeDataRoot), projectId)];
   let lastError: unknown;
   let wrote = false;
   for (const dir of candidates) {
@@ -723,7 +724,7 @@ describe('live artifact tool routes', () => {
     expect(create.status).toBe(200);
     const diskDataJson = { title: 'Disk API Title', owner: 'data.json owner' };
     await writeFile(
-      path.join(serverRuntimeDataRoot, 'projects', projectId, '.live-artifacts', create.body.artifact.id, 'data.json'),
+      path.join(resolveUserProjectsRoot(serverRuntimeDataRoot), projectId, '.live-artifacts', create.body.artifact.id, 'data.json'),
       `${JSON.stringify(diskDataJson, null, 2)}\n`,
       'utf8',
     );

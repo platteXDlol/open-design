@@ -13,6 +13,7 @@ import type {
 } from '@open-design/sidecar-proto';
 import { createProjectFileVersion } from '../src/project-file-versions.js';
 import { startServer } from '../src/server.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 // ---------------------------------------------------------------------------
 // Screenshot export — desktop renderer file handoff.
@@ -91,12 +92,12 @@ describe('screenshot export desktop renderer file handoff', () => {
     // (RUNTIME_DATA_DIR_CANONICAL); on macOS OD_DATA_DIR may contain a symlink
     // (/var -> /private/var), so resolve it the same way for the prefix check.
     exportRenderRoot = path.join(realpathSync(dataDir), 'export-render');
-    const dir = path.join(dataDir, 'projects', projectId);
+    const dir = path.join(resolveUserProjectsRoot(dataDir), projectId);
     await mkdir(dir, { recursive: true });
     await writeFile(path.join(dir, 'index.html'), '<html><body><section class="slide">A</section></body></html>');
     await writeFile(path.join(dir, 'page.html'), '<html><body><main>Ordinary page</main></body></html>');
     const versioned = await createProjectFileVersion(
-      path.join(dataDir, 'projects'),
+      resolveUserProjectsRoot(dataDir),
       projectId,
       'versioned.html',
       '<html><body><main>Historical export version</main></body></html>',

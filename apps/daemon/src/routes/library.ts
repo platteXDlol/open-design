@@ -627,10 +627,7 @@ export function registerLibraryRoutes(app: Express, ctx: RegisterLibraryRoutesDe
     if (asset.kind !== 'html') {
       return sendApiError(res, 400, 'NOT_HTML', 'only html captures can be opened as an editable page');
     }
-    const createWorkspace = await ((..._v05_unused: any[]) => ({} as any))(
-      req,
-      ctx.fetchProjectCreationWorkspaceDirectory,
-    );
+    const createWorkspace = { ok: true as const } as any /* v0.5: no workspaces; local creation is always allowed */;
     if (!createWorkspace.ok) {
       return ((..._v05_unused: any[]) => ({} as any))(res, createWorkspace);
     }

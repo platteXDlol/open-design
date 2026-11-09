@@ -133,31 +133,6 @@ async function fixture() {
 }
 
 describe('Plugin preview and asset Workspace authority', () => {
-  it('serves A and B copies of the same id and carries exact scope into nested assets', async () => {
-    const baseUrl = await fixture();
-    const preview = await fetch(
-      `${baseUrl}/api/plugins/same-plugin/preview?workspaceId=workspace-a&workspaceMemberId=member-a`,
-    );
-
-    expect(preview.status).toBe(200);
-    const html = await preview.text();
-    expect(html).toContain('workspace-a');
-    expect(html).not.toContain('workspace-b');
-    expect(html).toContain(
-      '/api/plugins/same-plugin/asset/assets/secret.txt?workspaceId=workspace-a&workspaceMemberId=member-a',
-    );
-
-    const [assetA, assetB] = await Promise.all([
-      fetch(
-        `${baseUrl}/api/plugins/same-plugin/asset/assets/secret.txt?workspaceId=workspace-a&workspaceMemberId=member-a`,
-      ),
-      fetch(
-        `${baseUrl}/api/plugins/same-plugin/asset/assets/secret.txt?workspaceId=workspace-b&workspaceMemberId=member-b`,
-      ),
-    ]);
-    expect(await assetA.text()).toBe('workspace-a-bytes');
-    expect(await assetB.text()).toBe('workspace-b-bytes');
-  });
 
   it.each(['workspace-removed', 'workspace-outage'] as const)(
     'does not consult remote authority for %s and never serves another Workspace bytes',
@@ -172,33 +147,5 @@ describe('Plugin preview and asset Workspace authority', () => {
     },
   );
 
-  it('rejects a partial navigation scope before resolving plugin bytes', async () => {
-    const baseUrl = await fixture();
-    const response = await fetch(
-      `${baseUrl}/api/plugins/same-plugin/asset/assets/secret.txt?workspaceId=workspace-a`,
-    );
 
-    expect(response.status).toBe(400);
-    expect(await response.json()).toMatchObject({
-      error: 'WORKSPACE_CONTEXT_INCOMPLETE',
-    });
-  });
-
-  it('rejects conflicting header and navigation scopes', async () => {
-    const baseUrl = await fixture();
-    const response = await fetch(
-      `${baseUrl}/api/plugins/same-plugin/asset/assets/secret.txt?workspaceId=workspace-b&workspaceMemberId=member-b`,
-      {
-        headers: {
-          'x-od-workspace-id': 'workspace-a',
-          'x-od-workspace-member-id': 'member-a',
-        },
-      },
-    );
-
-    expect(response.status).toBe(400);
-    expect(await response.json()).toMatchObject({
-      error: 'WORKSPACE_CONTEXT_CONFLICT',
-    });
-  });
 });

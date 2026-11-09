@@ -13,6 +13,7 @@ import {
 } from '../src/deploy.js';
 import { ensureProject } from '../src/projects.js';
 import { startServer } from '../src/server.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 describe('deploy provider routes', () => {
   let server: http.Server;
@@ -164,7 +165,7 @@ describe('deploy provider routes', () => {
     const dataDir = process.env.OD_DATA_DIR;
     if (!dataDir) throw new Error('OD_DATA_DIR is required for daemon route tests');
     const projectId = `deploy-route-${Date.now()}`;
-    const dir = await ensureProject(path.join(dataDir, 'projects'), projectId);
+    const dir = await ensureProject(resolveUserProjectsRoot(dataDir), projectId);
     await writeFile(
       path.join(dir, 'index.html'),
       '<!doctype html><meta name="viewport" content="width=device-width"><h1>Hello</h1>',
@@ -382,7 +383,7 @@ describe('deploy provider routes', () => {
     const priorStateRoot = process.env.OD_USER_STATE_DIR;
     process.env.OD_USER_STATE_DIR = stateRoot;
     const projectId = `cf-invalid-${Date.now()}`;
-    const dir = await ensureProject(path.join(dataDir, 'projects'), projectId);
+    const dir = await ensureProject(resolveUserProjectsRoot(dataDir), projectId);
     await writeFile(path.join(dir, 'index.html'), '<!doctype html><h1>Hello</h1>');
     try {
       const createProjectResp = await fetch(`${baseUrl}/api/projects`, {
@@ -454,7 +455,7 @@ describe('deploy provider routes', () => {
     process.env.OD_USER_STATE_DIR = stateRoot;
     const projectId = `cf-domain-check-${Date.now()}`;
     const expectedPagesProject = cloudflarePagesProjectNameForProject(projectId, 'Domain check test');
-    const dir = await ensureProject(path.join(dataDir, 'projects'), projectId);
+    const dir = await ensureProject(resolveUserProjectsRoot(dataDir), projectId);
     await writeFile(path.join(dir, 'index.html'), '<!doctype html><h1>Hello</h1>');
     try {
       const createProjectResp = await fetch(`${baseUrl}/api/projects`, {
@@ -675,7 +676,7 @@ describe('deploy provider routes', () => {
     const priorStateRoot = process.env.OD_USER_STATE_DIR;
     process.env.OD_USER_STATE_DIR = stateRoot;
     const projectId = `vercel-payload-${Date.now()}`;
-    const dir = await ensureProject(path.join(dataDir, 'projects'), projectId);
+    const dir = await ensureProject(resolveUserProjectsRoot(dataDir), projectId);
     await writeFile(path.join(dir, 'index.html'), '<!doctype html><h1>Hello</h1>');
     await writeFile(path.join(dir, 'index-v1.html'), '<!doctype html><h1>V1</h1>');
     await mkdir(path.join(dir, 'screens'), { recursive: true });
@@ -845,7 +846,7 @@ describe('deploy provider routes', () => {
     process.env.OD_USER_STATE_DIR = stateRoot;
     const projectId = `cf-target-preview-${Date.now()}`;
     const expectedPagesProject = cloudflarePagesProjectNameForProject(projectId, 'Target preview test');
-    const dir = await ensureProject(path.join(dataDir, 'projects'), projectId);
+    const dir = await ensureProject(resolveUserProjectsRoot(dataDir), projectId);
     await writeFile(path.join(dir, 'index.html'), '<!doctype html><h1>Hello</h1>');
     try {
       const createProjectResp = await fetch(`${baseUrl}/api/projects`, {
@@ -911,7 +912,7 @@ describe('deploy provider routes', () => {
     process.env.OD_USER_STATE_DIR = stateRoot;
     const projectId = `cf-target-prod-${Date.now()}`;
     const expectedPagesProject = cloudflarePagesProjectNameForProject(projectId, 'Target prod test');
-    const dir = await ensureProject(path.join(dataDir, 'projects'), projectId);
+    const dir = await ensureProject(resolveUserProjectsRoot(dataDir), projectId);
     await writeFile(path.join(dir, 'index.html'), '<!doctype html><h1>Hello</h1>');
     try {
       const createProjectResp = await fetch(`${baseUrl}/api/projects`, {
@@ -984,7 +985,7 @@ describe('deploy provider routes', () => {
     const dataDir = process.env.OD_DATA_DIR;
     if (!dataDir) throw new Error('OD_DATA_DIR is required for daemon route tests');
     const projectId = `${projectIdPrefix}-${Date.now()}`;
-    const dir = await ensureProject(path.join(dataDir, 'projects'), projectId);
+    const dir = await ensureProject(resolveUserProjectsRoot(dataDir), projectId);
     await writeFile(path.join(dir, 'index.html'), '<!doctype html><h1>Hello</h1>');
     const createProjectResp = await fetch(`${baseUrl}/api/projects`, {
       method: 'POST',
@@ -1111,7 +1112,7 @@ describe('deploy provider routes', () => {
     process.env.OD_USER_STATE_DIR = stateRoot;
     const projectId = `cf-target-default-${Date.now()}`;
     const expectedPagesProject = cloudflarePagesProjectNameForProject(projectId, 'Target default test');
-    const dir = await ensureProject(path.join(dataDir, 'projects'), projectId);
+    const dir = await ensureProject(resolveUserProjectsRoot(dataDir), projectId);
     await writeFile(path.join(dir, 'index.html'), '<!doctype html><h1>Hello</h1>');
     try {
       const createProjectResp = await fetch(`${baseUrl}/api/projects`, {
@@ -1189,7 +1190,7 @@ describe('deploy provider routes', () => {
     const dataDir = process.env.OD_DATA_DIR;
     if (!dataDir) throw new Error('OD_DATA_DIR is required for daemon route tests');
     const projectId = `${projectIdPrefix}-${Date.now()}`;
-    const dir = await ensureProject(path.join(dataDir, 'projects'), projectId);
+    const dir = await ensureProject(resolveUserProjectsRoot(dataDir), projectId);
     await writeFile(path.join(dir, 'index.html'), '<!doctype html><h1>Hello</h1>');
     const createProjectResp = await fetch(`${baseUrl}/api/projects`, {
       method: 'POST',
@@ -1261,7 +1262,7 @@ describe('deploy provider routes', () => {
     process.env.OD_USER_STATE_DIR = stateRoot;
     try {
       const projectId = await setupProjectAndVercelConfig('deploy-error-code', 'Deploy error code test');
-      await writeFile(path.join(dataDir, 'projects', projectId, 'notes.txt'), 'not html');
+      await writeFile(path.join(resolveUserProjectsRoot(dataDir), projectId, 'notes.txt'), 'not html');
 
       const resp = await fetch(`${baseUrl}/api/projects/${projectId}/deploy`, {
         method: 'POST',

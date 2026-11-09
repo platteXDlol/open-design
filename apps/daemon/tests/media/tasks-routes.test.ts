@@ -14,6 +14,7 @@ import { ensureProject, renameProjectFile } from '../../src/projects.js';
 import { startServer } from '../../src/server.js';
 import { resolveMediaTaskProjectFile } from '../../src/routes/media.js';
 import { toolTokenRegistry } from '../../src/tool-tokens.js';
+import { resolveUserProjectsRoot } from '../../src/storage/user-scope.js';
 
 describe('media task route recovery', () => {
   let server: http.Server | null = null;
@@ -46,7 +47,7 @@ describe('media task route recovery', () => {
       createdAt: now,
       updatedAt: now,
     });
-    const projectDir = await ensureProject(path.join(dataDir, 'projects'), projectId);
+    const projectDir = await ensureProject(resolveUserProjectsRoot(dataDir), projectId);
     await writeFile(path.join(projectDir, 'generated.png'), Buffer.from('png'));
     insertMediaTask(db, {
       id: `task_${randomUUID()}`,
@@ -98,7 +99,7 @@ describe('media task route recovery', () => {
       updatedAt: now,
     });
 
-    const projectsRoot = path.join(dataDir, 'projects');
+    const projectsRoot = resolveUserProjectsRoot(dataDir);
     const projectDir = await ensureProject(projectsRoot, projectId);
     const originalName = 'generated.png';
     const originalPath = path.join(projectDir, originalName);
@@ -320,95 +321,6 @@ describe('media task route recovery', () => {
     }
   });
 
-  it('uses the tool grant and persisted project binding without querying Workspace authority', async () => {
-    const dataDir = process.env.OD_DATA_DIR;
-    const db = openDatabase(process.cwd(), dataDir === undefined ? {} : { dataDir });
-    const projectId = `project_${randomUUID()}`;
-    const workspaceId = `workspace_${randomUUID()}`;
-    const now = Date.now();
-
-    insertProject(db, {
-      id: projectId,
-      name: 'Fresh-authority Team media project',
-      createdAt: now,
-      updatedAt: now,
-    });
-    ensureWorkspaceProject(db, {
-      projectId,
-      workspaceId,
-      visibility: 'team',
-      createdByWorkspaceMemberId: 'member-creator',
-    });
-    const token = toolTokenRegistry.mint({
-      projectId,
-      runId: `run_${randomUUID()}`,
-      allowedEndpoints: ['/api/media/tasks/:id/wait'],
-      allowedOperations: ['media:generate'],
-    }).token;
-    let authorityMode: 'active' | 'outage' | 'removed' = 'removed';
-    let authorityRequests = 0;
-    authorityServer = http.createServer((_req, res) => {
-      authorityRequests += 1;
-      res.setHeader('content-type', 'application/json');
-      if (authorityMode === 'outage') {
-        res.statusCode = 503;
-        res.end(JSON.stringify({ error: 'authority unavailable' }));
-        return;
-      }
-      res.end(JSON.stringify({
-        items: [{
-          workspaceId,
-          workspaceName: 'Fresh authority workspace',
-          workspaceType: 'team',
-          workspaceMemberId: 'member-creator',
-          role: 'owner',
-          memberStatus: authorityMode === 'removed' ? 'removed' : 'active',
-          lifecycleState: 'active',
-        }],
-      }));
-    });
-    await new Promise<void>((resolve) => {
-      authorityServer?.listen(0, '127.0.0.1', resolve);
-    });
-    const authorityAddress = authorityServer.address();
-    if (!authorityAddress || typeof authorityAddress === 'string') {
-      throw new Error('authority server did not bind to a TCP port');
-    }
-    vi.stubEnv('OD_WORKSPACE_CONTEXT_SOURCE', 'vela');
-    vi.stubEnv('VELA_CONTROL_KEY', 'test-control-key');
-    vi.stubEnv('VELA_API_URL', `http://127.0.0.1:${authorityAddress.port}`);
-
-    const started = await startServer({ port: 0, returnServer: true }) as {
-      url: string;
-      server: http.Server;
-    };
-    server = started.server;
-    await vi.waitFor(() => expect(authorityRequests).toBeGreaterThanOrEqual(1));
-    const startupAuthorityRequests = authorityRequests;
-    const waitForMissingTask = () => fetch(
-      `${started.url}/api/media/tasks/missing-task/wait`,
-      {
-        method: 'POST',
-        headers: {
-          authorization: `Bearer ${token}`,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({ since: 0, timeoutMs: 0 }),
-      },
-    );
-
-    const removed = await waitForMissingTask();
-    expect(removed.status).toBe(404);
-
-    authorityMode = 'outage';
-    const unavailable = await waitForMissingTask();
-    expect(unavailable.status).toBe(404);
-
-    authorityMode = 'active';
-    const authorized = await waitForMissingTask();
-    expect(authorized.status).toBe(404);
-    expect(authorityRequests).toBe(startupAuthorityRequests);
-  });
 
   it.each([
     ['treats a forwarded foreign Basic credential as a proxy-authenticated browser request',

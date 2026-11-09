@@ -21,6 +21,7 @@ import {
   parseOdNextPromptBundleV2,
   parseOdNextIntentResolutionTurnV1,
 } from '@open-design/contracts';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 const codexArchiveBoundary = vi.hoisted(() => ({
   home: '', activeParentPath: '', cleanupStarted: false,
@@ -2034,9 +2035,7 @@ process.exit(127);
 
   it('runs parsed plan -> serialization repair -> production after each source end and remains exactly-once across restart', async () => {
     const fixture = await createFixture('repair');
-    const sourcePdfAttachment = path.join(
-      process.env.OD_DATA_DIR!,
-      'projects',
+    const sourcePdfAttachment = path.join(resolveUserProjectsRoot(process.env.OD_DATA_DIR!),
       fixture.projectId,
       'brief.pdf',
     );
