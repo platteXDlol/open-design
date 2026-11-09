@@ -13,6 +13,7 @@ import {
   signDesktopImportToken,
   startServer,
 } from '../src/server.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 describe('POST /api/import/folder', () => {
   let server: http.Server;
@@ -1065,7 +1066,7 @@ describe('POST /api/import/folder', () => {
 
     const dataDir = process.env.OD_DATA_DIR;
     if (!dataDir) throw new Error('OD_DATA_DIR is required for daemon route tests');
-    await expect(stat(path.join(dataDir, 'projects', project.id, 'generated.html'))).rejects.toMatchObject({
+    await expect(stat(path.join(resolveUserProjectsRoot(dataDir), project.id, 'generated.html'))).rejects.toMatchObject({
       code: 'ENOENT',
     });
   });

@@ -6,6 +6,7 @@ import path from 'node:path';
 import type { WorkspaceCollabContext } from '@open-design/contracts';
 import { afterEach, describe, expect, it } from 'vitest';
 import { registerStaticResourceRoutes } from '../src/routes/static-resource.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 const servers: http.Server[] = [];
 const roots: string[] = [];
@@ -96,7 +97,7 @@ async function fixture() {
     LIBRARY_DIR: path.join(root, 'library'),
     OD_BIN: path.join(root, 'od'),
     PROJECT_ROOT: root,
-    PROJECTS_DIR: path.join(root, 'projects'),
+    PROJECTS_DIR: resolveUserProjectsRoot(root),
     PROMPT_TEMPLATES_DIR: path.join(root, 'prompt-templates'),
     RUNTIME_DATA_DIR: path.join(root, 'data'),
     RUNTIME_DATA_DIR_CANONICAL: path.join(root, 'data'),

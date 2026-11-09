@@ -4,6 +4,7 @@ import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { startServer } from '../src/server.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 // ---------------------------------------------------------------------------
 // GET /api/projects/:id/raw/* — cache revalidation behaviour.
@@ -37,7 +38,7 @@ describe('GET /api/projects/:id/raw/* cache revalidation', () => {
     });
     expect(createResponse.status).toBe(200);
 
-    projectsRoot = path.join(process.env.OD_DATA_DIR!, 'projects');
+    projectsRoot = resolveUserProjectsRoot(process.env.OD_DATA_DIR!);
     const dir = path.join(projectsRoot, projectId);
     await mkdir(dir, { recursive: true });
     await writeFile(path.join(dir, 'styles.css'), Buffer.from('body{color:#123456}'));

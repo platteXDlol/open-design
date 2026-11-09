@@ -14,6 +14,7 @@ import { ensureProject, renameProjectFile } from '../../src/projects.js';
 import { startServer } from '../../src/server.js';
 import { resolveMediaTaskProjectFile } from '../../src/routes/media.js';
 import { toolTokenRegistry } from '../../src/tool-tokens.js';
+import { resolveUserProjectsRoot } from '../../src/storage/user-scope.js';
 
 describe('media task route recovery', () => {
   let server: http.Server | null = null;
@@ -46,7 +47,7 @@ describe('media task route recovery', () => {
       createdAt: now,
       updatedAt: now,
     });
-    const projectDir = await ensureProject(path.join(dataDir, 'projects'), projectId);
+    const projectDir = await ensureProject(resolveUserProjectsRoot(dataDir), projectId);
     await writeFile(path.join(projectDir, 'generated.png'), Buffer.from('png'));
     insertMediaTask(db, {
       id: `task_${randomUUID()}`,
@@ -98,7 +99,7 @@ describe('media task route recovery', () => {
       updatedAt: now,
     });
 
-    const projectsRoot = path.join(dataDir, 'projects');
+    const projectsRoot = resolveUserProjectsRoot(dataDir);
     const projectDir = await ensureProject(projectsRoot, projectId);
     const originalName = 'generated.png';
     const originalPath = path.join(projectDir, originalName);

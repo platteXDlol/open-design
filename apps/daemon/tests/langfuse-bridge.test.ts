@@ -10,6 +10,7 @@ import {
 } from '../src/langfuse-bridge.js';
 import { buildPromptStackTelemetry } from '../src/prompt-telemetry.js';
 import { readObjectEvidence } from '../src/services/evidence-delivery.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 interface FakeMessage {
   id: string;
@@ -1347,7 +1348,7 @@ describe('langfuse-bridge.reportRunCompletedFromDaemon', () => {
       installationId: 'install-uuid-1',
       telemetry: { metrics: true, content: true, artifactManifest: true },
     });
-    const projectDir = path.join(dataDir, 'projects', 'proj-1');
+    const projectDir = path.join(resolveUserProjectsRoot(dataDir), 'proj-1');
     await mkdir(projectDir, { recursive: true });
     await writeFile(path.join(projectDir, 'brief.txt'), 'private attachment body');
     await writeFile(path.join(projectDir, 'index.html'), '<!doctype html><h1>private artifact</h1>');
@@ -1460,7 +1461,7 @@ describe('langfuse-bridge.reportRunCompletedFromDaemon', () => {
     enableTestVelaTelemetry();
     vi.stubEnv('OPEN_DESIGN_OBJECT_OUTBOX_MODE', 'send');
     vi.stubEnv('OPEN_DESIGN_TELEMETRY_RELAY_URL', 'https://telemetry.open-design.ai/api/langfuse');
-    const projectDir = path.join(dataDir, 'projects', 'proj-1');
+    const projectDir = path.join(resolveUserProjectsRoot(dataDir), 'proj-1');
     await mkdir(projectDir, { recursive: true });
     const original = '<!doctype html><h1>frozen original</h1>';
     await writeFile(path.join(projectDir, 'index.html'), original);
@@ -1534,7 +1535,7 @@ describe('langfuse-bridge.reportRunCompletedFromDaemon', () => {
     enableTestVelaTelemetry();
     vi.stubEnv('OPEN_DESIGN_OBJECT_OUTBOX_MODE', 'send');
     vi.stubEnv('OPEN_DESIGN_TELEMETRY_RELAY_URL', 'https://telemetry.open-design.ai/api/langfuse');
-    const projectDir = path.join(dataDir, 'projects', 'proj-1');
+    const projectDir = path.join(resolveUserProjectsRoot(dataDir), 'proj-1');
     await mkdir(projectDir, { recursive: true });
     const original = '<!doctype html><h1>frozen original</h1>';
     await writeFile(path.join(projectDir, 'index.html'), original);
@@ -1585,7 +1586,7 @@ describe('langfuse-bridge.reportRunCompletedFromDaemon', () => {
       installationId: 'install-uuid-1',
       telemetry: { metrics: true, content: true, artifactManifest: true },
     });
-    const projectDir = path.join(dataDir, 'projects', 'proj-1');
+    const projectDir = path.join(resolveUserProjectsRoot(dataDir), 'proj-1');
     await mkdir(projectDir, { recursive: true });
     await writeFile(
       path.join(projectDir, 'brief.txt'),
@@ -1735,7 +1736,7 @@ describe('langfuse-bridge.reportRunCompletedFromDaemon', () => {
       installationId: 'install-uuid-1',
       telemetry: { metrics: true, content: true, artifactManifest: true },
     });
-    const projectDir = path.join(dataDir, 'projects', 'proj-1');
+    const projectDir = path.join(resolveUserProjectsRoot(dataDir), 'proj-1');
     await mkdir(projectDir, { recursive: true });
     await writeFile(path.join(projectDir, 'index.html'), '<!doctype html><h1>artifact body</h1>');
     const fetchSpy = vi.fn().mockResolvedValue(new Response('{}', { status: 207 }));
@@ -1794,7 +1795,7 @@ describe('langfuse-bridge.reportRunCompletedFromDaemon', () => {
       installationId: 'install-uuid-1',
       telemetry: { metrics: true, content: true, artifactManifest: true },
     });
-    const projectDir = path.join(dataDir, 'projects', 'proj-1');
+    const projectDir = path.join(resolveUserProjectsRoot(dataDir), 'proj-1');
     await mkdir(projectDir, { recursive: true });
     await writeFile(path.join(projectDir, 'index.html'), '<!doctype html><h1>artifact body</h1>');
     const fetchSpy = vi.fn().mockResolvedValue(new Response('{}', { status: 207 }));
@@ -1860,7 +1861,7 @@ describe('langfuse-bridge.reportRunCompletedFromDaemon', () => {
       installationId: 'install-uuid-1',
       telemetry: { metrics: true, content: true, artifactManifest: true },
     });
-    const projectDir = path.join(dataDir, 'projects', 'proj-1');
+    const projectDir = path.join(resolveUserProjectsRoot(dataDir), 'proj-1');
     await mkdir(projectDir, { recursive: true });
     await writeFile(path.join(projectDir, 'index.html'), '<!doctype html><h1>artifact body</h1>');
 
@@ -1974,7 +1975,7 @@ describe('langfuse-bridge.reportRunCompletedFromDaemon', () => {
       installationId: 'install-uuid-1',
       telemetry: { metrics: true, content: true, artifactManifest: true },
     });
-    const projectDir = path.join(dataDir, 'projects', 'proj-1');
+    const projectDir = path.join(resolveUserProjectsRoot(dataDir), 'proj-1');
     await mkdir(projectDir, { recursive: true });
     await writeFile(path.join(projectDir, 'existing.html'), '<!doctype html><h1>modified</h1>');
     const uploadedFilenames: string[] = [];
@@ -2063,7 +2064,7 @@ describe('langfuse-bridge.reportRunCompletedFromDaemon', () => {
       installationId: 'install-uuid-1',
       telemetry: { metrics: true, content: true, artifactManifest: true },
     });
-    const projectDir = path.join(dataDir, 'projects', 'proj-1');
+    const projectDir = path.join(resolveUserProjectsRoot(dataDir), 'proj-1');
     await mkdir(projectDir, { recursive: true });
     await writeFile(path.join(projectDir, 'index.html'), '<!doctype html><h1>artifact body</h1>');
     const fetchSpy = vi.fn(async (url: string, init: RequestInit) => {
@@ -2156,7 +2157,7 @@ describe('langfuse-bridge.reportRunCompletedFromDaemon', () => {
       telemetry: { metrics: true, content: true, artifactManifest: true },
     });
     const importedRoot = path.join(dataDir, 'imported-project');
-    const managedRoot = path.join(dataDir, 'projects', 'proj-1');
+    const managedRoot = path.join(resolveUserProjectsRoot(dataDir), 'proj-1');
     await mkdir(path.join(importedRoot, 'dist'), { recursive: true });
     await mkdir(managedRoot, { recursive: true });
     await writeFile(path.join(importedRoot, 'dist', 'index.html'), '<!doctype html><h1>imported</h1>');

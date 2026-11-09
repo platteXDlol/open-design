@@ -25,6 +25,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { startServer } from '../src/server.js';
 import { closeDatabase, openDatabase } from '../src/db.js';
 import { createChatArtifactBlobStore } from '../src/chat-artifacts/blob-store.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 const projectId = 'proj-media-hook-wiring';
 
@@ -88,7 +89,7 @@ describe('media generation freezes provider bytes through the route hook', () =>
     }
     expect(status).toBe('done');
 
-    const workspaceFile = path.join(dataDir, 'projects', projectId, 'hero.png');
+    const workspaceFile = path.join(resolveUserProjectsRoot(dataDir), projectId, 'hero.png');
     const providerBytes = await readFile(workspaceFile);
     expect(providerBytes.byteLength).toBeGreaterThan(0);
 

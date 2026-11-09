@@ -27,6 +27,7 @@ import {
   rebindWorkspaceProject,
   updateWorkspaceProject,
 } from '../../src/db.js';
+import { resolveUserProjectsRoot } from '../../src/storage/user-scope.js';
 
 const TEAM_WORKSPACE_ID = 'ws-team-1';
 const READER_MEMBER_ID = 'member-reader';
@@ -74,7 +75,7 @@ describe('project move refused by the hub with team_project_owner_conflict', () 
 
   beforeEach(async () => {
     tempDir = await mkdtemp(path.join(tmpdir(), 'od-move-owner-conflict-'));
-    projectsRoot = path.join(tempDir, 'projects');
+    projectsRoot = resolveUserProjectsRoot(tempDir);
     db = openDatabase(projectsRoot, { dataDir: tempDir });
   });
 
@@ -278,7 +279,7 @@ describe('owner_conflict unreachability through the normal UI path', () => {
 
   beforeEach(async () => {
     tempDir = await mkdtemp(path.join(tmpdir(), 'od-move-owner-unreachable-'));
-    projectsRoot = path.join(tempDir, 'projects');
+    projectsRoot = resolveUserProjectsRoot(tempDir);
     db = openDatabase(projectsRoot, { dataDir: tempDir });
   });
 

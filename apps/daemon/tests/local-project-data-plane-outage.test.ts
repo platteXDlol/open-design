@@ -12,6 +12,7 @@ import {
   openDatabase,
 } from '../src/db.js';
 import { startServer } from '../src/server.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 describe('local project data plane during Workspace authority outage', () => {
   let daemon: {
@@ -54,7 +55,7 @@ describe('local project data plane during Workspace authority outage', () => {
     const dataDir = process.env.OD_DATA_DIR;
     if (!dataDir) throw new Error('OD_DATA_DIR is required by the test harness');
     const db = openDatabase(process.cwd(), { dataDir });
-    const projectDir = path.join(dataDir, 'projects', projectId);
+    const projectDir = path.join(resolveUserProjectsRoot(dataDir), projectId);
 
     let workspaceDirectoryRequests = 0;
     authorityServer = http.createServer((req, res) => {
@@ -138,7 +139,7 @@ describe('local project data plane during Workspace authority outage', () => {
       '<!doctype html><title>Offline preview</title><h1 data-od-id="hero">Hero</h1>',
       'utf8',
     );
-    const mirrorProjectDir = path.join(dataDir, 'projects', mirrorProjectId);
+    const mirrorProjectDir = path.join(resolveUserProjectsRoot(dataDir), mirrorProjectId);
     await mkdir(mirrorProjectDir, { recursive: true });
     await writeFile(
       path.join(mirrorProjectDir, 'index.html'),

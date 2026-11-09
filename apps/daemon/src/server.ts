@@ -474,6 +474,17 @@ import { isArtboardDeckFile } from '@open-design/contracts';
 // v0.5: the workspace event hub was removed with the collab plane; emits are no-ops.
 const emitWorkspaceEvent = (..._v05_unused: any[]): void => {};
 const emitWorkspaceDirectoryChanged = (..._v05_unused: any[]): void => {};
+// v0.5 local-only replacements for deleted collab/workspace helpers that are
+// still reached on ordinary local requests. No team plane: nothing is a
+// shared placeholder, requests carry no workspace context, presence has no cache.
+const isUnmaterializedSharedPlaceholder = (..._v05_unused: any[]): boolean => false;
+const resolveOptionalLocalWorkspaceRequestAuthority = (..._v05_unused: any[]) =>
+  ({ ok: true as const, context: null as any });
+const invalidatePresenceReadCache = (..._v05_unused: any[]): void => {};
+const markPresenceReadCacheStale = (..._v05_unused: any[]): void => {};
+const WORKSPACE_DIRECTORY_EVENTS_CAPABILITY = 'v05-removed:workspace-directory-events';
+const CODING_PLAN_USAGE_EVENTS_CAPABILITY = 'v05-removed:coding-plan-usage-events';
+const AUTHORITATIVE_PROJECT_PRESENCE_CAPABILITY = 'v05-removed:project-presence';
 
 function isSingleFileHtml(name: string): boolean {
   return /\.html?$/i.test(name) && !isArtboardDeckFile(name);
@@ -13538,7 +13549,12 @@ undefined,
     let jsonEventStreamHandler: ReturnType<typeof createJsonEventStreamHandler> | null = null;
     let agentStdoutTail = '';
     let agentStderrTail = '';
-    const agentStderrFilter = createAgentStderrVisibilityFilter(agentId);
+    // v0.5: the AMR stderr filter was removed with AMR; every remaining agent passes stderr through.
+    const agentStderrFilter = {
+      write: (chunk: unknown): string =>
+        typeof chunk === 'string' ? chunk : Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk ?? ''),
+      flush: (): string => '',
+    };
     const emitVisibleAgentStderr = (chunk: any) => {
       const visibleChunk = agentStderrFilter.write(chunk);
       if (!visibleChunk) return;
@@ -14083,7 +14099,7 @@ undefined,
     // time before deciding whether to forward it. The auth-prompt guard
     // in the close handler suppresses the buffer when the output is an
     // OAuth prompt; otherwise the flush below sends the chunks in order.
-    const plaintextStdoutBuffer: BufferedStdoutChunk[] = [];
+    const plaintextStdoutBuffer: { text: string; receivedAt: number }[] = [];
     // Arrival time of the first buffered plain-text stdout chunk
     // (antigravity). First-token timing is stamped from this value only
     // when the buffer is actually flushed to the client at close time. If

@@ -10,6 +10,7 @@ import * as http from 'node:http';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildSampleFig } from './helpers/fig-fixture.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 const PROJECT_ID = 'figma-import-route-fixture';
 
@@ -62,12 +63,12 @@ describe('POST /api/projects/:id/figma/import — HTTP layer', () => {
     expect(body.suggestedPrompt).toMatch(/warm landing page/);
 
     // The snapshot really landed on disk under the project cwd.
-    const treePath = path.join(dataDir, 'projects', PROJECT_ID, 'figma', 'tree.json');
+    const treePath = path.join(resolveUserProjectsRoot(dataDir), PROJECT_ID, 'figma', 'tree.json');
     expect(fs.existsSync(treePath)).toBe(true);
     const tree = JSON.parse(fs.readFileSync(treePath, 'utf8'));
     expect(Array.isArray(tree)).toBe(true);
     expect(tree).toHaveLength(4);
-    expect(fs.existsSync(path.join(dataDir, 'projects', PROJECT_ID, 'figma', 'thumbnail.png'))).toBe(true);
+    expect(fs.existsSync(path.join(resolveUserProjectsRoot(dataDir), PROJECT_ID, 'figma', 'thumbnail.png'))).toBe(true);
   });
 
   it('rejects a request with neither a file nor a Figma URL', async () => {

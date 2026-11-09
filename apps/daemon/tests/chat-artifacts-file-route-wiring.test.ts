@@ -31,6 +31,7 @@ import {
   getWorkspaceArtifact,
   getLiveWorkspaceArtifactByPath,
 } from '../src/chat-artifacts/store.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 const projectId = 'proj-file-route-wiring';
 
@@ -54,7 +55,7 @@ describe('file mutation routes move workspace artifact identity', () => {
       body: JSON.stringify({ id: projectId, name: projectId }),
     });
     expect(created.status).toBe(200);
-    projectDir = path.join(dataDir, 'projects', projectId);
+    projectDir = path.join(resolveUserProjectsRoot(dataDir), projectId);
     await mkdir(projectDir, { recursive: true });
   }, 60_000);
 

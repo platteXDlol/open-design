@@ -22,6 +22,7 @@ import {
 import { duplicatePluginExampleIntoProject } from '../src/plugins/duplicate-project.js';
 import { removeProjectDir } from '../src/projects.js';
 import { registerPluginRoutes } from '../src/routes/plugins/index.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 const tempRoots: string[] = [];
 
@@ -102,7 +103,7 @@ describe('plugin project duplication', () => {
     'rejects duplicates that would skip a required symlinked file',
     async () => {
       const root = await makeTempRoot('od-plugin-duplicate-helper-');
-      const projectsRoot = path.join(root, 'projects');
+      const projectsRoot = resolveUserProjectsRoot(root);
       const plugin = await makePreviewPlugin(root);
       await writeFile(path.join(plugin.fsPath, 'preview', 'target.txt'), 'asset', 'utf8');
       await symlink('target.txt', path.join(plugin.fsPath, 'preview', 'linked.txt'));
@@ -124,7 +125,7 @@ describe('plugin project duplication', () => {
 
   it('duplicates locally without querying the remote Workspace directory', async () => {
     const root = await makeTempRoot('od-plugin-duplicate-authority-');
-    const projectsRoot = path.join(root, 'projects');
+    const projectsRoot = resolveUserProjectsRoot(root);
     const plugin = await makePreviewPlugin(root, 'authority-plugin-fixture');
     const projectId = 'authority-plugin-project';
     const project = {
@@ -223,7 +224,7 @@ describe('plugin project duplication', () => {
 
   it('binds Plugin Remix to the exact request workspace inside the DB transaction', async () => {
     const root = await makeTempRoot('od-plugin-duplicate-workspace-');
-    const projectsRoot = path.join(root, 'projects');
+    const projectsRoot = resolveUserProjectsRoot(root);
     const plugin = await makePreviewPlugin(root, 'workspace-plugin-fixture');
     (plugin.manifest.od as { mode?: string }).mode = 'deck';
     const projectId = 'workspace-plugin-project';
@@ -354,7 +355,7 @@ describe('plugin project duplication', () => {
     dbDeleteThrows,
   }) => {
     const root = await makeTempRoot('od-plugin-duplicate-route-');
-    const projectsRoot = path.join(root, 'projects');
+    const projectsRoot = resolveUserProjectsRoot(root);
     const plugin = await makePreviewPlugin(root, 'route-duplicate-fixture');
     const projectId = 'route-duplicate-project';
     const project = {
@@ -458,7 +459,7 @@ describe('plugin project duplication', () => {
 
   it('rolls back real SQLite rows and removes managed files when workspace binding fails', async () => {
     const root = await makeTempRoot('od-plugin-duplicate-sqlite-');
-    const projectsRoot = path.join(root, 'projects');
+    const projectsRoot = resolveUserProjectsRoot(root);
     const plugin = await makePreviewPlugin(root, 'sqlite-plugin-fixture');
     const projectId = 'sqlite-plugin-project';
     const conversationId = 'sqlite-plugin-conversation';

@@ -8,6 +8,7 @@ import { getProjectFileVersionRootStats } from '../src/project-file-versions.js'
 import { projectFileWriteTestHooks } from '../src/projects.js';
 import { snapshotAiHtmlVersionsForRun } from '../src/run-html-version-snapshots.js';
 import { startServer } from '../src/server.js';
+import { resolveUserProjectsRoot } from '../src/storage/user-scope.js';
 
 describe('project file version routes', () => {
   let server: http.Server;
@@ -54,7 +55,7 @@ describe('project file version routes', () => {
   function projectsRoot(): string {
     const dataDir = process.env.OD_DATA_DIR;
     if (!dataDir) throw new Error('OD_DATA_DIR is required for daemon route tests');
-    return path.join(dataDir, 'projects');
+    return resolveUserProjectsRoot(dataDir);
   }
 
   async function blockVersionRoot(projectId: string): Promise<void> {
