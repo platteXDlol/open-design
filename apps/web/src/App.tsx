@@ -966,6 +966,16 @@ function AppInner() {
     },
     [],
   );
+  // v7 SSO: when the session has expired, send the user back through login on next focus.
+  useEffect(() => {
+    const check = () => {
+      void fetch('/api/auth/me', { credentials: 'same-origin' })
+        .then((r) => { if (r.status === 401) window.location.assign('/api/auth/login'); })
+        .catch(() => {});
+    };
+    window.addEventListener('focus', check);
+    return () => window.removeEventListener('focus', check);
+  }, []);
   useEffect(() => {
     const onFirstPartyExternalLink = (event: MouseEvent) => openFirstPartyExternalLinkFromClick(
       event,
