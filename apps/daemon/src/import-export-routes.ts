@@ -692,7 +692,7 @@ export function registerProjectExportRoutes(app: Express, ctx: RegisterProjectEx
         : { mode: 'read' },
     );
     if (!authorized) return null;
-    const requestWorkspace = ((..._v05_unused: any[]) => ({} as any))(req);
+    const requestWorkspace: any = null; // v0.5: no workspace request headers in the local fork
     return {
       previewWorkspace: requestWorkspace === null || requestWorkspace === 'missing'
         ? null

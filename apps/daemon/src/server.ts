@@ -3668,7 +3668,7 @@ undefined,
     // Local/dev has no signed membership directory. Its explicit request
     // headers are the complete, static authority; still never consult the
     // daemon's mutable active-workspace context.
-    const claimed = ((..._v05_unused: any[]) => ({} as any))(input.req);
+    const claimed: any = null; // v0.5: no workspace request headers in the local fork
     if (claimed === null) {
       return {
         ok: false as const,
@@ -3786,7 +3786,7 @@ undefined,
   async function resolveDesignSystemWorkspaceContext(
     req: any,
   ): Promise<any | null> {
-    const claimed = ((..._v05_unused: any[]) => ({} as any))(req);
+    const claimed: any = null; // v0.5: no workspace request headers in the local fork
     // A completely headerless local/signed-out request is the explicit legacy
     // lane: built-ins plus unclaimed local resources, and new resources remain
     // unbound. A half-specified identity is never that lane and is rejected by
@@ -3961,7 +3961,7 @@ undefined,
     requestedWorkspaceId?: string,
   ): WorkspaceCollabContext | null => {
     ((..._v05_unused: any[]) => ({} as any))();
-    const claimed = ((..._v05_unused: any[]) => ({} as any))(req);
+    const claimed: any = null; // v0.5: no workspace request headers in the local fork
     if (!claimed || claimed === 'missing') return null;
     if (
       requestedWorkspaceId &&
@@ -3979,7 +3979,7 @@ undefined,
   };
   const verifyWorkspaceContextReadAuthority = async (req: any) => {
     ((..._v05_unused: any[]) => ({} as any))();
-    const claimed = ((..._v05_unused: any[]) => ({} as any))(req);
+    const claimed: any = null; // v0.5: no workspace request headers in the local fork
     if (claimed && claimed !== 'missing') {
       const cached = workspaceExactAuthorityCache.cached(
         claimed.workspaceId,
@@ -8265,7 +8265,7 @@ undefined,
       // and `syncSharedTeamDesignSystem` kept re-stamping `markTeamSynced()`
       // onto every teammate forever.
       unshareTeamDesignSystemIfShared: async (id, req) => {
-        const requestContext = ((..._v05_unused: any[]) => ({} as any))(req);
+        const requestContext: any = null; // v0.5: no workspace request headers in the local fork
         const hasWorkspaceContextHeaders = Object.keys(req.headers ?? {}).some(
           (name) => name.startsWith('x-od-workspace-') || name === 'x-od-app-user-id',
         );
@@ -8910,11 +8910,10 @@ undefined,
     id: string,
     source: string,
   ) => {
-    // v0.5 removed the team-plugin source path. The local-only fork resolves
-    // plugins by id+source from the personal plugin registry, not from a
-    // team-share flow. The personal lookup is `plugins.getLocalPluginBySource`
-    // (added in the v0.5 follow-up), wired through the same options below.
-    return null;
+    // v0.5 dropped the team-plugin source path; only the local registry record
+    // with the exact source remains.
+    const installed = getInstalledPlugin(dbHandle, id);
+    return installed?.source === source ? installed : null;
   };
 
   registerPluginRoutes(app, {
