@@ -85,7 +85,8 @@ COPY plugins/_official ./plugins/_official
 
 FROM ${RUNTIME_IMAGE}
 
-RUN apk add --no-cache tini poppler-utils bash git && \
+# chromium + fonts: headless deck export (PPTX/PDF), see specs/current/deck-export-m3-design.md.
+RUN apk add --no-cache tini poppler-utils bash git chromium font-noto font-noto-cjk && \
     addgroup -S -g 1001 open-design && \
     adduser -S -D -H -u 1001 -G open-design open-design
 
@@ -113,6 +114,7 @@ ENV NODE_ENV=production
 ENV NODE_OPTIONS=--max-old-space-size=192
 ENV OD_BIND_HOST=0.0.0.0
 ENV OD_PORT=7456
+ENV OD_CHROMIUM_PATH=/usr/bin/chromium-browser
 
 EXPOSE 7456
 

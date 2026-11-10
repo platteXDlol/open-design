@@ -471,7 +471,7 @@ Total: ~12 files, ~3000 lines reviewed, ~500 / -2000 line diff expected. The sma
 | **M4** | Canvas pan/zoom + tweaks + undo | not started |
 | **M5** | Comments end-to-end | not started |
 | **M6** | Handoff bundle consumed by Claude Code | not started |
-| **M7** | OIDC SSO via Authentik/Keycloak | **storage half landed in v0.6 (data-prefix only, synthetic user); auth half remains v7** |
+| **M7** | OIDC SSO via Authentik/Keycloak | auth half landed in v7 (PR #28) on top of the v0.6 storage half; partner share link still open |
 
 ### v0.6 — Per-user project prefix (storage half of M7)
 
@@ -484,5 +484,7 @@ rationale and the migration mechanics are recorded in
 
 ### Next concrete steps (in order)
 
-1. **Slide deck renderer (Q1, first output type)** — design conversation first, no code in the first turn.
-2. **v7 — OIDC SSO (auth half of M7)** — the storage half already landed in v0.6; see `local-only-divergence.md` §4.2.
+1. ~~Slide deck renderer~~ — done (M2 closed, PRs #23/#24/#27).
+2. ~~v7 — OIDC SSO (auth half of M7)~~ — done (PR #28).
+3. **M3 deck export** — headless PPTX/PDF/HTML ZIP for multi-artboard decks; see `deck-export-m3-design.md`.
+4. M3 remainder: share link, `docker compose up` verification on a fresh host, manual design-system import check.

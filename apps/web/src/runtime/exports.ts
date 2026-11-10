@@ -82,6 +82,27 @@ function triggerDownload(blob: Blob, filename: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
+/**
+ * M3 multi-artboard deck export (`specs/current/deck-export-m3-design.md`).
+ * Same endpoint as `od artifacts deck export`; throws with the daemon's message.
+ */
+export async function exportDeckArtboards(opts: {
+  projectId: string;
+  artifactId: string;
+  format: 'pptx' | 'pdf' | 'html';
+}): Promise<void> {
+  const resp = await fetch(
+    `/api/projects/${encodeURIComponent(opts.projectId)}/artifacts/${encodeURIComponent(opts.artifactId)}/export`,
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ format: opts.format }) },
+  );
+  if (!resp.ok) {
+    const body = (await resp.json().catch(() => null)) as { error?: { message?: string } } | null;
+    throw new Error(body?.error?.message || `export failed (${resp.status})`);
+  }
+  const ext = opts.format === 'html' ? 'zip' : opts.format;
+  triggerDownload(await resp.blob(), filenameFromContentDisposition(resp) ?? `${opts.artifactId}.${ext}`);
+}
+
 export function exportAsHtml(html: string, title: string): void {
   const doc = buildSrcdoc(html);
   const blob = new Blob([doc], { type: 'text/html;charset=utf-8' });

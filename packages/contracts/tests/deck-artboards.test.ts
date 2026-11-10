@@ -6,6 +6,9 @@ import {
   ARTBOARD_WIDTH,
   DECK_MIN_ARTBOARDS,
   buildDeckManifestV2,
+  buildDeckExportIndexHtml,
+  deckExportFile,
+  isDeckExportFormat,
   isDeckArtboardPath,
   parseDeckManifestV2,
   validateArtboardHtml,
@@ -134,5 +137,33 @@ describe('validateArtboardDeck (AC1, AC3)', () => {
     const files = ['artboards/a.html', 'artboards/b.html', 'artboards/c.html'];
     const m = buildDeckManifestV2({ title: 'x', files });
     expect(validateArtboardDeck(m, files)).toEqual([]);
+  });
+});
+
+describe('deck export (M3)', () => {
+  const files = ['artboards/01-a.html', 'artboards/02-b.html', 'artboards/03-c.html'];
+  it('maps formats to files under exports/', () => {
+    expect(deckExportFile('d1', 'pptx')).toBe('exports/d1.pptx');
+    expect(deckExportFile('d1', 'html')).toBe('exports/d1.zip');
+    expect(isDeckExportFormat('pdf')).toBe(true);
+    expect(isDeckExportFormat('docx')).toBe(false);
+  });
+  it('round-trips export records and drops unsafe ones', () => {
+    const m = buildDeckManifestV2({ title: 'x', files });
+    const parsed = parseDeckManifestV2({
+      ...m,
+      exported: [
+        { format: 'pptx', file: 'exports/x.pptx', bytes: 10, createdAt: 't' },
+        { format: 'pdf', file: '../evil.pdf', bytes: 1, createdAt: 't' },
+      ],
+    });
+    expect(parsed?.exported).toEqual([{ format: 'pptx', file: 'exports/x.pptx', bytes: 10, createdAt: 't' }]);
+  });
+  it('index.html lists every artboard in order, escaping the title', () => {
+    const html = buildDeckExportIndexHtml(buildDeckManifestV2({ title: '<b>Deck</b>', files }));
+    expect(html.indexOf('01-a')).toBeLessThan(html.indexOf('03-c'));
+    expect(html.match(/<iframe/g)).toHaveLength(3);
+    expect(html).not.toContain('<b>Deck</b>');
+    expect(html).not.toMatch(/https?:\/\//);
   });
 });

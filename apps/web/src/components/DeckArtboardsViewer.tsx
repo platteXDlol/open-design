@@ -12,7 +12,9 @@ import {
   parseDeckManifestV2,
   type DeckManifestV2,
 } from '@open-design/contracts';
+import { Button } from '@open-design/components';
 import { projectRawUrl } from '../providers/registry';
+import { exportDeckArtboards } from '../runtime/exports';
 import styles from './DeckArtboardsViewer.module.css';
 
 /** `artifacts/<id>` for a v2 deck's manifest or artboard file, else null. */
@@ -66,6 +68,8 @@ export function DeckArtboardsViewer({ projectId, artifactDir, initialFile, refre
   const [active, setActive] = useState(0);
   const stageRef = useRef<HTMLDivElement>(null);
   const [stageWidth, setStageWidth] = useState(960);
+  const [exporting, setExporting] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -125,6 +129,18 @@ export function DeckArtboardsViewer({ projectId, artifactDir, initialFile, refre
   const v = refreshKey === undefined ? '' : `?v=${encodeURIComponent(String(refreshKey))}`;
   const url = (file: string) => `${projectRawUrl(projectId, `${artifactDir}/${file}`)}${v}`;
   const current = manifest.artboards[Math.min(active, count - 1)]!;
+  const artifactId = artifactDir.split('/').pop()!;
+  const runExport = async (format: 'pptx' | 'pdf' | 'html') => {
+    setExporting(format);
+    setExportError(null);
+    try {
+      await exportDeckArtboards({ projectId, artifactId, format });
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setExporting(null);
+    }
+  };
 
   return (
     <div className={styles.root}>
@@ -153,6 +169,14 @@ export function DeckArtboardsViewer({ projectId, artifactDir, initialFile, refre
         onKeyDown={onKeyDown}
       >
         <ArtboardFrame key={current.id} src={url(current.file)} title={`Slide ${active + 1} of ${count}`} width={stageWidth} />
+      </div>
+      <div className={styles.exportBar} role="group" aria-label="Export deck">
+        {(['pptx', 'pdf', 'html'] as const).map((f) => (
+          <Button key={f} size="sm" variant="secondary" disabled={exporting !== null} onClick={() => void runExport(f)}>
+            {exporting === f ? 'Exporting…' : `Export ${f === 'html' ? 'HTML' : f.toUpperCase()}`}
+          </Button>
+        ))}
+        {exportError ? <span role="alert" className={styles.exportError}>{exportError}</span> : null}
       </div>
     </div>
   );
