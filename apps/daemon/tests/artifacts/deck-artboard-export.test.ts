@@ -9,6 +9,7 @@ import {
   createHeadlessSlideRenderer,
   DeckExportError,
   exportDeckArtifact,
+  chromiumEnv,
   resolveChromiumPath,
   type SlideRenderer,
 } from '../../src/artifacts/deck-artboard-export.js';
@@ -87,6 +88,14 @@ describe('deck export (M3)', () => {
       .rejects.toMatchObject({ kind: 'not-found' });
     await expect(exportDeckArtifact({ projectRoot: root, artifactId: 'deck-v1', format: 'pptx', render: null }))
       .rejects.toMatchObject({ kind: 'no-renderer' });
+  });
+
+  it('launches Chromium with a writable HOME even when HOME is missing (Docker read-only rootfs)', () => {
+    const env = chromiumEnv({ HOME: '/home/does-not-exist', PATH: '/usr/bin' });
+    expect(env.HOME).toBe(path.join(tmpdir(), 'od-chromium'));
+    expect(existsSync(env.HOME!)).toBe(true);
+    expect(env.XDG_CONFIG_HOME!.startsWith(env.HOME!)).toBe(true);
+    expect(env.PATH).toBe('/usr/bin');
   });
 
   it('OD_CHROMIUM_PATH pointing nowhere resolves to null', async () => {
