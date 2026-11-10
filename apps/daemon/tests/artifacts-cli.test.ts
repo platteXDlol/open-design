@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -91,6 +91,28 @@ describe('od artifacts CLI', () => {
     it('validate exits zero for a valid deck', async () => {
       fetchMock.mockImplementation(route(true));
       expect((await runArtifactsCli(['deck', 'validate', ...base])).exitCode).toBe(0);
+    });
+
+    it('export POSTs the format and writes the file to --out (AC5)', async () => {
+      const outDir = await mkdtemp(path.join(tmpdir(), 'od-deck-out-'));
+      tempRoots.push(outDir);
+      fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/api/projects')) {
+          return new Response(JSON.stringify({ projects: [{ id: 'project-1', name: 'Demo' }] }), { status: 200 });
+        }
+        expect(url).toBe('http://127.0.0.1:17456/api/projects/project-1/artifacts/pitch-v1/export');
+        expect(JSON.parse(String(init?.body))).toEqual({ format: 'pptx' });
+        return new Response(new Uint8Array([1, 2, 3]), { status: 200 });
+      });
+      const out = path.join(outDir, 'deck.pptx');
+      const result = await runArtifactsCli(['deck', 'export', ...base, '--format', 'pptx', '--out', out, '--json']);
+      expect(result.exitCode).toBe(0);
+      expect(JSON.parse(stdoutOutput.join(''))).toMatchObject({ ok: true, out, bytes: 3 });
+      expect([...(await readFile(out))]).toEqual([1, 2, 3]);
+    });
+
+    it('export rejects an unknown format', async () => {
+      expect((await runArtifactsCli(['deck', 'export', ...base, '--format', 'docx'])).exitCode).toBe(1);
     });
 
     it('requires --deck', async () => {

@@ -53,6 +53,74 @@ export interface DeckManifestV2 {
   designSystemId?: string | null;
   createdAt?: string;
   updatedAt?: string;
+  /** Files produced by deck export (M3), one per format; latest wins. */
+  exported?: DeckExportRecord[];
+}
+
+// ── Export (M3) ─ design: specs/current/deck-export-m3-design.md ───────────
+
+export const DECK_EXPORT_FORMATS = ['pptx', 'pdf', 'html'] as const;
+export type DeckExportFormat = (typeof DECK_EXPORT_FORMATS)[number];
+
+export interface DeckExportRecord {
+  format: DeckExportFormat;
+  /** Artifact-relative path, `exports/<artifactId>.<ext>`. */
+  file: string;
+  bytes: number;
+  createdAt: string;
+}
+
+/** `POST /api/projects/:id/artifacts/:artifactId/export` body. */
+export interface DeckExportRequest {
+  format: DeckExportFormat;
+}
+
+/** JSON response of the export endpoint (`?json=1`). */
+export interface DeckExportResult {
+  artifactId: string;
+  record: DeckExportRecord;
+}
+
+export function isDeckExportFormat(value: unknown): value is DeckExportFormat {
+  return typeof value === 'string' && (DECK_EXPORT_FORMATS as readonly string[]).includes(value);
+}
+
+export function deckExportFile(artifactId: string, format: DeckExportFormat): string {
+  return `exports/${artifactId}.${format === 'html' ? 'zip' : format}`;
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
+/**
+ * `index.html` for the offline HTML ZIP: every artboard stacked, each in an
+ * iframe scaled to the page width. Each artboard fits itself to its frame.
+ */
+export function buildDeckExportIndexHtml(manifest: DeckManifestV2): string {
+  const frames = manifest.artboards
+    .map(
+      (a, i) =>
+        `<section><iframe src="${escapeHtml(a.file)}" title="Slide ${i + 1}" loading="lazy"></iframe></section>`,
+    )
+    .join('\n');
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${escapeHtml(manifest.title)}</title>
+<style>
+body{margin:0;background:#111;padding:24px;display:grid;gap:24px}
+section{width:100%;max-width:1600px;margin:0 auto;aspect-ratio:${ARTBOARD_WIDTH}/${ARTBOARD_HEIGHT}}
+iframe{width:100%;height:100%;border:0;display:block;background:#fff}
+</style>
+</head>
+<body>
+${frames}
+</body>
+</html>
+`;
 }
 
 const ARTBOARD_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
@@ -160,7 +228,18 @@ export function parseDeckManifestV2(value: unknown): DeckManifestV2 | null {
     ...(v.designSystemId === null || typeof v.designSystemId === 'string' ? { designSystemId: v.designSystemId } : {}),
     ...(typeof v.createdAt === 'string' ? { createdAt: v.createdAt } : {}),
     ...(typeof v.updatedAt === 'string' ? { updatedAt: v.updatedAt } : {}),
+    ...(Array.isArray(v.exported) ? { exported: parseExportRecords(v.exported) } : {}),
   };
+}
+
+function parseExportRecords(raw: unknown[]): DeckExportRecord[] {
+  return raw.flatMap((r) => {
+    if (!r || typeof r !== 'object') return [];
+    const e = r as Record<string, unknown>;
+    if (!isDeckExportFormat(e.format) || typeof e.file !== 'string' || !/^exports\/[^/]+$/.test(e.file)) return [];
+    if (typeof e.bytes !== 'number' || typeof e.createdAt !== 'string') return [];
+    return [{ format: e.format, file: e.file, bytes: e.bytes, createdAt: e.createdAt }];
+  });
 }
 
 // ── Static validation ──────────────────────────────────────────────────────

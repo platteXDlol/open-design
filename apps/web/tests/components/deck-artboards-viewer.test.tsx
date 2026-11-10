@@ -61,4 +61,19 @@ describe('DeckArtboardsViewer (M2 AC4)', () => {
     render(<DeckArtboardsViewer projectId="p1" artifactDir="artifacts/deck-v1" />);
     await waitFor(() => expect(screen.getByText('No slides yet.')).toBeTruthy());
   });
+
+  it('exports through the deck export endpoint and surfaces daemon errors (M3 AC5)', async () => {
+    const manifest = buildDeckManifestV2({ title: 'Pitch', files });
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (init?.method !== 'POST') return new Response(JSON.stringify(manifest));
+      return new Response(JSON.stringify({ error: { message: 'deck has validation findings' } }), { status: 422 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<DeckArtboardsViewer projectId="p1" artifactDir="artifacts/deck-v1" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Export PPTX' }));
+    expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'deck has validation findings');
+    const post = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST')!;
+    expect(post[0]).toBe('/api/projects/p1/artifacts/deck-v1/export');
+    expect(JSON.parse(String(post[1]!.body))).toEqual({ format: 'pptx' });
+  });
 });

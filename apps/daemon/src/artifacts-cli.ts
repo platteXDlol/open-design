@@ -1,5 +1,6 @@
-import { readFile } from 'node:fs/promises';
-import type { DeckInspectResponse } from '@open-design/contracts';
+import { readFile, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { deckExportFile, isDeckExportFormat, type DeckInspectResponse } from '@open-design/contracts';
 import { postCreateArtifactRequest } from './artifacts/create.js';
 import { resolveDaemonUrl } from './daemon-url.js';
 import { resolveProjectArg, withActiveEcho } from './mcp.js';
@@ -22,6 +23,8 @@ interface ParsedOptions {
   deckCommand?: string;
   deck?: string;
   json?: boolean;
+  format?: string;
+  out?: string;
 }
 
 const USAGE = `Usage:
@@ -35,6 +38,11 @@ Existing target paths are rejected.
 
 Lists a multi-artboard deck's slides, or validates every slide and the deck
 (exit 1 when anything fails). Same endpoint as the web viewer.
+
+  od artifacts deck export --deck <deck-id> --format pptx|pdf|html [--out <path>] [--project <id-or-name>] [--json] [--daemon-url <url>]
+
+Exports the deck (html = offline ZIP) and writes it to --out (default:
+./<deck-id>.<ext>). The daemon also keeps a copy under the deck's exports/.
 `;
 
 function writeJson(value: any, stream: NodeJS.WriteStream = process.stdout): void {
@@ -70,6 +78,14 @@ function parseOptions(args: string[]): ParsedOptions | { error: string } {
       const value = rest[++index];
       if (!value) return { error: '--deck requires a deck id' };
       options.deck = value;
+    } else if (arg === '--format') {
+      const value = rest[++index];
+      if (!value) return { error: '--format requires pptx, pdf, or html' };
+      options.format = value;
+    } else if (arg === '--out') {
+      const value = rest[++index];
+      if (!value) return { error: '--out requires a path' };
+      options.out = value;
     } else if (arg === '--json') {
       options.json = true;
     } else if (arg === '--project') {
@@ -171,8 +187,9 @@ export async function runArtifactsCli(args: string[]): Promise<ArtifactCliResult
 }
 
 async function runDeckCommand(options: ParsedOptions): Promise<ArtifactCliResult> {
+  if (options.deckCommand === 'export') return runDeckExport(options);
   if (options.deckCommand !== 'list' && options.deckCommand !== 'validate') {
-    return fail('usage: od artifacts deck list|validate --deck <deck-id>');
+    return fail('usage: od artifacts deck list|validate|export --deck <deck-id>');
   }
   if (!options.deck) return fail(`deck ${options.deckCommand} requires --deck <deck-id>`);
   try {
@@ -199,6 +216,31 @@ async function runDeckCommand(options: ParsedOptions): Promise<ArtifactCliResult
     if (options.deckCommand === 'validate') lines.push(deck.valid ? 'valid' : 'invalid');
     process.stdout.write(`${lines.join('\n')}\n`);
     return { exitCode };
+  } catch (error: any) {
+    return fail(error instanceof Error ? error.message : String(error));
+  }
+}
+
+async function runDeckExport(options: ParsedOptions): Promise<ArtifactCliResult> {
+  if (!options.deck) return fail('deck export requires --deck <deck-id>');
+  if (!isDeckExportFormat(options.format)) return fail('deck export requires --format pptx|pdf|html');
+  try {
+    const daemonUrl = await resolveDaemonUrl(
+      options.daemonUrl === undefined ? {} : { flagUrl: options.daemonUrl },
+    );
+    const { id } = await resolveProjectArg(daemonUrl, options.project);
+    const resp = await fetch(
+      `${daemonUrl}/api/projects/${encodeURIComponent(id)}/artifacts/${encodeURIComponent(options.deck)}/export`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ format: options.format }) },
+    );
+    if (!resp.ok) return fail(`daemon ${resp.status}: ${await resp.text()}`, undefined, resp.status);
+    const buffer = Buffer.from(await resp.arrayBuffer());
+    const out = path.resolve(options.out ?? path.basename(deckExportFile(options.deck, options.format)));
+    await writeFile(out, buffer);
+    const result = { ok: true, deck: options.deck, format: options.format, out, bytes: buffer.length };
+    if (options.json) writeJson(result);
+    else process.stdout.write(`${out} (${buffer.length} bytes)\n`);
+    return { exitCode: 0 };
   } catch (error: any) {
     return fail(error instanceof Error ? error.message : String(error));
   }

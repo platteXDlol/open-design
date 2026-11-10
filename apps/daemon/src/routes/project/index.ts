@@ -3,6 +3,19 @@
 // are now inline-replaced at their call sites; the call site replacements
 // match the v0.5 stub contracts (null/false/{ ok: true }).
 import { inspectDeckArtifact } from '../../artifacts/deck-artboard-tracker.js';
+import {
+  createHeadlessSlideRenderer,
+  DeckExportError,
+  exportDeckArtifact,
+  resolveChromiumPath,
+} from '../../artifacts/deck-artboard-export.js';
+import { isDeckExportFormat, type DeckExportFormat, type DeckExportResult } from '@open-design/contracts';
+
+const DECK_EXPORT_MIME: Record<DeckExportFormat, string> = {
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  pdf: 'application/pdf',
+  html: 'application/zip',
+};
 import { createHash, randomUUID } from 'node:crypto';
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
@@ -6518,6 +6531,48 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
       res.json(deck);
     } catch (err: any) {
       sendApiError(res, 400, 'BAD_REQUEST', String(err?.message || err));
+    }
+  });
+
+  // M3 deck export (pptx | pdf | html zip). Binary by default; `?json=1` returns DeckExportResult.
+  app.post('/api/projects/:id/artifacts/:artifactId/export', async (req, res) => {
+    try {
+      const format = req.body?.format;
+      if (!isDeckExportFormat(format)) {
+        sendApiError(res, 400, 'BAD_REQUEST', 'format must be pptx, pdf, or html');
+        return;
+      }
+      const project = getProject(db, req.params.id);
+      if (!project) {
+        sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'project not found');
+        return;
+      }
+      if (!await authorizeProjectRequest(req, res, project.id, { mode: 'write' })) return;
+      const projectRoot = resolveProjectDir(ctx.paths.PROJECTS_DIR, project.id, project.metadata);
+      const artifactId = String(req.params.artifactId);
+      const chromium = format === 'html' ? null : await resolveChromiumPath();
+      const { record, buffer } = await exportDeckArtifact({
+        projectRoot,
+        artifactId,
+        format,
+        render: chromium ? createHeadlessSlideRenderer(chromium) : null,
+      });
+      res.setHeader('Cache-Control', 'no-store');
+      if (req.query.json === '1') {
+        const result: DeckExportResult = { artifactId, record };
+        res.json(result);
+        return;
+      }
+      res.setHeader('Content-Type', DECK_EXPORT_MIME[format]);
+      res.setHeader('Content-Disposition', `attachment; filename="${path.basename(record.file)}"`);
+      res.send(buffer);
+    } catch (err: any) {
+      if (err instanceof DeckExportError) {
+        if (err.kind === 'not-found') return void sendApiError(res, 404, 'NOT_FOUND', err.message);
+        if (err.kind === 'no-renderer') return void sendApiError(res, 501, 'UPSTREAM_UNAVAILABLE', err.message);
+        return void sendApiError(res, 422, 'VALIDATION_FAILED', err.message, { details: { findings: err.findings } });
+      }
+      sendApiError(res, 500, 'INTERNAL_ERROR', String(err?.message || err));
     }
   });
 
