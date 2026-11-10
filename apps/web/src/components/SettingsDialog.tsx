@@ -168,6 +168,7 @@ import { PetSettings } from './pet/PetSettings';
 import { McpClientSection } from './McpClientSection';
 import { DesignSystemsSection } from './DesignSystemsSection';
 import { PrivacySection } from './PrivacySection';
+import { AccountSection } from './AccountSection';
 import { ProjectLocationsSection } from './ProjectLocationsSection';
 import { RoutinesSection } from './RoutinesSection';
 import { SettingsWorkspaceSection } from './SettingsWorkspaceSection';
@@ -244,6 +245,7 @@ export type SettingsSection =
   | 'projectLocations'
   | 'memory'
   | 'privacy'
+  | 'account'
   // 'library' is consumed by the EntryShell library route — App opens it
   // via this same openSettings entry point, so SettingsSection must
   // accept the token even though SettingsDialog itself has no Library
@@ -3858,6 +3860,7 @@ export function SettingsDialog({
     },
     notifications: { title: t('settings.notifications'), subtitle: t('settings.notificationsHint') },
     privacy: { title: t('settings.privacy'), subtitle: t('settings.privacyHint') },
+    account: { title: t('settings.account'), subtitle: t('settings.accountHint') },
     pet: { title: t('pet.title'), subtitle: t('pet.subtitle') },
     designSystems: {
       title: t('settings.designSystems'),
@@ -4378,6 +4381,17 @@ export function SettingsDialog({
               <span>
                 <strong>{t('settings.mcpServerTitle')}</strong>
                 <small>{t('settings.mcpServerHint')}</small>
+              </span>
+            </button>
+            <button
+              type="button"
+              className={`settings-nav-item${activeSection === 'account' ? ' active' : ''}`}
+              onClick={() => setActiveSection('account')}
+            >
+              <Icon name="key" size={18} />
+              <span>
+                <strong>{t('settings.account')}</strong>
+                <small>{t('settings.accountHint')}</small>
               </span>
             </button>
             <button
@@ -5856,6 +5870,7 @@ export function SettingsDialog({
             />
           ) : null}
 
+          {activeSection === 'account' ? <AccountSection /> : null}
           {activeSection === 'privacy' ? (
             <PrivacySection cfg={cfg} setCfg={setCfg} />
           ) : null}

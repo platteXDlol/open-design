@@ -17,7 +17,7 @@ const MCP_REGISTRATION_REFRESH_DELAY_MS = 5_000;
 
 export function registerMcpRoutes(app: Express, ctx: RegisterMcpRoutesDeps) {
   const { isLocalSameOrigin, resolvedPortRef, sendApiError } = ctx.http;
-  const { OD_BIN, RUNTIME_DATA_DIR, PROJECTS_DIR } = ctx.paths;
+  const { OD_BIN, RUNTIME_DATA_DIR } = ctx.paths;
   const { pendingAuth, daemonUrlRef, inheritedEnvironment } = ctx.mcp;
   const getResolvedPort = () => resolvedPortRef.current;
   const getDaemonUrl = () => daemonUrlRef.current;

@@ -21,7 +21,7 @@ export interface RegisterTerminalRoutesDeps
 export function registerTerminalRoutes(app: Express, ctx: RegisterTerminalRoutesDeps) {
   const { db, terminals, authorizeProjectRequest } = ctx;
   const { sendApiError, createSseResponse } = ctx.http;
-  const { PROJECTS_DIR } = ctx.paths;
+  
   const { getProject } = ctx.projectStore;
   const { resolveProjectDir } = ctx.projectFiles;
 
@@ -60,7 +60,7 @@ export function registerTerminalRoutes(app: Express, ctx: RegisterTerminalRoutes
       { mode: 'write', capability: 'writeFiles' },
     )) return;
     const body = req.body || {};
-    const cwd = resolveProjectDir(PROJECTS_DIR, project.id, project.metadata);
+    const cwd = resolveProjectDir(ctx.paths.PROJECTS_DIR, project.id, project.metadata);
     try {
       const session = await terminals.create({
         projectId: project.id,

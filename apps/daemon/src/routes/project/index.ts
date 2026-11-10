@@ -556,7 +556,7 @@ function projectDetailResolvedDir(
  * Materialize a *managed* project's folder before it is referenced as
  * read-only context for another run.
  *
- * Invariant: after this resolves for a managed project, `PROJECTS_DIR/<id>`
+ * Invariant: after this resolves for a managed project, `ctx.paths.PROJECTS_DIR/<id>`
  * exists on disk. A brand-new project has a DB row but no on-disk directory
  * until its first file write, so without this a reference resolves to a path
  * that fails both the composer's existence probe and the daemon's
@@ -2116,7 +2116,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
       : DEFAULT_PROJECT_CREATE_PREPARATION_TIMEOUT_MS;
   const projectTelemetry = ctx.telemetry;
   const { sendApiError, createSseResponse } = ctx.http;
-  const { DESIGN_SYSTEMS_DIR, PROJECTS_DIR, SKILLS_DIR, BRANDS_DIR, USER_DESIGN_SYSTEMS_DIR } = ctx.paths;
+  const { DESIGN_SYSTEMS_DIR, SKILLS_DIR, BRANDS_DIR, USER_DESIGN_SYSTEMS_DIR } = ctx.paths;
   const { readAppConfig, writeAppConfig } = ctx.appConfig;
   const {
     insertProject,
@@ -2993,7 +2993,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
 
   async function configuredProjectLocations() {
     const config = await readAppConfig(ctx.paths.RUNTIME_DATA_DIR);
-    const all = allProjectLocations(PROJECTS_DIR, config.projectLocations);
+    const all = allProjectLocations(ctx.paths.PROJECTS_DIR, config.projectLocations);
     const valid = all[0] ? [all[0]] : [];
     for (const location of all.slice(1)) {
       const validated = validateLinkedDirs([location.path]);
@@ -3110,7 +3110,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
         });
       }
       const config = await writeAppConfig(ctx.paths.RUNTIME_DATA_DIR, { projectLocations: prepared });
-      const locations = allProjectLocations(PROJECTS_DIR, config.projectLocations);
+      const locations = allProjectLocations(ctx.paths.PROJECTS_DIR, config.projectLocations);
       const removedProjectIds = unregisterProjectsForRemovedLocations(previousLocations, config.projectLocations ?? []);
       /** @type {import('@open-design/contracts').ProjectLocationsResponse} */
       const body = { locations, removedProjectIds };
@@ -3654,7 +3654,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
         }
       });
       const stagedDelete = finalProjectIds.length > 0
-        ? await stageProjectDirsForDelete(PROJECTS_DIR, finalProjectIds, randomId())
+        ? await stageProjectDirsForDelete(ctx.paths.PROJECTS_DIR, finalProjectIds, randomId())
         : null;
       try {
         deleteMany(projectIds, finalProjectIds);
@@ -4198,7 +4198,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
               'preparing template files',
             );
             managedTemplateDirPrepared = externalProjectDir == null;
-            await ensureProject(PROJECTS_DIR, id, projectMetadata);
+            await ensureProject(ctx.paths.PROJECTS_DIR, id, projectMetadata);
             for (const f of tpl.files) {
               if (
                 !f
@@ -4209,7 +4209,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
               }
               try {
                 await writeProjectFile(
-                  PROJECTS_DIR,
+                  ctx.paths.PROJECTS_DIR,
                   id,
                   f.name,
                   Buffer.from(f.content, 'utf8'),
@@ -4238,7 +4238,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
           if (externalProjectDir) {
             await rm(externalProjectDir, { recursive: true, force: true }).catch(() => {});
           } else if (managedTemplateDirPrepared) {
-            await removeProjectDir(PROJECTS_DIR, id).catch(() => {});
+            await removeProjectDir(ctx.paths.PROJECTS_DIR, id).catch(() => {});
           }
           return;
         }
@@ -4321,7 +4321,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
         if (externalProjectDir) {
           await rm(externalProjectDir, { recursive: true, force: true }).catch(() => {});
         } else if (managedTemplateDirPrepared) {
-          await removeProjectDir(PROJECTS_DIR, id).catch(() => {});
+          await removeProjectDir(ctx.paths.PROJECTS_DIR, id).catch(() => {});
         }
         if (pluginResolutionState.failure) {
           return res
@@ -4605,21 +4605,21 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
       const metadata = cloneProjectMetadataForDuplicate(sourceProject);
       let insertedProject = false;
       try {
-        await ensureProject(PROJECTS_DIR, targetProjectId, metadata);
-        const sourceFiles = await listFiles(PROJECTS_DIR, sourceProject.id, {
+        await ensureProject(ctx.paths.PROJECTS_DIR, targetProjectId, metadata);
+        const sourceFiles = await listFiles(ctx.paths.PROJECTS_DIR, sourceProject.id, {
           metadata: sourceProject.metadata,
         });
         const copiedFiles: string[] = [];
         for (const file of sourceFiles) {
           if (!file?.name || typeof file.name !== 'string') continue;
           const sourceFile = await readProjectFile(
-            PROJECTS_DIR,
+            ctx.paths.PROJECTS_DIR,
             sourceProject.id,
             file.name,
             sourceProject.metadata,
           );
           await writeProjectFile(
-            PROJECTS_DIR,
+            ctx.paths.PROJECTS_DIR,
             targetProjectId,
             sourceFile.name,
             sourceFile.buffer,
@@ -4673,7 +4673,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
         res.json(body);
       } catch (err: any) {
         if (insertedProject) dbDeleteProject(db, targetProjectId);
-        await removeProjectDir(PROJECTS_DIR, targetProjectId).catch(() => {});
+        await removeProjectDir(ctx.paths.PROJECTS_DIR, targetProjectId).catch(() => {});
         throw err;
       }
     } catch (err: any) {
@@ -4749,22 +4749,22 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
           sourceProjectId: sourceProject.id,
           sourceProjectName: sourceProject.name,
         };
-        await ensureProject(PROJECTS_DIR, targetProjectId, metadata);
+        await ensureProject(ctx.paths.PROJECTS_DIR, targetProjectId, metadata);
 
-        const sourceFiles = await listFiles(PROJECTS_DIR, sourceProject.id, {
+        const sourceFiles = await listFiles(ctx.paths.PROJECTS_DIR, sourceProject.id, {
           metadata: sourceProject.metadata,
         });
         const copiedFiles: string[] = [];
         for (const file of sourceFiles) {
           if (!file?.name || typeof file.name !== 'string') continue;
           const sourceFile = await readProjectFile(
-            PROJECTS_DIR,
+            ctx.paths.PROJECTS_DIR,
             sourceProject.id,
             file.name,
             sourceProject.metadata,
           );
           await writeProjectFile(
-            PROJECTS_DIR,
+            ctx.paths.PROJECTS_DIR,
             targetProjectId,
             sourceFile.name,
             sourceFile.buffer,
@@ -4808,7 +4808,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
         });
 
         await writeProjectFile(
-          PROJECTS_DIR,
+          ctx.paths.PROJECTS_DIR,
           targetProjectId,
           'context/source-context.md',
           Buffer.from(
@@ -4837,7 +4837,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
         res.json(body);
       } catch (err: any) {
         if (insertedProject) dbDeleteProject(db, targetProjectId);
-        await removeProjectDir(PROJECTS_DIR, targetProjectId).catch(() => {});
+        await removeProjectDir(ctx.paths.PROJECTS_DIR, targetProjectId).catch(() => {});
         if (createdDesignSystemId) {
           await deleteUserDesignSystem(USER_DESIGN_SYSTEMS_DIR, createdDesignSystemId).catch(() => false);
         }
@@ -4859,7 +4859,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
     // reference resolves to a real directory. See ensureReferencedProjectDir.
     if (req.query.ensureDir === '1' || req.query.ensureDir === 'true') {
       try {
-        await ensureReferencedProjectDir(PROJECTS_DIR, project, ensureProject);
+        await ensureReferencedProjectDir(ctx.paths.PROJECTS_DIR, project, ensureProject);
       } catch (err: any) {
         return sendApiError(
           res,
@@ -4869,7 +4869,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
         );
       }
     }
-    const resolvedDir = projectDetailResolvedDir(PROJECTS_DIR, project, resolveProjectDir);
+    const resolvedDir = projectDetailResolvedDir(ctx.paths.PROJECTS_DIR, project, resolveProjectDir);
     const binding = getWorkspaceProjectByProjectId(db, project.id);
     /** @type {import('@open-design/contracts').ProjectResponse} */
     const body = {
@@ -5317,7 +5317,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
       // billing and writes into a directory that no longer exists (#5468).
       await cancelRunsOwnedBy(design.runs, { projectId: req.params.id });
       dbDeleteProject(db, req.params.id);
-      await removeProjectDir(PROJECTS_DIR, req.params.id).catch(() => {});
+      await removeProjectDir(ctx.paths.PROJECTS_DIR, req.params.id).catch(() => {});
       /** @type {import('@open-design/contracts').OkResponse} */
       const body = { ok: true };
       res.json(body);
@@ -5356,7 +5356,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
       }
       sinks.add(projectEventSink);
       const watchProject = getProject(db, req.params.id);
-      sub = subscribeFileEvents(PROJECTS_DIR, req.params.id, (evt: any) => {
+      sub = subscribeFileEvents(ctx.paths.PROJECTS_DIR, req.params.id, (evt: any) => {
         sse.send('file-changed', evt);
       }, { metadata: watchProject?.metadata });
       sub.ready.then(() => sse.send('ready', { projectId: req.params.id })).catch(() => {});
@@ -5468,7 +5468,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
       // Snapshot every HTML / sketch / text file in the source project.
       // We deliberately skip binary uploads — templates are about the
       // generated design, not the user's reference imagery.
-      const files = await listFiles(PROJECTS_DIR, sourceProjectId, {
+      const files = await listFiles(ctx.paths.PROJECTS_DIR, sourceProjectId, {
         metadata: sourceProject.metadata,
       });
       const snapshot = [];
@@ -5476,7 +5476,7 @@ export function registerProjectRoutes(app: Express, ctx: RegisterProjectRoutesDe
         if (f.kind !== 'html' && f.kind !== 'text' && f.kind !== 'code')
           continue;
         const entry = await readProjectFile(
-          PROJECTS_DIR,
+          ctx.paths.PROJECTS_DIR,
           sourceProjectId,
           f.name,
           sourceProject.metadata,
@@ -5601,8 +5601,8 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
   const { db } = ctx;
   const { sendApiError, sendMulterError } = ctx.http;
   // The design-token suggestion route reads the design-system roots to resolve
-  // a project's tokens, so this scope needs them alongside PROJECTS_DIR.
-  const { PROJECTS_DIR, DESIGN_SYSTEMS_DIR, USER_DESIGN_SYSTEMS_DIR } = ctx.paths;
+  // a project's tokens, so this scope needs them alongside ctx.paths.PROJECTS_DIR.
+  const { DESIGN_SYSTEMS_DIR, USER_DESIGN_SYSTEMS_DIR } = ctx.paths;
   const { upload } = ctx.uploads;
   const { fs } = ctx.node;
   const { getProject, getWorkspaceProject, getWorkspaceProjectByProjectId } = ctx.projectStore;
@@ -5815,7 +5815,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
     const parentVersionId = requestedParentVersionId.trim();
     try {
       const existing = await readProjectFile(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         project.id,
         fileName,
         project.metadata,
@@ -5995,7 +5995,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
     revalidate = false,
   ) {
     const meta = await resolveProjectFilePath(
-      PROJECTS_DIR,
+      ctx.paths.PROJECTS_DIR,
       projectId,
       relPath,
       metadata,
@@ -6070,7 +6070,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
       return;
     }
 
-    const file = await readProjectFile(PROJECTS_DIR, projectId, relPath, metadata);
+    const file = await readProjectFile(ctx.paths.PROJECTS_DIR, projectId, relPath, metadata);
     const body = transformFile ? await transformFile(file) : file.buffer;
     if (revalidate && willSubstitute) {
       // Validator from the ACTUAL response bytes, so a change to the substituted
@@ -6307,7 +6307,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
       if (project?.metadata?.teamMirrorRevokedAt) {
         return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'not found');
       }
-      const files = await listFiles(PROJECTS_DIR, req.params.id, {
+      const files = await listFiles(ctx.paths.PROJECTS_DIR, req.params.id, {
         since: Number.isFinite(since) ? since : undefined,
         metadata: project?.metadata,
       });
@@ -6340,7 +6340,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
       }
       const pattern = req.query.pattern ? String(req.query.pattern) : null;
       const max = Math.min(Number(req.query.max) || 200, 1000);
-      const matches = await searchProjectFiles(PROJECTS_DIR, req.params.id, query, {
+      const matches = await searchProjectFiles(ctx.paths.PROJECTS_DIR, req.params.id, query, {
         pattern,
         max,
         metadata: searchProject?.metadata,
@@ -6400,7 +6400,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
         projectId: req.params.id,
         project,
         projectMetadata: project.metadata,
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
         designSystemsRoot: DESIGN_SYSTEMS_DIR,
         userDesignSystemsRoot: USER_DESIGN_SYSTEMS_DIR,
         listFiles,
@@ -6420,7 +6420,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
         return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'project not found');
       }
       if (!await authorizeProjectRequest(req, res, project.id, { mode: 'read' })) return;
-      const folders = await listProjectFolders(PROJECTS_DIR, req.params.id, {
+      const folders = await listProjectFolders(ctx.paths.PROJECTS_DIR, req.params.id, {
         metadata: project.metadata,
       });
       /** @type {import('@open-design/contracts').ProjectFoldersResponse} */
@@ -6452,7 +6452,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
         'writeFiles',
       )) return;
       const folder = await createProjectFolder(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         req.params.id,
         name,
         project.metadata,
@@ -6486,7 +6486,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
         'writeFiles',
       )) return;
       await deleteProjectFolder(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         req.params.id,
         folderPath,
         project.metadata,
@@ -6508,7 +6508,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
         return;
       }
       if (!await authorizeProjectRequest(req, res, project.id, { mode: 'read' })) return;
-      const projectRoot = resolveProjectDir(PROJECTS_DIR, project.id, project.metadata);
+      const projectRoot = resolveProjectDir(ctx.paths.PROJECTS_DIR, project.id, project.metadata);
       const deck = inspectDeckArtifact(projectRoot, String(req.params.artifactId));
       if (!deck) {
         sendApiError(res, 404, 'NOT_FOUND', 'deck not found');
@@ -6529,7 +6529,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
         return;
       }
       if (!await authorizeProjectRequest(req, res, project.id, { mode: 'read' })) return;
-      const projectRoot = resolveProjectDir(PROJECTS_DIR, project.id, project.metadata);
+      const projectRoot = resolveProjectDir(ctx.paths.PROJECTS_DIR, project.id, project.metadata);
       const audit = await auditDesignSystemPackage(projectRoot);
       res.setHeader('Cache-Control', 'no-store');
       res.json({ audit });
@@ -6548,7 +6548,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
       if (!await authorizeProjectRequest(req, res, project.id, { mode: 'read' })) return;
       const requestedPath = previewFilePathForProject(project, req.query.file);
       const meta = await resolveProjectFilePath(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         project.id,
         requestedPath,
         project.metadata,
@@ -6661,7 +6661,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
         { mode: 'read', allowNavigationQuery: true },
       )) return;
       const meta = await resolveProjectFilePath(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         projectId,
         relPath,
         project?.metadata,
@@ -6750,7 +6750,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
           projectId: project.id,
           relPath,
           metadata: project.metadata,
-          projectsRoot: PROJECTS_DIR,
+          projectsRoot: ctx.paths.PROJECTS_DIR,
           readProjectFile,
         }),
       );
@@ -6805,7 +6805,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
         res.header('Access-Control-Allow-Origin', '*');
       }
       const meta = await resolveProjectFilePath(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         projectId,
         relPath,
         project?.metadata,
@@ -6826,7 +6826,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
             projectId,
             relPath,
             metadata: project?.metadata,
-            projectsRoot: PROJECTS_DIR,
+            projectsRoot: ctx.paths.PROJECTS_DIR,
             readProjectFile,
           });
           const bridged = applyUrlPreviewBridgesToHtml(
@@ -6921,7 +6921,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
         { mode: 'read', allowNavigationQuery: true },
       )) return;
       const meta = await resolveProjectFilePath(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         projectId,
         relPath,
         project?.metadata,
@@ -6941,7 +6941,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
             projectId,
             relPath,
             metadata: project?.metadata,
-            projectsRoot: PROJECTS_DIR,
+            projectsRoot: ctx.paths.PROJECTS_DIR,
             readProjectFile,
           });
           return applyUrlPreviewBridgesToHtml(transformed, file.mime, req.query.odPreviewBridge);
@@ -6978,8 +6978,8 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
         project.id,
         'writeFiles',
       )) return;
-      await deleteProjectFile(PROJECTS_DIR, projectId, rawSplat, project?.metadata);
-      await markProjectFileVersionStoreDeleted(PROJECTS_DIR, projectId, rawSplat, project?.metadata);
+      await deleteProjectFile(ctx.paths.PROJECTS_DIR, projectId, rawSplat, project?.metadata);
+      await markProjectFileVersionStoreDeleted(ctx.paths.PROJECTS_DIR, projectId, rawSplat, project?.metadata);
       // Tombstone, not delete: an HTML card must be able to say "the current
       // file is gone" rather than silently opening whatever later takes the
       // name. Image cards keep resolving their own snapshot either way.
@@ -7015,7 +7015,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
         { mode: 'read', allowNavigationQuery: true },
       )) return;
       const file = await readProjectFile(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         req.params.id,
         req.params.name,
         project?.metadata,
@@ -7056,7 +7056,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
       let historyFileName = fileName;
       let workingFileContent: string | null = null;
       try {
-        const workingFile = await readProjectFile(PROJECTS_DIR, project.id, fileName, project.metadata);
+        const workingFile = await readProjectFile(ctx.paths.PROJECTS_DIR, project.id, fileName, project.metadata);
         if (!/\.html?$/i.test(workingFile.name)) {
           return sendApiError(res, 400, 'BAD_REQUEST', 'versions are only available for HTML files');
         }
@@ -7066,7 +7066,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
       } catch (err: any) {
         if (err?.code !== 'ENOENT') throw err;
       }
-      let versions = await listProjectFileVersions(PROJECTS_DIR, project.id, historyFileName, project.metadata);
+      let versions = await listProjectFileVersions(ctx.paths.PROJECTS_DIR, project.id, historyFileName, project.metadata);
       // Bootstrapping a baseline version is a WRITE, so it belongs only to a
       // caller with write authority over this project. A readonly member
       // reading a mirror of someone else's shared project gets the truthful
@@ -7084,7 +7084,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
           project.id,
         )) {
         const initial = await ensureCurrentProjectFileVersion(
-          PROJECTS_DIR,
+          ctx.paths.PROJECTS_DIR,
           project.id,
           historyFileName,
           workingFileContent,
@@ -7092,7 +7092,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
           project.metadata,
         );
         if (initial) {
-          versions = await listProjectFileVersions(PROJECTS_DIR, project.id, historyFileName, project.metadata);
+          versions = await listProjectFileVersions(ctx.paths.PROJECTS_DIR, project.id, historyFileName, project.metadata);
         }
       }
       file ??= fileFromVersionHistory(historyFileName, versions);
@@ -7134,7 +7134,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
         project.id,
         'writeFiles',
       )) return;
-      const requestedFile = await readProjectFile(PROJECTS_DIR, project.id, fileName, project.metadata);
+      const requestedFile = await readProjectFile(ctx.paths.PROJECTS_DIR, project.id, fileName, project.metadata);
       if (!/\.html?$/i.test(requestedFile.name)) {
         return sendApiError(res, 400, 'BAD_REQUEST', 'versions are only available for HTML files');
       }
@@ -7164,13 +7164,13 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
         versionOptions.promptSource = fallbackPromptInfo.promptSource;
       }
       const version = await withProjectFileVersionLock(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         project.id,
         requestedFile.name,
         project.metadata,
         async (versionLock) => {
           const currentFile = await readProjectFile(
-            PROJECTS_DIR,
+            ctx.paths.PROJECTS_DIR,
             project.id,
             requestedFile.name,
             project.metadata,
@@ -7231,7 +7231,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
         'writeFiles',
       )) return;
       const restored = await readProjectFileVersion(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         project.id,
         fileName,
         versionId,
@@ -7244,13 +7244,13 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
         ?? restored.version.prompt
         ?? latestProjectPrompt(project).prompt;
       const { file, version, versionWarning } = await withProjectFileVersionLock(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         project.id,
         fileName,
         project.metadata,
         async (versionLock) => {
           const file = await writeProjectFile(
-            PROJECTS_DIR,
+            ctx.paths.PROJECTS_DIR,
             project.id,
             fileName,
             Buffer.from(restored.content, 'utf8'),
@@ -7299,7 +7299,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
       }
       if (!await authorizeProjectRequest(req, res, project.id, { mode: 'read' })) return;
       const body = await readProjectFileVersion(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         project.id,
         fileName,
         versionId,
@@ -7340,7 +7340,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
         return sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'not found');
       }
       const file = await readProjectFile(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         projectId,
         fileSplat,
         project?.metadata,
@@ -7391,7 +7391,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
           cleanupRejectedUpload();
           return;
         }
-        await ensureProject(PROJECTS_DIR, req.params.id, uploadProject?.metadata);
+        await ensureProject(ctx.paths.PROJECTS_DIR, req.params.id, uploadProject?.metadata);
         if (req.file) {
           try {
             const buf = await fs.promises.readFile(req.file.path);
@@ -7418,7 +7418,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
                 )
                 : undefined;
               const meta = await writeProjectFile(
-                PROJECTS_DIR,
+                ctx.paths.PROJECTS_DIR,
                 req.params.id,
                 desiredName,
                 buf,
@@ -7427,7 +7427,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
               );
               const versionCapture = uploadProject && requestedSource && /\.html?$/i.test(meta.name) && versionLock
                 ? await (async () => {
-                  const savedFile = await readProjectFile(PROJECTS_DIR, uploadProject.id, meta.name, uploadProject.metadata);
+                  const savedFile = await readProjectFile(ctx.paths.PROJECTS_DIR, uploadProject.id, meta.name, uploadProject.metadata);
                   return tryEnsureLockedHtmlCurrentVersion(
                     uploadProject,
                     meta.name,
@@ -7447,7 +7447,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
             };
             const { meta, versionCapture } = uploadProject && requestedSource
               ? await withProjectFileVersionLock(
-                PROJECTS_DIR,
+                ctx.paths.PROJECTS_DIR,
                 req.params.id,
                 desiredName,
                 uploadProject.metadata,
@@ -7519,14 +7519,14 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
             : undefined;
           const meta = artifact === true
             ? await createProjectArtifactFile({
-              projectsRoot: PROJECTS_DIR,
+              projectsRoot: ctx.paths.PROJECTS_DIR,
               projectId: req.params.id,
               input: { name, content, encoding, artifactManifest },
               metadata: uploadProject?.metadata,
               writeProjectFile,
             })
             : await writeProjectFile(
-              PROJECTS_DIR,
+              ctx.paths.PROJECTS_DIR,
               req.params.id,
               name,
               buf,
@@ -7538,7 +7538,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
             );
           const versionCapture = uploadProject && requestedSource && /\.html?$/i.test(meta.name) && versionLock
             ? await (async () => {
-              const savedFile = await readProjectFile(PROJECTS_DIR, uploadProject.id, meta.name, uploadProject.metadata);
+              const savedFile = await readProjectFile(ctx.paths.PROJECTS_DIR, uploadProject.id, meta.name, uploadProject.metadata);
               const versionOverride: HtmlVersionOverride = {
                 source: requestedSource,
                 label: typeof versionLabel === 'string' ? versionLabel : null,
@@ -7565,7 +7565,7 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
         };
         const { meta, versionCapture } = uploadProject && requestedSource
           ? await withProjectFileVersionLock(
-            PROJECTS_DIR,
+            ctx.paths.PROJECTS_DIR,
             req.params.id,
             desiredName,
             uploadProject.metadata,
@@ -7635,14 +7635,14 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
         'writeFiles',
       )) return;
       const result = await renameProjectFile(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         req.params.id,
         from,
         to,
         project?.metadata,
       );
       await renameProjectFileVersionStore(
-        PROJECTS_DIR,
+        ctx.paths.PROJECTS_DIR,
         req.params.id,
         result.oldName,
         result.newName,
@@ -7689,8 +7689,8 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
         delProject.id,
         'writeFiles',
       )) return;
-      await deleteProjectFile(PROJECTS_DIR, req.params.id, req.params.name, delProject?.metadata);
-      await markProjectFileVersionStoreDeleted(PROJECTS_DIR, req.params.id, req.params.name, delProject?.metadata);
+      await deleteProjectFile(ctx.paths.PROJECTS_DIR, req.params.id, req.params.name, delProject?.metadata);
+      await markProjectFileVersionStoreDeleted(ctx.paths.PROJECTS_DIR, req.params.id, req.params.name, delProject?.metadata);
       try {
         deleteWorkspaceArtifact(db, req.params.id, req.params.name);
       } catch (error: any) {
@@ -7723,7 +7723,7 @@ export function registerProjectUploadRoutes(app: Express, ctx: RegisterProjectUp
   const { db } = ctx;
   const { sendApiError } = ctx.http;
   const { handleProjectUpload } = ctx.uploads;
-  const { PROJECTS_DIR } = ctx.paths;
+  
   const { getProject, getWorkspaceProject, getWorkspaceProjectByProjectId } = ctx.projectStore;
   const { readProjectFile } = ctx.projectFiles;
   const { fs } = ctx.node;
@@ -7778,9 +7778,9 @@ export function registerProjectUploadRoutes(app: Express, ctx: RegisterProjectUp
               originalName: f.originalname,
             });
             if (project && /\.html?$/i.test(rel)) {
-              const savedFile = await readProjectFile(PROJECTS_DIR, req.params.id, rel, project.metadata);
+              const savedFile = await readProjectFile(ctx.paths.PROJECTS_DIR, req.params.id, rel, project.metadata);
               await ensureCurrentProjectFileVersion(
-                PROJECTS_DIR,
+                ctx.paths.PROJECTS_DIR,
                 project.id,
                 savedFile.name,
                 savedFile.buffer.toString('utf8'),

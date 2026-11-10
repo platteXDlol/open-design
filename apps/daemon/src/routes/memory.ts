@@ -106,7 +106,7 @@ function isExtractionProvider(value: any): value is MemoryExtractionProvider {
 }
 
 export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps) {
-  const { RUNTIME_DATA_DIR, PROJECT_ROOT, PROJECTS_DIR } = ctx.paths;
+  const { RUNTIME_DATA_DIR, PROJECT_ROOT } = ctx.paths;
   const { createSseResponse, requireLocalDaemonRequest } = ctx.http;
   const { readAppConfig } = ctx.appConfig;
 
@@ -462,7 +462,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
           ? appConfig.agentModels[chatAgentId].model ?? null
           : null);
       const options = {
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
         projectRoot: PROJECT_ROOT,
         ...(projectId ? { projectId } : {}),
         ...(connectorIds ? { connectorIds } : {}),
@@ -510,7 +510,7 @@ export function registerMemoryRoutes(app: Express, ctx: RegisterMemoryRoutesDeps
           ? appConfig.agentModels[chatAgentId].model ?? null
           : null);
       const options = {
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
         projectRoot: PROJECT_ROOT,
         ...(projectId ? { projectId } : {}),
         ...(connectorIds ? { connectorIds } : {}),

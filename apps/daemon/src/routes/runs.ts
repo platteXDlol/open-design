@@ -942,7 +942,7 @@ export function registerRunCreateRoute(
 export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
   const { db, design } = ctx;
   const { createSseResponse, sendApiError } = ctx.http;
-  const { BUNDLED_PLUGINS_DIR, PROJECTS_DIR, RUNTIME_DATA_DIR } = ctx.paths;
+  const { BUNDLED_PLUGINS_DIR, RUNTIME_DATA_DIR } = ctx.paths;
   const taskInputSnapshotsRoot = path.join(RUNTIME_DATA_DIR, 'od-next-task-inputs');
   const { detectAgents, getAgentDef } = ctx.agents;
   const { startChatRun } = ctx.chat;
@@ -974,7 +974,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     analyticsLifecycle: createRunAnalyticsLifecycle({
       db,
       design,
-      paths: { PROJECTS_DIR, RUNTIME_DATA_DIR },
+      paths: { PROJECTS_DIR: ctx.paths.PROJECTS_DIR, RUNTIME_DATA_DIR },
       agents: { detectAgents },
       telemetry: ctx.telemetry,
     }),
@@ -1074,7 +1074,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     try {
       const resolved = await validateChatProjectDeliverable({
         db,
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
         run,
       });
       const validation = projectDeliverableValidation(resolved.validation);
@@ -1663,10 +1663,10 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
       return 'none';
     }
     try {
-      const cwd = resolveProjectDir(PROJECTS_DIR, projectId, metadata, {
+      const cwd = resolveProjectDir(ctx.paths.PROJECTS_DIR, projectId, metadata, {
         allowUnavailableSandboxImportedProject: true,
       });
-      return isManagedProjectCwd(cwd, PROJECTS_DIR) ? 'managed-project' : 'external-project';
+      return isManagedProjectCwd(cwd, ctx.paths.PROJECTS_DIR) ? 'managed-project' : 'external-project';
     } catch {
       return 'none';
     }
@@ -2589,7 +2589,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
       // chips/annotations survive reload for omit-pin clients that leave
       // currentPrompt unset.
       const projectRoot = runProject && meta.projectId
-        ? resolveProjectDir(PROJECTS_DIR, meta.projectId, runProject.metadata)
+        ? resolveProjectDir(ctx.paths.PROJECTS_DIR, meta.projectId, runProject.metadata)
         : null;
       const seededAttachments = seededUserMessageAttachmentFields(meta, projectRoot);
       const hasSeedableAttachmentMetadata =
@@ -2802,7 +2802,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
       const taskExecutionId = `odnext_${randomUUID().replaceAll('-', '')}`;
       try {
         const projectRoot = resolveProjectDir(
-          PROJECTS_DIR,
+          ctx.paths.PROJECTS_DIR,
           meta.projectId!,
           runProject?.metadata,
         );
@@ -3201,7 +3201,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     if (run.projectId && run.conversationId) {
       try {
         const project = toProjectRecord(getProject(db, run.projectId));
-        const projectRoot = resolveProjectDir(PROJECTS_DIR, run.projectId, project?.metadata);
+        const projectRoot = resolveProjectDir(ctx.paths.PROJECTS_DIR, run.projectId, project?.metadata);
         detectSkillPluginCandidateOnRunSuccess(db, design.runs, run, requestBody, projectRoot);
       } catch (err: any) {
         console.warn('[plugins] skill candidate hook setup failed', err);
@@ -3376,13 +3376,13 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
       const packageMetadata = run.projectMetadata ?? null;
       try {
         if (status.workspace?.storage?.kind === 'folder-backed') {
-          const projectRoot = resolveProjectDir(PROJECTS_DIR, project.id, packageMetadata);
+          const projectRoot = resolveProjectDir(ctx.paths.PROJECTS_DIR, project.id, packageMetadata);
           const projectRootStat = await fs.promises.stat(projectRoot);
           if (!projectRootStat.isDirectory()) {
             throw new Error('workspace root is not a directory');
           }
         }
-        files = toProjectFiles(await listFiles(PROJECTS_DIR, project.id, { metadata: packageMetadata }));
+        files = toProjectFiles(await listFiles(ctx.paths.PROJECTS_DIR, project.id, { metadata: packageMetadata }));
       } catch (err: any) {
         return sendApiError(
           res,
@@ -3484,7 +3484,7 @@ export function registerRunRoutes(app: Express, ctx: RegisterRunRoutesDeps) {
     const touchedArtifactPaths = runTouchedArtifactPaths(run);
     const deliverable = await validateChatRunDeliverable({
       db,
-      projectsRoot: PROJECTS_DIR,
+      projectsRoot: ctx.paths.PROJECTS_DIR,
       run,
       runStatus: run.status,
       artifactCount:

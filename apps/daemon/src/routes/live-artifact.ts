@@ -9,7 +9,7 @@ export interface RegisterLiveArtifactRoutesDeps extends RouteDeps<'db' | 'http' 
 export function registerLiveArtifactRoutes(app: Express, ctx: RegisterLiveArtifactRoutesDeps) {
   const { db } = ctx;
   const { sendApiError, sendLiveArtifactRouteError, requireLocalDaemonRequest } = ctx.http;
-  const { PROJECTS_DIR } = ctx.paths;
+  
   const { authorizeToolRequest, requestProjectOverride, requestRunOverride } = ctx.auth;
   const { createLiveArtifact, listLiveArtifacts, updateLiveArtifact, refreshLiveArtifact, emitLiveArtifactEvent, emitLiveArtifactRefreshEvent, readLiveArtifactCode, setLiveArtifactCodeHeaders, ensureLiveArtifactPreview, setLiveArtifactPreviewHeaders, getLiveArtifact, listLiveArtifactRefreshLogEntries, deleteLiveArtifact } = ctx.liveArtifacts;
   const { getProject, updateProject } = ctx.projectStore;
@@ -33,7 +33,7 @@ export function registerLiveArtifactRoutes(app: Express, ctx: RegisterLiveArtifa
       if (!await authorizeProject(req, res, projectId, { mode: 'read' })) return;
 
       const artifacts = await listLiveArtifacts({
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
         projectId,
       });
       res.json({ artifacts });
@@ -62,7 +62,7 @@ export function registerLiveArtifactRoutes(app: Express, ctx: RegisterLiveArtifa
       const variant = typeof req.query.variant === 'string' ? req.query.variant : 'rendered';
       if (variant === 'template' || variant === 'rendered-source') {
         const html = await readLiveArtifactCode({
-          projectsRoot: PROJECTS_DIR,
+          projectsRoot: ctx.paths.PROJECTS_DIR,
           projectId,
           artifactId: req.params.artifactId,
           variant: variant === 'template' ? 'template' : 'rendered',
@@ -75,7 +75,7 @@ export function registerLiveArtifactRoutes(app: Express, ctx: RegisterLiveArtifa
       }
 
       const record = await ensureLiveArtifactPreview({
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
         projectId,
         artifactId: req.params.artifactId,
       });
@@ -95,7 +95,7 @@ export function registerLiveArtifactRoutes(app: Express, ctx: RegisterLiveArtifa
       if (!await authorizeProject(req, res, projectId, { mode: 'read' })) return;
 
       const record = await getLiveArtifact({
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
         projectId,
         artifactId: req.params.artifactId,
       });
@@ -114,7 +114,7 @@ export function registerLiveArtifactRoutes(app: Express, ctx: RegisterLiveArtifa
       if (!await authorizeProject(req, res, projectId, { mode: 'read' })) return;
 
       const refreshes = await listLiveArtifactRefreshLogEntries({
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
         projectId,
         artifactId: req.params.artifactId,
       });
@@ -146,7 +146,7 @@ export function registerLiveArtifactRoutes(app: Express, ctx: RegisterLiveArtifa
       )) return;
 
       const record = await createLiveArtifact({
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
         projectId: toolGrant.projectId,
         input: input ?? {},
         templateHtml,
@@ -177,7 +177,7 @@ export function registerLiveArtifactRoutes(app: Express, ctx: RegisterLiveArtifa
       )) return;
 
       const artifacts = await listLiveArtifacts({
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
         projectId: toolGrant.projectId,
       });
       res.json({ artifacts });
@@ -206,7 +206,7 @@ export function registerLiveArtifactRoutes(app: Express, ctx: RegisterLiveArtifa
       )) return;
 
       const record = await updateLiveArtifact({
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
         projectId: toolGrant.projectId,
         artifactId,
         input: input ?? {},
@@ -242,7 +242,7 @@ export function registerLiveArtifactRoutes(app: Express, ctx: RegisterLiveArtifa
       let result;
       try {
         result = await refreshLiveArtifact({
-          projectsRoot: PROJECTS_DIR,
+          projectsRoot: ctx.paths.PROJECTS_DIR,
           projectId: toolGrant.projectId,
           artifactId,
           onStarted: ({ refreshId }: any) => {
@@ -284,7 +284,7 @@ export function registerLiveArtifactRoutes(app: Express, ctx: RegisterLiveArtifa
       )) return;
 
       const record = await updateLiveArtifact({
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
         projectId,
         artifactId: req.params.artifactId,
         input: req.body ?? {},
@@ -310,12 +310,12 @@ export function registerLiveArtifactRoutes(app: Express, ctx: RegisterLiveArtifa
       )) return;
 
       const existing = await getLiveArtifact({
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
         projectId,
         artifactId: req.params.artifactId,
       });
       await deleteLiveArtifact({
-        projectsRoot: PROJECTS_DIR,
+        projectsRoot: ctx.paths.PROJECTS_DIR,
         projectId,
         artifactId: req.params.artifactId,
       });
@@ -347,7 +347,7 @@ export function registerLiveArtifactRoutes(app: Express, ctx: RegisterLiveArtifa
       let result;
       try {
         result = await refreshLiveArtifact({
-          projectsRoot: PROJECTS_DIR,
+          projectsRoot: ctx.paths.PROJECTS_DIR,
           projectId,
           artifactId: req.params.artifactId,
           onStarted: ({ refreshId }: any) => {

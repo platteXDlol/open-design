@@ -29,7 +29,7 @@ export interface RegisterHandoffRoutesDeps
 export function registerHandoffRoutes(app: Express, ctx: RegisterHandoffRoutesDeps) {
   const { db } = ctx;
   const { sendApiError } = ctx.http;
-  const { PROJECTS_DIR } = ctx.paths;
+  
   const { getProject } = ctx.projectStore;
   const { getConversation } = ctx.conversations;
   const { isSafeId, validateExternalApiBaseUrl } = ctx.validation;
@@ -115,7 +115,7 @@ export function registerHandoffRoutes(app: Express, ctx: RegisterHandoffRoutesDe
 
       let result;
       try {
-        result = await synthesizeHandoffPrompt(db, PROJECTS_DIR, req.params.id, {
+        result = await synthesizeHandoffPrompt(db, ctx.paths.PROJECTS_DIR, req.params.id, {
           conversationId,
           apiKey,
           baseUrl,

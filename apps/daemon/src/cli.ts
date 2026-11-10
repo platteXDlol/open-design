@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 // @ts-nocheck
+import './cli-auth-fetch.js';
+import { runAuthCli } from './auth-cli.js';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { basename } from 'node:path';
 import { runDaemonCliStartup, startDaemonRuntime } from './daemon-startup.js';
@@ -387,6 +389,7 @@ const PLUGIN_LIST_BOOLEAN_FLAGS = new Set([
 const SUBCOMMAND_MAP = {
   agent: runAgent,
   artifacts: runArtifacts,
+  auth: runAuth,
   media: runMedia,
   mcp: runMcp,
   amr: runAmr,
@@ -1705,6 +1708,10 @@ async function runResearchSearch(rawArgs) {
     process.exit(4);
   }
   process.stdout.write(`${await resp.text()}\n`);
+}
+
+async function runAuth(args) {
+  process.exit(await runAuthCli(args));
 }
 
 async function runArtifacts(args) {
