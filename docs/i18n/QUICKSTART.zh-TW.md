@@ -174,7 +174,7 @@ cp deploy/.env.example deploy/.env
 OPEN_DESIGN_PORT=7456
 
 # 容器記憶體限制
-OPEN_DESIGN_MEM_LIMIT=384m
+OPEN_DESIGN_MEM_LIMIT=1g
 
 # 允許的 CORS 來源
 OPEN_DESIGN_ALLOWED_ORIGINS=https://yourdomain.com

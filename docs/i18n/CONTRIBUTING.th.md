@@ -87,7 +87,7 @@ docker compose up -d
 
 ```env
 OPEN_DESIGN_PORT=7456
-OPEN_DESIGN_MEM_LIMIT=384m
+OPEN_DESIGN_MEM_LIMIT=1g
 OPEN_DESIGN_ALLOWED_ORIGINS=https://yourdomain.com
 OPEN_DESIGN_IMAGE=docker.io/vanjayak/open-design:latest
 ```

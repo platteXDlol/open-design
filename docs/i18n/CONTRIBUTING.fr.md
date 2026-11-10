@@ -105,7 +105,7 @@ Ajustez ces valeurs dans `deploy/.env` en conservant votre `OD_API_TOKEN` :
 
 ```env
 OPEN_DESIGN_PORT=7456
-OPEN_DESIGN_MEM_LIMIT=384m
+OPEN_DESIGN_MEM_LIMIT=1g
 OPEN_DESIGN_ALLOWED_ORIGINS=https://yourdomain.com
 OPEN_DESIGN_IMAGE=ghcr.io/nexu-io/od:latest
 ```

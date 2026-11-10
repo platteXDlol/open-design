@@ -136,7 +136,7 @@ cp deploy/.env.example deploy/.env
 OPEN_DESIGN_PORT=7456
 
 # 컨테이너 메모리 제한
-OPEN_DESIGN_MEM_LIMIT=384m
+OPEN_DESIGN_MEM_LIMIT=1g
 
 # 허용할 CORS origin
 OPEN_DESIGN_ALLOWED_ORIGINS=https://yourdomain.com
