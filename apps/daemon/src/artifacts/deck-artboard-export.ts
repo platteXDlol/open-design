@@ -7,6 +7,7 @@
  * builders in `../deck-export.ts`.
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -58,10 +59,22 @@ export async function resolveChromiumPath(env: NodeJS.ProcessEnv = process.env):
   return SYSTEM_CHROMIUM_PATHS.find((p) => existsSync(p)) ?? null;
 }
 
+/**
+ * Chromium's crashpad handler dies (SIGTRAP at launch) when HOME is missing or
+ * read-only, as in the Docker image (no home dir, read_only rootfs). Point
+ * HOME/XDG dirs at the temp dir, which compose mounts as tmpfs.
+ */
+export function chromiumEnv(env: NodeJS.ProcessEnv = process.env): Record<string, string> {
+  const home = path.join(tmpdir(), 'od-chromium');
+  mkdirSync(home, { recursive: true });
+  const base = Object.fromEntries(Object.entries(env).filter((e): e is [string, string] => e[1] !== undefined));
+  return { ...base, HOME: home, XDG_CONFIG_HOME: path.join(home, '.config'), XDG_CACHE_HOME: path.join(home, '.cache') };
+}
+
 export function createHeadlessSlideRenderer(executablePath: string): SlideRenderer {
   return async (files) => {
     const { chromium } = await import('playwright-core');
-    const browser = await chromium.launch({ executablePath, args: ['--no-sandbox'] });
+    const browser = await chromium.launch({ executablePath, args: ['--no-sandbox'], env: chromiumEnv() });
     try {
       const context = await browser.newContext({
         viewport: { width: ARTBOARD_WIDTH, height: ARTBOARD_HEIGHT },
