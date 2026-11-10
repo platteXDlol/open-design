@@ -23,6 +23,10 @@ services:
       # the host environment to restore the upstream strict default.
       OD_ALLOW_PRIVATE_NETWORKS: ${OD_ALLOW_PRIVATE_NETWORKS:-1}
       OD_CODEX_SANDBOX: ${OD_CODEX_SANDBOX:-}
+      # Agent CLIs (OpenCode for BYOK) need a writable HOME; the rootfs is
+      # read-only. Sandbox mode puts agent HOME/XDG dirs under the data root.
+      OD_DATA_DIR: /app/.od
+      OD_SANDBOX_MODE: ${OD_SANDBOX_MODE:-1}
     ports:
       - "${OPEN_DESIGN_PORT:-7456}:7456"
     volumes:
@@ -32,7 +36,8 @@ services:
       - /tmp
     security_opt:
       - no-new-privileges:true
-    mem_limit: ${OPEN_DESIGN_MEM_LIMIT:-384m}
+    # OpenCode (BYOK agent) peaked ~620 MiB during a 5-slide deck run.
+    mem_limit: ${OPEN_DESIGN_MEM_LIMIT:-1g}
     pids_limit: 256
     healthcheck:
       test:

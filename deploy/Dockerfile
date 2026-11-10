@@ -90,6 +90,16 @@ RUN apk add --no-cache tini poppler-utils bash git chromium font-noto font-noto-
     addgroup -S -g 1001 open-design && \
     adduser -S -D -H -u 1001 -G open-design open-design
 
+# OpenCode CLI: runtime for the BYOK agent (`byok-opencode`), the only
+# generation path in an image without local CLI agents. Only the musl binary
+# for this arch (opencode-ai itself pulls every platform, ~830 MB).
+ARG OPENCODE_VERSION=1.19.5
+ARG TARGETARCH
+RUN arch=$([ "$TARGETARCH" = "arm64" ] && echo arm64 || echo x64) && \
+    npm i -g --no-fund --no-audit "opencode-linux-${arch}-musl@${OPENCODE_VERSION}" && \
+    ln -s "/usr/local/lib/node_modules/opencode-linux-${arch}-musl/bin/opencode" /usr/local/bin/opencode && \
+    npm cache clean --force
+
 WORKDIR /app
 COPY --from=build --chown=open-design:open-design /app/deploy/daemon ./apps/daemon
 COPY --from=build --chown=open-design:open-design /app/apps/web/out ./apps/web/out

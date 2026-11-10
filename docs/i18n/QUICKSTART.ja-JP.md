@@ -174,7 +174,7 @@ cp deploy/.env.example deploy/.env
 OPEN_DESIGN_PORT=7456
 
 # コンテナのメモリ制限
-OPEN_DESIGN_MEM_LIMIT=384m
+OPEN_DESIGN_MEM_LIMIT=1g
 
 # 許可する CORS オリジン
 OPEN_DESIGN_ALLOWED_ORIGINS=https://yourdomain.com

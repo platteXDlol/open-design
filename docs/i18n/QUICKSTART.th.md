@@ -136,7 +136,7 @@ cp deploy/.env.example deploy/.env
 OPEN_DESIGN_PORT=7456
 
 # Container memory limit
-OPEN_DESIGN_MEM_LIMIT=384m
+OPEN_DESIGN_MEM_LIMIT=1g
 
 # Allowed CORS origins
 OPEN_DESIGN_ALLOWED_ORIGINS=https://yourdomain.com
