@@ -467,7 +467,7 @@ Total: ~12 files, ~3000 lines reviewed, ~500 / -2000 line diff expected. The sma
 | **M0** | "This weekend" — daemon runs, llama-swap serves, BYOK config saves, first chat streams | ✅ closed 2026-10-05 |
 | **M1** | A user can configure 6 providers and a model route, with a single design system bound | **re-stated**: 3 providers (openai/anthropic/ollama) + LAN toggle; vLLM/openai-custom/anthropic-custom labels were deferred (pure-label wrapper, no functional value). The 6-provider framing in §2 is now 3 in practice. |
 | **M2** | Slide-deck artifact (3+ artboards) streamed + validated | ✅ closed 2026-11-09 — PRs #23, #24 + placeholder fix; manual check passed (opencode + hlc-coding-5.5: 5 artboards streamed, v2 manifest, repair loop ran once, `od artifacts deck validate` valid). See `specs/current/slide-deck-m2-design.md` → Manual check. |
-| **M3** | v1 ships — `docker compose up` + user generates, exports, shares | not started |
+| **M3** | v1 ships — `docker compose up` + user generates, exports, shares | in progress — deck export (#29), Docker Chromium/OpenCode (#30, #31), DS folder upload (#32), share links (`share-link-m3.md`) done; fresh-host verify open |
 | **M4** | Canvas pan/zoom + tweaks + undo | not started |
 | **M5** | Comments end-to-end | not started |
 | **M6** | Handoff bundle consumed by Claude Code | not started |
@@ -487,4 +487,5 @@ rationale and the migration mechanics are recorded in
 1. ~~Slide deck renderer~~ — done (M2 closed, PRs #23/#24/#27).
 2. ~~v7 — OIDC SSO (auth half of M7)~~ — done (PR #28).
 3. **M3 deck export** — headless PPTX/PDF/HTML ZIP for multi-artboard decks; see `deck-export-m3-design.md`.
-4. M3 remainder: share link, `docker compose up` verification on a fresh host, manual design-system import check.
+4. M3 share link — view-only `/s/<token>` deck links; see `share-link-m3.md`. Design-system folder import landed in #32.
+5. M3 remainder: `docker compose up` verification on a fresh host.

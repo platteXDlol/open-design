@@ -747,7 +747,9 @@ import { createAuthMiddleware } from './auth/auth-middleware.js';
 import { loadOidcConfig, openIdClientAdapter, registerAuthRoutes } from './auth/auth-routes.js';
 import { createAuthStore } from './auth/auth-store.js';
 import { adoptLocalUserData } from './auth/adopt-local-user.js';
-import { currentProjectsRoot, resolveUserId, resolveUserProjectsRoot } from './storage/user-scope.js';
+import { currentProjectsRoot, resolveUserId, resolveUserProjectDir, resolveUserProjectsRoot, runWithUser } from './storage/user-scope.js';
+import { createShareStore } from './share-links/share-store.js';
+import { registerShareViewerRoutes } from './share-links/share-viewer.js';
 import {
   CHAT_SCROLL_FORENSICS_PATH,
   chatScrollForensicsBodyParser,
@@ -3040,6 +3042,18 @@ export async function startServer({
   // `res.ok` and the export continues without the evidence.
   app.use(CHAT_SCROLL_FORENSICS_PATH, chatScrollForensicsBodyParser);
   app.use(express.json({ limit: '4mb' }));
+  // M3 share links: public view-only deck pages, mounted before the auth gate on purpose.
+  const shareStore = createShareStore(db);
+  registerShareViewerRoutes(app, {
+    store: shareStore,
+    resolveDeckDir: (share) =>
+      runWithUser(share.userId, () => {
+        const project = getProject(db, share.projectId);
+        if (!project) return null;
+        const dir = resolveUserProjectDir(RUNTIME_DATA_DIR, share.userId, project.id, project.metadata);
+        return path.join(dir, 'artifacts', share.artifactId);
+      }),
+  });
   app.use(createAuthMiddleware({
     store: authStore,
     enabled: oidcConfig !== null,

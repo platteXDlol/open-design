@@ -244,6 +244,8 @@ const nextConfig: NextConfig = {
             { source: '/api/:path*', destination: `${DAEMON_ORIGIN}/api/:path*` },
             { source: '/artifacts/:path*', destination: `${DAEMON_ORIGIN}/artifacts/:path*` },
             { source: '/frames/:path*', destination: `${DAEMON_ORIGIN}/frames/:path*` },
+            // M3 public share viewer is daemon-served.
+            { source: '/s/:path*', destination: `${DAEMON_ORIGIN}/s/:path*` },
           ];
         },
         devIndicators: {

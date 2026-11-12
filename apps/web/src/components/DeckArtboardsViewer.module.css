@@ -91,3 +91,59 @@
   font-size: 12px;
   color: var(--danger, #e5484d);
 }
+
+/* M3 share panel, dropped below the export bar. */
+.sharePanel {
+  position: absolute;
+  top: 52px;
+  right: 12px;
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  background: var(--bg, #1a1a1a);
+  font-size: 13px;
+}
+
+.shareRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.shareUrl {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+
+.shareUrl input {
+  width: 100%;
+  font: inherit;
+}
+
+.shareList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shareList li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.shareList li[data-status='revoked'],
+.shareList li[data-status='expired'] {
+  opacity: 0.6;
+}
