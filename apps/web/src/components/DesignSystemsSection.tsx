@@ -9,6 +9,7 @@ import {
   importLocalDesignSystem,
   importShadcnDesignSystem,
   updateDesignSystemDraft,
+  uploadDesignSystemFolder,
 } from '../providers/registry';
 import { DesignSystemPreviewModal } from './DesignSystemPreviewModal';
 import { Icon } from './Icon';
@@ -251,6 +252,17 @@ export function DesignSystemsSection({
         : importSource === 'shadcn'
           ? await importShadcnDesignSystem({ reference: importTarget, ...importOptions })
           : await importLocalDesignSystem({ baseDir: importTarget, ...importOptions });
+    finishImport(result);
+  }
+
+  async function handleFolderUpload(files: File[]) {
+    if (files.length === 0 || importing) return;
+    setImporting(true);
+    clearImportFeedback();
+    finishImport(await uploadDesignSystemFolder(files, { importMode: packageImportMode, craftApplies }));
+  }
+
+  function finishImport(result: Awaited<ReturnType<typeof importLocalDesignSystem>>) {
     setImporting(false);
     if ('error' in result) {
       setImportError(result.error.message);
@@ -462,6 +474,24 @@ export function DesignSystemsSection({
                           ? t('settings.designSystemsImportShadcn')
                           : t('settings.designSystemsImportProject')}
                   </button>
+                  {importSource === 'local' ? (
+                    <label className="library-install-submit">
+                      {t('settings.designSystemsChooseFolder')}
+                      <input
+                        type="file"
+                        multiple
+                        hidden
+                        disabled={importing}
+                        aria-label={t('settings.designSystemsChooseFolder')}
+                        {...({ webkitdirectory: '', directory: '' } as Record<string, string>)}
+                        onChange={(e) => {
+                          const files = Array.from(e.currentTarget.files ?? []);
+                          e.currentTarget.value = '';
+                          void handleFolderUpload(files);
+                        }}
+                      />
+                    </label>
+                  ) : null}
                 </div>
               </div>
             </div>

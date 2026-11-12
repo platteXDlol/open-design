@@ -3938,6 +3938,7 @@ export const it: Dict = {
   'settings.designSystemsCraftAccessibility': 'Accessibilità',
   'settings.designSystemsGithubUrl': 'URL GitHub',
   'settings.designSystemsProjectPath': 'Percorso progetto',
+  'settings.designSystemsChooseFolder': 'Scegli cartella',
   'settings.designSystemsImportGithub': 'Importa da GitHub',
   'settings.designSystemsImportProject': 'Importa dal progetto',
   'settings.designSystemsImportedStatus': '{title} importato',

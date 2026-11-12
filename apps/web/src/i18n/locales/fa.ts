@@ -3938,6 +3938,7 @@ export const fa: Dict = {
   'settings.designSystemsCraftAccessibility': 'دسترس‌پذیری',
   'settings.designSystemsGithubUrl': 'نشانی GitHub',
   'settings.designSystemsProjectPath': 'مسیر پروژه',
+  'settings.designSystemsChooseFolder': 'انتخاب پوشه',
   'settings.designSystemsImportGithub': 'درون‌ریزی از GitHub',
   'settings.designSystemsImportProject': 'درون‌ریزی از پروژه',
   'settings.designSystemsImportedStatus': '{title} درون‌ریزی شد',

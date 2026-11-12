@@ -3938,6 +3938,7 @@ export const ar: Dict = {
   'settings.designSystemsCraftAccessibility': 'إمكانية الوصول',
   'settings.designSystemsGithubUrl': 'رابط GitHub',
   'settings.designSystemsProjectPath': 'مسار المشروع',
+  'settings.designSystemsChooseFolder': 'اختر مجلدًا',
   'settings.designSystemsImportGithub': 'استيراد من GitHub',
   'settings.designSystemsImportProject': 'استيراد من المشروع',
   'settings.designSystemsImportedStatus': 'تم استيراد {title}',

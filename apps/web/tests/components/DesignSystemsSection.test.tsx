@@ -8,7 +8,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { DesignSystemSummary } from '@open-design/contracts';
 
 import { DesignSystemsSection } from '../../src/components/DesignSystemsSection';
-import { fetchDesignSystems, updateDesignSystemDraft } from '../../src/providers/registry';
+import {
+  fetchDesignSystems,
+  updateDesignSystemDraft,
+  uploadDesignSystemFolder,
+} from '../../src/providers/registry';
 import type { AppConfig } from '../../src/types';
 
 const memoryCss = readFileSync(resolve(process.cwd(), 'src/styles/viewer/memory.css'), 'utf8');
@@ -63,6 +67,9 @@ vi.mock('../../src/providers/registry', async () => {
     ...actual,
     fetchDesignSystems: vi.fn(async () => [editable, builtIn]),
     updateDesignSystemDraft: vi.fn(async () => ({ ...editable, title: 'Acme v2', body: '' })),
+    uploadDesignSystemFolder: vi.fn(async () => ({
+      designSystem: { ...editable, id: 'user:brand', title: 'Brand', status: 'published' },
+    })),
   };
 });
 
@@ -197,5 +204,30 @@ describe('DesignSystemsSection rename (issue #2811)', () => {
       expect(repeatMatch).toBeTruthy();
       expect(Number(repeatMatch![1])).toBe(buttonCount);
     }
+  });
+});
+
+describe('DesignSystemsSection folder upload', () => {
+  it('uploads a picked folder from the browser and shows the imported system', async () => {
+    const onChanged = vi.fn();
+    render(<DesignSystemsSection cfg={cfg} setCfg={() => {}} onDesignSystemsChanged={onChanged} />);
+    await screen.findByText('Linear');
+
+    const input = screen.getByLabelText(/Choose folder/i) as HTMLInputElement;
+    expect(input.type).toBe('file');
+    expect(input.hasAttribute('webkitdirectory')).toBe(true);
+
+    const md = new File(['# Brand'], 'DESIGN.md', { type: 'text/markdown' });
+    Object.defineProperty(md, 'webkitRelativePath', { value: 'brand/DESIGN.md' });
+    fireEvent.change(input, { target: { files: [md] } });
+
+    await waitFor(() => {
+      expect(vi.mocked(uploadDesignSystemFolder)).toHaveBeenCalledWith(
+        [md],
+        expect.objectContaining({ importMode: expect.any(String) }),
+      );
+    });
+    expect((await screen.findAllByText(/Brand/)).length).toBeGreaterThan(0);
+    expect(onChanged).toHaveBeenCalledWith('user:brand');
   });
 });

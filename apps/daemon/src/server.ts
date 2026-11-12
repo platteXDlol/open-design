@@ -3023,6 +3023,8 @@ export async function startServer({
   // the ingest body before the global one (express.json is a no-op once a body
   // has already been read).
   app.use('/api/library/ingest', express.json({ limit: '128mb' }));
+  // 20 MB raw design-system folder upload, base64-encoded (~4/3) plus JSON overhead.
+  app.use('/api/design-systems/import/upload', express.json({ limit: '32mb' }));
   // Brand extract-from-html carries the full rendered page DOM (+ collected CSS)
   // the web read out of the in-app browser tab after the user cleared an anti-bot
   // wall — well past 4mb for image/markup-heavy sites. Give it a dedicated limit

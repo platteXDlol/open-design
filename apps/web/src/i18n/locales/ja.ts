@@ -3938,6 +3938,7 @@ export const ja: Dict = {
   'settings.designSystemsCraftAccessibility': 'アクセシビリティ',
   'settings.designSystemsGithubUrl': 'GitHub URL',
   'settings.designSystemsProjectPath': 'プロジェクトパス',
+  'settings.designSystemsChooseFolder': 'フォルダを選択',
   'settings.designSystemsImportGithub': 'GitHub からインポート',
   'settings.designSystemsImportProject': 'プロジェクトからインポート',
   'settings.designSystemsImportedStatus': '{title} をインポートしました',

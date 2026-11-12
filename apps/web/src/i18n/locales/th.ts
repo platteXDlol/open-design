@@ -3938,6 +3938,7 @@ export const th: Dict = {
   'settings.designSystemsCraftAccessibility': 'การเข้าถึง',
   'settings.designSystemsGithubUrl': 'URL GitHub',
   'settings.designSystemsProjectPath': 'พาธโปรเจกต์',
+  'settings.designSystemsChooseFolder': 'เลือกโฟลเดอร์',
   'settings.designSystemsImportGithub': 'นำเข้าจาก GitHub',
   'settings.designSystemsImportProject': 'นำเข้าจากโปรเจกต์',
   'settings.designSystemsImportedStatus': 'นำเข้า {title} แล้ว',

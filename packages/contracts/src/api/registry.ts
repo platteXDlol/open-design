@@ -639,6 +639,15 @@ export interface ImportLocalDesignSystemRequest {
   craftApplies?: string[];
 }
 
+/** Browser folder upload: same import as a local path, files sent as base64. */
+export interface ImportUploadDesignSystemRequest {
+  /** Paths relative to the picked folder, usually prefixed with its name. */
+  files: Array<{ path: string; content: string }>;
+  name?: string;
+  importMode?: 'normalized' | 'hybrid' | 'verbatim';
+  craftApplies?: string[];
+}
+
 export interface ImportLocalDesignSystemResponse {
   designSystem: DesignSystemSummary;
   tokenContractRebuild?: DesignSystemTokenContractRebuildJobResponse;

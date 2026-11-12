@@ -3938,6 +3938,7 @@ export const uk: Dict = {
   'settings.designSystemsCraftAccessibility': 'Доступність',
   'settings.designSystemsGithubUrl': 'URL GitHub',
   'settings.designSystemsProjectPath': 'Шлях проєкту',
+  'settings.designSystemsChooseFolder': 'Вибрати теку',
   'settings.designSystemsImportGithub': 'Імпортувати з GitHub',
   'settings.designSystemsImportProject': 'Імпортувати з проєкту',
   'settings.designSystemsImportedStatus': 'Імпортовано {title}',
