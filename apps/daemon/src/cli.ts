@@ -7,6 +7,7 @@ import { basename } from 'node:path';
 import { runDaemonCliStartup, startDaemonRuntime } from './daemon-startup.js';
 import { runLiveArtifactsMcpServer } from './mcp-live-artifacts-server.js';
 import { runArtifactsCli } from './artifacts-cli.js';
+import { runShareCli } from './share-cli.js';
 import { runProjectHandoff } from './handoff-cli.js';
 import { runConnectorsToolCli } from './tools-connectors-cli.js';
 import { runDesignSystemsToolCli } from './tools-design-systems-cli.js';
@@ -389,6 +390,7 @@ const PLUGIN_LIST_BOOLEAN_FLAGS = new Set([
 const SUBCOMMAND_MAP = {
   agent: runAgent,
   artifacts: runArtifacts,
+  share: runShare,
   auth: runAuth,
   media: runMedia,
   mcp: runMcp,
@@ -973,6 +975,9 @@ function printRootHelp() {
 
   od artifacts create --name <path> --input <file> [--project <id-or-name>]
       Create a normal project artifact through the local daemon.
+
+  od share create|list|revoke --deck <deck-id> [--expires 1d|7d|30d|never] [--id <share-id>] [--json]
+      Manage read-only links to a multi-artboard deck (/s/<token>).
 
   od tools connectors <list|execute|github-design-context> [options]
       Discover and execute configured connectors.
@@ -1716,6 +1721,11 @@ async function runAuth(args) {
 
 async function runArtifacts(args) {
   const { exitCode } = await runArtifactsCli(args);
+  process.exit(exitCode);
+}
+
+async function runShare(args) {
+  const { exitCode } = await runShareCli(args);
   process.exit(exitCode);
 }
 

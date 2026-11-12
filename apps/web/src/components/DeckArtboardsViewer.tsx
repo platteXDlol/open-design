@@ -15,6 +15,7 @@ import {
 import { Button } from '@open-design/components';
 import { projectRawUrl } from '../providers/registry';
 import { exportDeckArtboards } from '../runtime/exports';
+import { DeckSharePanel } from './DeckSharePanel';
 import styles from './DeckArtboardsViewer.module.css';
 
 /** `artifacts/<id>` for a v2 deck's manifest or artboard file, else null. */
@@ -70,6 +71,7 @@ export function DeckArtboardsViewer({ projectId, artifactDir, initialFile, refre
   const [stageWidth, setStageWidth] = useState(960);
   const [exporting, setExporting] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -176,8 +178,12 @@ export function DeckArtboardsViewer({ projectId, artifactDir, initialFile, refre
             {exporting === f ? 'Exporting…' : `Export ${f === 'html' ? 'HTML' : f.toUpperCase()}`}
           </Button>
         ))}
+        <Button size="sm" variant="secondary" aria-expanded={shareOpen} onClick={() => setShareOpen((o) => !o)}>
+          Share
+        </Button>
         {exportError ? <span role="alert" className={styles.exportError}>{exportError}</span> : null}
       </div>
+      {shareOpen ? <DeckSharePanel projectId={projectId} artifactId={artifactId} /> : null}
     </div>
   );
 }

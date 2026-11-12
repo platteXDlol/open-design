@@ -3,13 +3,23 @@
 // are now inline-replaced at their call sites; the call site replacements
 // match the v0.5 stub contracts (null/false/{ ok: true }).
 import { inspectDeckArtifact } from '../../artifacts/deck-artboard-tracker.js';
+import { createShareStore } from '../../share-links/share-store.js';
+import { resolveUserId } from '../../storage/user-scope.js';
 import {
   createHeadlessSlideRenderer,
   DeckExportError,
   exportDeckArtifact,
   resolveChromiumPath,
 } from '../../artifacts/deck-artboard-export.js';
-import { isDeckExportFormat, type DeckExportFormat, type DeckExportResult } from '@open-design/contracts';
+import {
+  isDeckExportFormat,
+  isShareLinkExpiry,
+  shareLinkPath,
+  type CreateShareLinkResponse,
+  type DeckExportFormat,
+  type DeckExportResult,
+  type ShareLinksResponse,
+} from '@open-design/contracts';
 
 const DECK_EXPORT_MIME: Record<DeckExportFormat, string> = {
   pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
@@ -6532,6 +6542,59 @@ export function registerProjectFileRoutes(app: Express, ctx: RegisterProjectFile
     } catch (err: any) {
       sendApiError(res, 400, 'BAD_REQUEST', String(err?.message || err));
     }
+  });
+
+  // M3 share links: owner-side create / list / revoke. The public viewer is /s/<token>.
+  const shareStore = createShareStore(db);
+  const shareDeckProject = async (req: any, res: any, mode: 'read' | 'write') => {
+    const project = getProject(db, req.params.id);
+    if (!project) {
+      sendApiError(res, 404, 'PROJECT_NOT_FOUND', 'project not found');
+      return null;
+    }
+    if (!await authorizeProjectRequest(req, res, project.id, { mode })) return null;
+    return project;
+  };
+  app.post('/api/projects/:id/artifacts/:artifactId/shares', async (req, res) => {
+    try {
+      const expires = req.body?.expires;
+      if (expires !== undefined && !isShareLinkExpiry(expires)) {
+        sendApiError(res, 400, 'BAD_REQUEST', 'expires must be 1d, 7d, 30d, or never');
+        return;
+      }
+      const project = await shareDeckProject(req, res, 'write');
+      if (!project) return;
+      const artifactId = String(req.params.artifactId);
+      const projectRoot = resolveProjectDir(ctx.paths.PROJECTS_DIR, project.id, project.metadata);
+      if (!inspectDeckArtifact(projectRoot, artifactId)) {
+        sendApiError(res, 404, 'NOT_FOUND', 'deck not found');
+        return;
+      }
+      const { share, token } = shareStore.create({ userId: resolveUserId(), projectId: project.id, artifactId, expires });
+      const body: CreateShareLinkResponse = { share, token, path: shareLinkPath(token) };
+      res.setHeader('Cache-Control', 'no-store');
+      res.status(201).json(body);
+    } catch (err: any) {
+      sendApiError(res, 500, 'INTERNAL_ERROR', String(err?.message || err));
+    }
+  });
+  app.get('/api/projects/:id/artifacts/:artifactId/shares', async (req, res) => {
+    const project = await shareDeckProject(req, res, 'read');
+    if (!project) return;
+    const body: ShareLinksResponse = {
+      shares: shareStore.list({ userId: resolveUserId(), projectId: project.id, artifactId: String(req.params.artifactId) }),
+    };
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(body);
+  });
+  app.delete('/api/projects/:id/artifacts/:artifactId/shares/:shareId', async (req, res) => {
+    const project = await shareDeckProject(req, res, 'write');
+    if (!project) return;
+    if (!shareStore.revoke(resolveUserId(), String(req.params.shareId))) {
+      sendApiError(res, 404, 'NOT_FOUND', 'share link not found');
+      return;
+    }
+    res.json({ ok: true });
   });
 
   // M3 deck export (pptx | pdf | html zip). Binary by default; `?json=1` returns DeckExportResult.
