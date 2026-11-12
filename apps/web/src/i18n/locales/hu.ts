@@ -3938,6 +3938,7 @@ export const hu: Dict = {
   'settings.designSystemsCraftAccessibility': 'Akadálymentesség',
   'settings.designSystemsGithubUrl': 'GitHub URL',
   'settings.designSystemsProjectPath': 'Projekt útvonala',
+  'settings.designSystemsChooseFolder': 'Mappa kiválasztása',
   'settings.designSystemsImportGithub': 'Importálás GitHubból',
   'settings.designSystemsImportProject': 'Importálás projektből',
   'settings.designSystemsImportedStatus': '{title} importálva',

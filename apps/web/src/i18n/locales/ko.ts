@@ -3938,6 +3938,7 @@ export const ko: Dict = {
   'settings.designSystemsCraftAccessibility': '접근성',
   'settings.designSystemsGithubUrl': 'GitHub URL',
   'settings.designSystemsProjectPath': '프로젝트 경로',
+  'settings.designSystemsChooseFolder': '폴더 선택',
   'settings.designSystemsImportGithub': 'GitHub에서 가져오기',
   'settings.designSystemsImportProject': '프로젝트에서 가져오기',
   'settings.designSystemsImportedStatus': '{title} 가져옴',

@@ -3938,6 +3938,7 @@ export const tr: Dict = {
   'settings.designSystemsCraftAccessibility': 'Erişilebilirlik',
   'settings.designSystemsGithubUrl': 'GitHub URL’si',
   'settings.designSystemsProjectPath': 'Proje yolu',
+  'settings.designSystemsChooseFolder': 'Klasör seç',
   'settings.designSystemsImportGithub': 'GitHub’dan içe aktar',
   'settings.designSystemsImportProject': 'Projeden içe aktar',
   'settings.designSystemsImportedStatus': '{title} içe aktarıldı',

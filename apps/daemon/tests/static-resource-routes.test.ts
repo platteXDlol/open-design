@@ -10,6 +10,7 @@ import { isLocalSameOrigin } from '../src/origin-validation.js';
 import { listDesignSystems } from '../src/design-systems/index.js';
 import { closeDatabase, openDatabase } from '../src/db.js';
 import { registerStaticResourceRoutes } from '../src/routes/static-resource.js';
+import { DESIGN_SYSTEM_UPLOAD_MAX_BYTES } from '../src/design-systems/upload.js';
 
 describe('static resource mutation routes', () => {
   let server: http.Server;
@@ -101,6 +102,7 @@ describe('static resource mutation routes', () => {
     ['DELETE', '/api/skills/demo-skill'],
     ['POST', '/api/design-systems/install'],
     ['POST', '/api/design-systems/import/local'],
+    ['POST', '/api/design-systems/import/upload'],
     ['POST', '/api/design-systems/import/github'],
     ['POST', '/api/design-systems/import/shadcn'],
     ['DELETE', '/api/design-systems/demo-system'],
@@ -195,6 +197,7 @@ describe('design system import catalog lookup', () => {
         );
 
         const app = express();
+        app.use('/api/design-systems/import/upload', express.json({ limit: '32mb' }));
         app.use(express.json({ limit: '4mb' }));
         registerStaticResourceRoutes(app, {
           // Never reached by any subtest in this file — every request either
@@ -294,6 +297,64 @@ describe('design system import catalog lookup', () => {
     expect(body.designSystem.id).toBe('user:demo-app');
     expect(body.designSystem.title).toBe('demo app');
     expect(fs.existsSync(path.join(userDesignSystemsDir, 'demo-app', 'DESIGN.md'))).toBe(true);
+  });
+
+  it('imports a local design system as published so projects can use it', async () => {
+    const res = await fetch(`${baseUrl}/api/design-systems/import/local`, {
+      method: 'POST',
+      headers: { Origin: baseUrl, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ baseDir: sourceRoot }),
+    });
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as { designSystem: { status?: string } };
+    expect(body.designSystem.status).toBe('published');
+  });
+
+  const uploadFiles = (files: Array<{ path: string; text: string }>) =>
+    files.map((f) => ({ path: f.path, content: Buffer.from(f.text).toString('base64') }));
+  const postUpload = (body: unknown) =>
+    fetch(`${baseUrl}/api/design-systems/import/upload`, {
+      method: 'POST',
+      headers: { Origin: baseUrl, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+  it('imports an uploaded design-system folder through the same import, published', async () => {
+    const res = await postUpload({
+      name: 'Acme Upload',
+      files: uploadFiles([
+        { path: 'acme/DESIGN.md', text: '# Acme Upload\n\nPrimary #FF5A1F.\n' },
+        { path: 'acme/tokens.css', text: ':root { --acme-orange: #FF5A1F; }' },
+        { path: 'acme/notes.exe', text: 'skipped' },
+      ]),
+    });
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as { designSystem: { id: string; status?: string } };
+    expect(body.designSystem.id).toMatch(/^user:acme-upload/u);
+    expect(body.designSystem.status).toBe('published');
+    const dir = path.join(userDesignSystemsDir, body.designSystem.id.replace(/^user:/u, ''));
+    expect(fs.existsSync(path.join(dir, 'DESIGN.md'))).toBe(true);
+  });
+
+  it.each([
+    ['no DESIGN.md', { files: uploadFiles([{ path: 'x/tokens.css', text: ':root{}' }]) }],
+    ['a path escape', { files: uploadFiles([{ path: 'x/DESIGN.md', text: '# a' }, { path: '../evil.md', text: 'x' }]) }],
+    ['an absolute path', { files: uploadFiles([{ path: 'x/DESIGN.md', text: '# a' }, { path: '/etc/evil.md', text: 'x' }]) }],
+    ['no files', { files: [] }],
+  ])('refuses an upload with %s and writes nothing', async (_label, payload) => {
+    const before = fs.existsSync(userDesignSystemsDir) ? fs.readdirSync(userDesignSystemsDir).sort() : [];
+    const res = await postUpload(payload);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ code: 'BAD_REQUEST' });
+    const after = fs.existsSync(userDesignSystemsDir) ? fs.readdirSync(userDesignSystemsDir).sort() : [];
+    expect(after).toEqual(before);
+  });
+
+  it('refuses an upload over the size limit', async () => {
+    const big = 'a'.repeat(DESIGN_SYSTEM_UPLOAD_MAX_BYTES + 1);
+    const res = await postUpload({ files: uploadFiles([{ path: 'x/DESIGN.md', text: big }]) });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ code: 'BAD_REQUEST' });
   });
 
   it('keeps local design-system import successful when token contract auto-queue fails', async () => {

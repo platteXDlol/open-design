@@ -20,6 +20,7 @@ import type {
   ImportShadcnDesignSystemResponse,
   OpenDesignGithubLatestReleaseResponse,
   ImportLocalDesignSystemRequest,
+  ImportUploadDesignSystemRequest,
   ImportLocalDesignSystemResponse,
   ReplaceProjectWorkingDirResponse,
   ProjectFileTextPreviewResponse,
@@ -1198,6 +1199,47 @@ export async function importLocalDesignSystem(
       },
     };
   }
+}
+
+// Reads a webkitdirectory selection and posts it to the daemon's upload import,
+// so the folder only has to exist in the browser, not on the daemon's disk.
+export async function uploadDesignSystemFolder(
+  files: File[],
+  options: Omit<ImportUploadDesignSystemRequest, 'files'> = {},
+): Promise<ImportLocalDesignSystemResponse | { error: SkillImportError }> {
+  try {
+    const encoded = await Promise.all(
+      files.map(async (file) => ({
+        path: file.webkitRelativePath || file.name,
+        content: bytesToBase64(new Uint8Array(await file.arrayBuffer())),
+      })),
+    );
+    const body: ImportUploadDesignSystemRequest = { ...options, files: encoded };
+    const resp = await fetch('/api/design-systems/import/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) {
+      return { error: await readImportError(resp) };
+    }
+    noteDesignSystemCatalogMutation();
+    return (await resp.json()) as ImportLocalDesignSystemResponse;
+  } catch (err) {
+    return {
+      error: {
+        message: err instanceof Error ? err.message : 'Upload request failed.',
+      },
+    };
+  }
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
 }
 
 export async function importGitHubDesignSystem(

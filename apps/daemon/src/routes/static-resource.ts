@@ -30,8 +30,10 @@ import { listCodexPets, readCodexPetSpritesheet } from '../codex-pets.js';
 import { syncCommunityPets } from '../community-pets-sync.js';
 import {
   readDesignSystem,
+  updateUserDesignSystem,
   writeUserDesignSystemWorkspaceClaim,
 } from '../design-systems/index.js';
+import { DesignSystemUploadError, stageDesignSystemUpload } from '../design-systems/upload.js';
 import {
   designSystemLogicalResourceId,
   workspaceTeamDesignSystemBindingResourceId,
@@ -1221,6 +1223,45 @@ _deleted,
     }
   });
 
+  // Shared by path and upload imports. Imports are published right away: the
+  // user picked the folder on purpose, and projects refuse draft systems.
+  const importLocalFolder = async (
+    res: Response,
+    sourceRoot: string,
+    body: Record<string, unknown>,
+    workspaceContext: WorkspaceCollabContext | null,
+  ) => {
+    const before = await listAllDesignSystems();
+    const importMode = normalizeDesignSystemImportMode(body.importMode);
+    const craftApplies = normalizeDesignSystemCraftApplies(body.craftApplies);
+    const result = await importLocalDesignSystemProject(sourceRoot, USER_DESIGN_SYSTEMS_DIR, {
+      ...(typeof body.name === 'string' ? { name: body.name } : {}),
+      ...(importMode ? { importMode } : {}),
+      ...(craftApplies ? { craftApplies } : {}),
+      reservedIds: reservedDesignSystemDirIds(before),
+    });
+    await claimImportedDesignSystem(result.id, workspaceContext);
+    await updateUserDesignSystem(USER_DESIGN_SYSTEMS_DIR, userDesignSystemCatalogId(result.id), { status: 'published' });
+    const systems = await listAllDesignSystems();
+    const designSystem = findUserDesignSystemInCatalog(systems, result.id);
+    if (!designSystem) {
+      return sendApiError(
+        res,
+        500,
+        'INTERNAL_ERROR',
+        `imported design system was not found in catalog: ${result.dir}`,
+      );
+    }
+    res.status(201).json(await importedDesignSystemResponse(designSystem));
+  };
+  const sendLocalImportError = (res: Response, err: any) => {
+    if (sendWorkspaceScopeError(res, err)) return;
+    if (err instanceof LocalDesignSystemImportError) {
+      return sendApiError(res, err.code === 'BAD_REQUEST' ? 400 : 500, err.code, err.message);
+    }
+    sendApiError(res, 500, 'INTERNAL_ERROR', String(err));
+  };
+
   app.post('/api/design-systems/import/local', async (req, res) => {
     if (!requireLocalOrigin(req, res)) return;
     try {
@@ -1262,33 +1303,30 @@ _deleted,
         // The runtime data directory may not exist yet in first-run tests.
       }
 
-      const before = await listAllDesignSystems();
-      const importMode = normalizeDesignSystemImportMode(body.importMode);
-      const craftApplies = normalizeDesignSystemCraftApplies(body.craftApplies);
-      const result = await importLocalDesignSystemProject(sourceRoot, USER_DESIGN_SYSTEMS_DIR, {
-        ...(typeof body.name === 'string' ? { name: body.name } : {}),
-        ...(importMode ? { importMode } : {}),
-        ...(craftApplies ? { craftApplies } : {}),
-        reservedIds: reservedDesignSystemDirIds(before),
-      });
-      await claimImportedDesignSystem(result.id, workspaceContext);
-      const systems = await listAllDesignSystems();
-      const designSystem = findUserDesignSystemInCatalog(systems, result.id);
-      if (!designSystem) {
-        return sendApiError(
-          res,
-          500,
-          'INTERNAL_ERROR',
-          `imported design system was not found in catalog: ${result.dir}`,
-        );
-      }
-      res.status(201).json(await importedDesignSystemResponse(designSystem));
+      await importLocalFolder(res, sourceRoot, body, workspaceContext);
     } catch (err: any) {
-      if (sendWorkspaceScopeError(res, err)) return;
-      if (err instanceof LocalDesignSystemImportError) {
-        return sendApiError(res, err.code === 'BAD_REQUEST' ? 400 : 500, err.code, err.message);
+      sendLocalImportError(res, err);
+    }
+  });
+
+  // Browser folder upload (Settings → Design systems): files arrive as base64,
+  // are staged to a temp dir, then go through the same local import.
+  app.post('/api/design-systems/import/upload', async (req, res) => {
+    if (!requireLocalOrigin(req, res)) return;
+    let staged: Awaited<ReturnType<typeof stageDesignSystemUpload>> | null = null;
+    try {
+      const workspaceContext = await resolveWorkspaceAuthority(req, res);
+      if (workspaceContext === undefined) return;
+      const body = req.body && typeof req.body === 'object' ? req.body : {};
+      staged = await stageDesignSystemUpload(body.files);
+      await importLocalFolder(res, staged.root, body, workspaceContext);
+    } catch (err: any) {
+      if (err instanceof DesignSystemUploadError) {
+        return sendApiError(res, 400, 'BAD_REQUEST', err.message);
       }
-      sendApiError(res, 500, 'INTERNAL_ERROR', String(err));
+      sendLocalImportError(res, err);
+    } finally {
+      await staged?.cleanup();
     }
   });
 

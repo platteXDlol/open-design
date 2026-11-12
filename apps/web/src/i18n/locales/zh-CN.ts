@@ -4144,6 +4144,7 @@ export const zhCN: Dict = {
   "settings.designSystemsCraftAccessibility": "无障碍",
   "settings.designSystemsGithubUrl": "GitHub URL",
   "settings.designSystemsProjectPath": "项目路径",
+  'settings.designSystemsChooseFolder': '选择文件夹',
   "settings.designSystemsImportGithub": "从 GitHub 导入",
   "settings.designSystemsImportProject": "从项目导入",
   "settings.designSystemsImportedStatus": "已导入 {title}",

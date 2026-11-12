@@ -3938,6 +3938,7 @@ export const ptBR: Dict = {
   'settings.designSystemsCraftAccessibility': 'Acessibilidade',
   'settings.designSystemsGithubUrl': 'URL do GitHub',
   'settings.designSystemsProjectPath': 'Caminho do projeto',
+  'settings.designSystemsChooseFolder': 'Escolher pasta',
   'settings.designSystemsImportGithub': 'Importar do GitHub',
   'settings.designSystemsImportProject': 'Importar do projeto',
   'settings.designSystemsImportedStatus': '{title} importado',

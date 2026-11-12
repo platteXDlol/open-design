@@ -732,6 +732,7 @@ export interface Dict {
   'settings.designSystemsCraftAccessibility': string;
   'settings.designSystemsGithubUrl': string;
   'settings.designSystemsProjectPath': string;
+  'settings.designSystemsChooseFolder': string;
   'settings.designSystemsImportGithub': string;
   'settings.designSystemsImportProject': string;
   'settings.designSystemsImportedStatus': string;

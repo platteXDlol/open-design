@@ -3938,6 +3938,7 @@ export const ru: Dict = {
   'settings.designSystemsCraftAccessibility': 'Доступность',
   'settings.designSystemsGithubUrl': 'URL GitHub',
   'settings.designSystemsProjectPath': 'Путь проекта',
+  'settings.designSystemsChooseFolder': 'Выбрать папку',
   'settings.designSystemsImportGithub': 'Импортировать из GitHub',
   'settings.designSystemsImportProject': 'Импортировать из проекта',
   'settings.designSystemsImportedStatus': 'Импортировано: {title}',

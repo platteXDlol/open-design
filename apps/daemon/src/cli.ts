@@ -9880,6 +9880,7 @@ async function runDesignSystemImportLocal(args) {
     console.log(`Usage:
   od design-systems import-local <path> [--name <name>] [--import-mode <mode>] [--craft <slugs>] [--json] [--daemon-url <url>]
   od design-systems import-local --path <path> [--name <name>] [--json]
+  od design-systems import-local <path> --upload [--name <name>] [--json]
 
 Imports a local project directory as an editable OpenDesign design system.
 
@@ -9887,21 +9888,46 @@ Imports a local project directory as an editable OpenDesign design system.
   --path <path>          Path alternative for scripts that prefer named flags.
   --name <name>          Display name override for the imported system.
   --import-mode <mode>   normalized | hybrid | verbatim (default hybrid).
-  --craft <slugs>        Comma-separated craft sections to apply (e.g. color,type).`);
+  --craft <slugs>        Comma-separated craft sections to apply (e.g. color,type).
+  --upload               Send the folder's files to the daemon instead of a path
+                         (for a daemon on another machine or in Docker).`);
     process.exit(args.length === 0 ? 2 : 0);
   }
   const stringFlags = new Set([...LIBRARY_STRING_FLAGS, 'path', 'name', 'import-mode', 'craft']);
-  const flags = parseFlags(args, { string: stringFlags, boolean: LIBRARY_BOOLEAN_FLAGS });
+  const flags = parseFlags(args, { string: stringFlags, boolean: new Set([...LIBRARY_BOOLEAN_FLAGS, 'upload']) });
   const localPath = typeof flags.path === 'string' ? flags.path : positionalArgs(args, stringFlags)[0];
   if (!localPath) {
     console.error('Usage: od design-systems import-local <path>');
     process.exit(2);
   }
   const pathModule = await import('node:path');
+  if (flags.upload) {
+    const files = await readDesignSystemUploadFiles(pathModule.resolve(localPath));
+    const body = designSystemImportRequestBody(flags, { files });
+    return postDesignSystemImport(flags, '/api/design-systems/import/upload', body);
+  }
   const body = designSystemImportRequestBody(flags, {
     baseDir: pathModule.resolve(localPath),
   });
   return postDesignSystemImport(flags, '/api/design-systems/import/local', body);
+}
+
+// Same shape the web folder picker sends: paths prefixed with the folder name,
+// base64 content. The daemon filters file types and enforces the size cap.
+async function readDesignSystemUploadFiles(root) {
+  const { readdir, readFile } = await import('node:fs/promises');
+  const pathModule = await import('node:path');
+  const prefix = pathModule.basename(root);
+  const entries = await readdir(root, { recursive: true, withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+    const abs = pathModule.join(entry.parentPath ?? entry.path, entry.name);
+    const rel = pathModule.relative(root, abs).split(pathModule.sep).join('/');
+    if (rel.split('/').some((part) => part === 'node_modules' || part.startsWith('.'))) continue;
+    files.push({ path: `${prefix}/${rel}`, content: (await readFile(abs)).toString('base64') });
+  }
+  return files;
 }
 
 // od design-systems import-github <url> [--branch <branch>] [--name <name>]

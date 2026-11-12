@@ -4152,6 +4152,7 @@ export const zhTW: Dict = {
   "settings.designSystemsCraftAccessibility": "無障礙",
   "settings.designSystemsGithubUrl": "GitHub URL",
   "settings.designSystemsProjectPath": "專案路徑",
+  'settings.designSystemsChooseFolder': '選擇資料夾',
   "settings.designSystemsImportGithub": "從 GitHub 匯入",
   "settings.designSystemsImportProject": "從專案匯入",
   "settings.designSystemsImportedStatus": "已匯入 {title}",
