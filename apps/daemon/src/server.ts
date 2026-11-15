@@ -345,6 +345,8 @@ import {
   buildWindowsFolderDialogCommand,
   parseFolderDialogStdout,
   parseLinuxFolderDialogResult,
+  nativeFolderPickerAvailable,
+  binaryOnPath,
 } from './native-folder-dialog.js';
 import {
   AssetCacheError,
@@ -3650,7 +3652,12 @@ export async function startServer({
   // second witness behind the team-share invariant: a team share may only be
   // recorded in — and a project-scoped collab call may only be pinned to — a
   // workspace that can actually host a team plane. See collab/team-share-scope.ts.
-  const workspaceTypes = { learn: (..._v05_unused: any[]): void => {} };
+  // v0.5: personal-only daemon; nothing is ever a known team workspace.
+  const workspaceTypes = {
+    learn: (..._v05_unused: any[]): void => {},
+    typeOf: (_workspaceId?: string | null): null => null,
+    isKnownPersonal: (_workspaceId?: string | null): boolean => false,
+  };
   const configuredAmrEnv = () =>
     agentCliEnvForAgent(readAppConfigSync(RUNTIME_DATA_DIR).agentCliEnv, 'amr');
   const workspaceExactAuthorityCache = ((..._v05_unused: any[]) => ({} as any))({
@@ -7405,7 +7412,6 @@ undefined,
     db,
     recoverBeforeInterrupt: (state, states, now) => recoverPlanningIntentResolution(db, state, states, now),
     reportLangfuse: reportRunCompletedFromDaemon,
-    finalizeTerminalLocally: ((..._v05_unused: any[]) => ({} as any))(amrTerminalReportOutbox),
     taskObservationModeForRun: (runId) => taskObservationRollout.modeForRun(runId),
     taskObservationRepresentationForRun: (runId) =>
       taskObservationRollout.representationForRun(runId),
@@ -7828,7 +7834,8 @@ undefined,
     },
   };
   const orbitDeps = { orbitService };
-  const nativeDialogDeps = { openBrowser, openNativeFolderDialog };
+  const nativeFolderPicker = nativeFolderPickerAvailable({ platform: process.platform, env: process.env, hasBinary: (name) => binaryOnPath(name) });
+  const nativeDialogDeps = { openBrowser, openNativeFolderDialog, folderPickerAvailable: () => nativeFolderPicker };
   const researchDeps = { searchResearch, ResearchError };
   const liveArtifactDeps = {
     createLiveArtifact,

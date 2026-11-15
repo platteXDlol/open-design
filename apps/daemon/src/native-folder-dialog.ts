@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
 export interface NativeFolderDialogCommand {
   command: string;
   args: string[];
@@ -71,4 +74,34 @@ export function parseLinuxFolderDialogResult(error: any, stdout: string, stderr:
 
   const selectedPath = stdout.trim();
   return selectedPath.length > 0 ? selectedPath : null;
+}
+
+export interface NativeFolderPickerProbe {
+  platform: string;
+  env: Record<string, string | undefined>;
+  hasBinary: (name: string) => boolean;
+}
+
+/**
+ * Whether `/api/dialog/open-folder` can show a dialog on this host. A daemon in
+ * Docker / headless Linux has no display (and usually no zenity), so the web UI
+ * hides its folder pickers instead of failing on click.
+ */
+export function nativeFolderPickerAvailable({ platform, env, hasBinary }: NativeFolderPickerProbe): boolean {
+  if (platform === 'darwin' || platform === 'win32') return true;
+  if (platform !== 'linux') return false;
+  return Boolean(env.DISPLAY || env.WAYLAND_DISPLAY) && hasBinary('zenity');
+}
+
+/** True when `name` is an executable file on `PATH`. */
+export function binaryOnPath(name: string, pathEnv = process.env.PATH ?? ''): boolean {
+  return pathEnv.split(path.delimiter).some((dir) => {
+    if (!dir) return false;
+    try {
+      fs.accessSync(path.join(dir, name), fs.constants.X_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  });
 }

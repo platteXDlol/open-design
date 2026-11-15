@@ -22,3 +22,24 @@ describe('daemon boot', () => {
     expect(resp.ok).toBe(true);
   });
 });
+
+describe('v0.5 leftovers on the request path', () => {
+  it('GET /api/projects/:id/workspace-scope does not 500 (workspaceTypes.typeOf stub)', async () => {
+    const created = await fetch(`${started.url}/api/projects`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ id: `boot-scope-${Date.now()}`, name: 'scope probe' }),
+    });
+    expect(created.ok).toBe(true);
+    const { project } = (await created.json()) as { project: { id: string } };
+    const resp = await fetch(`${started.url}/api/projects/${encodeURIComponent(project.id)}/workspace-scope`);
+    expect(resp.status).toBe(200);
+  });
+
+  it('GET /api/dialog/capabilities reports folderPicker as a boolean', async () => {
+    const resp = await fetch(`${started.url}/api/dialog/capabilities`);
+    expect(resp.ok).toBe(true);
+    const body = (await resp.json()) as { folderPicker: unknown };
+    expect(typeof body.folderPicker).toBe('boolean');
+  });
+});

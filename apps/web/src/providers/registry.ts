@@ -3404,19 +3404,49 @@ export async function renameProjectFile(
   return (await resp.json()) as RenameProjectFileResponse;
 }
 
+let folderPickerAvailablePromise: Promise<boolean> | null = null;
+
+/**
+ * Whether the daemon can show a native folder dialog (false in Docker / on a
+ * headless LAN server). Cached for the page lifetime. A daemon without the
+ * capabilities endpoint keeps the old always-shown behavior.
+ */
+export function fetchFolderPickerAvailable(): Promise<boolean> {
+  folderPickerAvailablePromise ??= fetch('/api/dialog/capabilities')
+    .then(async (resp) => {
+      if (!resp.ok) return true;
+      const body = (await resp.json()) as Partial<NativeDialogCapabilitiesResponse>;
+      return body.folderPicker !== false;
+    })
+    .catch(() => true)
+    .then((available) => {
+      folderDebug('native folder picker capability', { available });
+      return available;
+    });
+  return folderPickerAvailablePromise;
+}
+
+/** Test hook: forget the cached capability. */
+export function resetFolderPickerAvailableCache(): void {
+  folderPickerAvailablePromise = null;
+}
+
 export async function openFolderDialog(options: { throwOnError?: boolean } = {}): Promise<string | null> {
+  folderDebug('openFolderDialog called → POST /api/dialog/open-folder', options);
   try {
     const resp = await fetch('/api/dialog/open-folder', { method: 'POST' });
     if (!resp.ok) {
-      if (options.throwOnError) {
-        const errorBody = await readApiErrorBody(resp);
-        throw new Error(errorBody.message);
-      }
+      const errorBody = await readApiErrorBody(resp);
+      console.error('[od-folder] folder picker failed', { status: resp.status, message: errorBody.message });
+      if (options.throwOnError) throw new Error(errorBody.message);
       return null;
     }
     const data = await resp.json();
-    return typeof data.path === 'string' && data.path.length > 0 ? data.path : null;
+    const picked = typeof data.path === 'string' && data.path.length > 0 ? data.path : null;
+    folderDebug(picked ? 'folder picked' : 'picker closed without a folder (cancelled)', { path: picked });
+    return picked;
   } catch (err) {
+    console.error('[od-folder] folder picker error', err);
     if (options.throwOnError) {
       throw err instanceof Error ? err : new Error('Could not open folder picker');
     }
@@ -3785,6 +3815,8 @@ import type {
   LibrarySyncResponse,
 } from '@open-design/contracts';
 import { LIBRARY_UPLOAD_MAX_BYTES, isLibraryUploadMimeAllowed } from '@open-design/contracts';
+import type { NativeDialogCapabilitiesResponse } from '@open-design/contracts';
+import { folderDebug } from '../runtime/ui-debug';
 
 /** Raw bytes URL for a library asset (image src / download href). */
 export function libraryAssetRawUrl(id: string): string {

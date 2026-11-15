@@ -1,3 +1,6 @@
+import { execFile } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { runShareCli } from '../src/share-cli.js';
@@ -45,6 +48,17 @@ describe('od share CLI', () => {
     expect((await runShareCli(['revoke', ...base, '--id', 'abc'])).exitCode).toBe(0);
     expect(fetchMock.mock.calls.at(-1)).toEqual([`${api}/abc`, { method: 'DELETE' }]);
   });
+
+  it('is reachable through the real od entry next to the social share targets', async () => {
+    // Regression: a second `runShare` in cli.ts (ts-nocheck) crashed the packaged daemon at load.
+    const cli = fileURLToPath(new URL('../src/cli.ts', import.meta.url));
+    const run = (args: string[]) =>
+      promisify(execFile)(process.execPath, ['--import', 'tsx', cli, 'share', ...args], {
+        cwd: fileURLToPath(new URL('..', import.meta.url)),
+      });
+    expect((await run(['create', '--help'])).stdout).toContain('od share create --deck');
+    expect((await run(['--help'])).stdout).toContain('od share open-design');
+  }, 60_000);
 
   it('rejects bad input before calling the daemon', async () => {
     expect((await runShareCli(['create', ...base, '--expires', '9y'])).exitCode).toBe(1);

@@ -104,6 +104,7 @@ import {
 } from './composer/LexicalComposerInput';
 import { CaretFloatingLayer } from './composer/CaretFloatingLayer';
 import { PlaceholderCarousel } from './home-hero/PlaceholderCarousel';
+import { sendDebug } from '../runtime/ui-debug';
 import {
   buildPlaceholderScenarios,
   PLACEHOLDER_BASE_HINT_KEY,
@@ -626,17 +627,28 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
     carouselScenario !== null &&
     carouselScenarios.some((scenario) => scenario.id === carouselScenario.id);
   const sendEnabled = canSubmit || carouselSubmittable;
+  useEffect(() => {
+    sendDebug('home: send button state', { sendEnabled, canSubmit, carouselSubmittable, submitting, submitDisabled });
+  }, [sendEnabled, canSubmit, carouselSubmittable, submitting, submitDisabled]);
   function handleSend() {
-    if (submitting || submitDisabled) return;
+    sendDebug('home: handleSend called', { canSubmit, carouselSubmittable, submitting, submitDisabled });
+    if (submitting || submitDisabled) {
+      sendDebug('home: handleSend stopped (submitting or submitDisabled)');
+      return;
+    }
     if (canSubmit) {
       notifyCompletionFeedbackGesture();
+      sendDebug('home: calling onSubmit (HomeView.submit)');
       onSubmit();
       return;
     }
     if (carouselSubmittable && carouselScenario) {
       notifyCompletionFeedbackGesture();
+      sendDebug('home: calling onSubmitScenario');
       onSubmitScenario(carouselScenario);
+      return;
     }
+    sendDebug('home: handleSend did nothing (no prompt, no scenario)');
   }
   const fileMatches = useMemo(
     () =>
@@ -2431,7 +2443,10 @@ export const HomeHero = forwardRef<HomeHeroHandle, Props>(function HomeHero(
               type="button"
               className={`home-hero__submit${sendAttention ? ' home-hero__attention-sheen' : ''}`}
               data-testid="home-hero-submit"
-              onClick={handleSend}
+              onClick={() => {
+                sendDebug('home: send button clicked', { sendEnabled });
+                handleSend();
+              }}
               onAnimationEnd={() => setSendAttention(false)}
               disabled={!sendEnabled}
               // No tooltip: the arrow is the composer's only send affordance,

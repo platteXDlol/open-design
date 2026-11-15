@@ -390,7 +390,6 @@ const PLUGIN_LIST_BOOLEAN_FLAGS = new Set([
 const SUBCOMMAND_MAP = {
   agent: runAgent,
   artifacts: runArtifacts,
-  share: runShare,
   auth: runAuth,
   media: runMedia,
   mcp: runMcp,
@@ -1721,11 +1720,6 @@ async function runAuth(args) {
 
 async function runArtifacts(args) {
   const { exitCode } = await runArtifactsCli(args);
-  process.exit(exitCode);
-}
-
-async function runShare(args) {
-  const { exitCode } = await runShareCli(args);
   process.exit(exitCode);
 }
 
@@ -6244,6 +6238,8 @@ function printShareUsage() {
   od share open-design [--locale <locale>] [--platform <id>] [--json]
   od share url --url <https-url> [--title <title>] [--text <text>]
                [--copy-text <text>] [--locale <locale>] [--platform <id>] [--json]
+  od share create|list|revoke --deck <deck-id> [--expires 1d|7d|30d|never] [--id <share-id>] [--json]
+               Read-only /s/<token> links to a multi-artboard deck (see od share create --help).
 
 Platforms:
   x, linkedin, facebook, reddit, telegram, whatsapp, weibo, line, instagram, xiaohongshu
@@ -6254,6 +6250,11 @@ Common options:
 }
 
 async function runShare(args) {
+  // M3 deck share links live in share-cli.ts; the rest is social share intents.
+  if (['create', 'list', 'revoke'].includes(args[0])) {
+    const { exitCode } = await runShareCli(args);
+    process.exit(exitCode);
+  }
   const wantsHelp = args.length === 0
     || args[0] === 'help'
     || args.includes('--help')

@@ -38,6 +38,8 @@ import type {
 } from '@open-design/contracts/analytics';
 import { deriveUploadCohort } from '../analytics/upload-tracking';
 import { notifyCompletionFeedbackGesture } from '../utils/notifications';
+import { folderDebug } from "../runtime/ui-debug";
+import { useFolderPickerAvailable } from "../hooks/useFolderPickerAvailable";
 import { projectRawUrl, uploadProjectFiles, openFolderDialog, fetchRecentLinkedDirs, pushRecentLinkedDir, dirExists, applyLibraryAsset, fetchLibraryAssetElementHtml } from "../providers/registry";
 import {
   duplicatePluginAsProject,
@@ -805,6 +807,7 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     // so the user can type-to-filter.
     const [slash, setSlash] = useState<{ q: string } | null>(null);
     const [slashIndex, setSlashIndex] = useState(0);
+    const folderPickerAvailable = useFolderPickerAvailable();
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState<string | null>(null);
     /* 待发送托盘里【还没传完 / 传失败】的那几张卡(设计稿 #61 / #63)。
@@ -1872,8 +1875,20 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
       }
     }
 
+    // Picker errors (e.g. no native dialog in Docker) must be visible, not silent.
+    async function pickFolderOrToast(source: string): Promise<string | null> {
+      folderDebug(`chat composer: ${source} clicked`, { projectId });
+      try {
+        return await openFolderDialog({ throwOnError: true });
+      } catch (err) {
+        const detail = err instanceof Error ? err.message : String(err);
+        onShowToast?.(`${t('chat.linkedFolderPickError')}: ${detail}`);
+        return null;
+      }
+    }
+
     async function handleLinkLocalCodeContext() {
-      const selected = await openFolderDialog();
+      const selected = await pickFolderOrToast('link local code');
       if (!selected) {
         trackContextLinkResult(analytics.track, {
           page_name: 'chat_panel',
@@ -2743,10 +2758,14 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
     }
 
     async function handleLinkFolder() {
-      if (!projectId) return;
-      const selected = await openFolderDialog();
+      if (!projectId) {
+        folderDebug('chat composer: link folder ignored (no projectId)');
+        return;
+      }
+      const selected = await pickFolderOrToast('link folder');
       if (!selected) return;
-      await addLinkedDir(selected);
+      const result = await addLinkedDir(selected);
+      folderDebug('chat composer: addLinkedDir done', { selected, ok: result !== false });
     }
 
     function linkedDirsWithWorkspaceContext(primaryDir: string | null): string[] {
@@ -3698,10 +3717,10 @@ export const ChatComposer = forwardRef<ChatComposerHandle, Props>(
                 });
                 setProjectReferenceOpen(true);
               }}
-              onLinkLocalCode={() => {
+              onLinkLocalCode={folderPickerAvailable ? () => {
                 trackComposerBar({ element: 'plus_pick', resource_kind: 'workspace', resource_id: 'local-code' });
                 void handleLinkLocalCodeContext();
-              }}
+              } : undefined}
               attachLoading={uploading}
               onSelectFromLibrary={() => {
                 trackChatPanelClick(analytics.track, {
