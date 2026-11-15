@@ -7,6 +7,8 @@
 // surface by lifting its plugin orchestration up here so the prompt
 // textarea can live centered in the hero.
 
+import { folderDebug } from '../runtime/ui-debug';
+import { useFolderPickerAvailable } from '../hooks/useFolderPickerAvailable';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Dialog, DialogFooter, DialogTitle } from '@open-design/components';
 import type {
@@ -591,6 +593,7 @@ export function HomeView({
     setPlugins(cached ?? []);
     setPluginsLoading(cached === null);
   }
+  const folderPickerAvailable = useFolderPickerAvailable();
   const [pendingApplyId, setPendingApplyId] = useState<string | null>(null);
   const [pendingChipId, setPendingChipId] = useState<string | null>(null);
   const [pendingAuthoringChipId, setPendingAuthoringChipId] = useState<string | null>(null);
@@ -2155,6 +2158,7 @@ export function HomeView({
   }
 
   async function handlePickWorkingDir() {
+    folderDebug('home: working directory pick clicked', { desktopHost: isOpenDesignHostAvailable() });
     // On desktop the working-dir POST is gated behind a host-minted token, so
     // pick through the host bridge to capture { baseDir, token } together.
     if (isOpenDesignHostAvailable()) {
@@ -2182,7 +2186,13 @@ export function HomeView({
     }
     // Pure web path: no desktop host, so there is no token gate — the raw
     // browser folder path is the expected, working input.
-    const picked = await openFolderDialog();
+    let picked: string | null = null;
+    try {
+      picked = await openFolderDialog({ throwOnError: true });
+    } catch (err) {
+      setError(`Couldn't open the folder picker: ${err instanceof Error ? err.message : String(err)}`);
+      return null;
+    }
     if (picked) {
       setWorkingDir(picked);
       setWorkingDirToken(null);
@@ -2193,6 +2203,7 @@ export function HomeView({
   }
 
   async function handlePickLocalCodeDir() {
+    folderDebug('home: local code pick clicked', { desktopHost: isOpenDesignHostAvailable() });
     if (isOpenDesignHostAvailable()) {
       const result = await pickHostWorkingDir();
       if (result.ok) {
@@ -2205,7 +2216,13 @@ export function HomeView({
       );
       return null;
     }
-    const picked = await openFolderDialog();
+    let picked: string | null = null;
+    try {
+      picked = await openFolderDialog({ throwOnError: true });
+    } catch (err) {
+      setError(`Couldn't open the folder picker: ${err instanceof Error ? err.message : String(err)}`);
+      return null;
+    }
     if (picked) {
       void rememberRecentDir(picked);
       return picked;
@@ -3218,8 +3235,8 @@ export function HomeView({
         error={error}
         workingDir={workingDir}
         recentDirs={recentDirs}
-        onPickWorkingDir={handlePickWorkingDir}
-        onPickLocalCodeDir={handlePickLocalCodeDir}
+        onPickWorkingDir={folderPickerAvailable ? handlePickWorkingDir : undefined}
+        onPickLocalCodeDir={folderPickerAvailable ? handlePickLocalCodeDir : undefined}
         onSelectRecentWorkingDir={(dir) => {
           setWorkingDir(dir);
           // Recents come from the browser-side picker only; they carry no

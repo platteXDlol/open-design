@@ -3,6 +3,7 @@ import {
   buildWindowsFolderDialogCommand,
   parseLinuxFolderDialogResult,
   parseFolderDialogStdout,
+  nativeFolderPickerAvailable,
 } from '../src/native-folder-dialog.js';
 
 function dialogError(message: string, code: string | number): Error & { code: string | number } {
@@ -75,5 +76,22 @@ describe('native folder dialog helpers', () => {
     expect(() => parseLinuxFolderDialogResult(err, '', '')).toThrow(
       'Could not open folder picker: zenity is not installed',
     );
+  });
+});
+
+describe('nativeFolderPickerAvailable', () => {
+  const zenityOn = (bin: string) => bin === 'zenity';
+  it('is true on macOS and Windows', () => {
+    expect(nativeFolderPickerAvailable({ platform: 'darwin', env: {}, hasBinary: () => false })).toBe(true);
+    expect(nativeFolderPickerAvailable({ platform: 'win32', env: {}, hasBinary: () => false })).toBe(true);
+  });
+  it('needs zenity and a display on Linux', () => {
+    expect(nativeFolderPickerAvailable({ platform: 'linux', env: { DISPLAY: ':0' }, hasBinary: zenityOn })).toBe(true);
+    expect(nativeFolderPickerAvailable({ platform: 'linux', env: { WAYLAND_DISPLAY: 'wayland-0' }, hasBinary: zenityOn })).toBe(true);
+    expect(nativeFolderPickerAvailable({ platform: 'linux', env: {}, hasBinary: zenityOn })).toBe(false);
+    expect(nativeFolderPickerAvailable({ platform: 'linux', env: { DISPLAY: ':0' }, hasBinary: () => false })).toBe(false);
+  });
+  it('is false on other platforms', () => {
+    expect(nativeFolderPickerAvailable({ platform: 'freebsd', env: { DISPLAY: ':0' }, hasBinary: zenityOn })).toBe(false);
   });
 });

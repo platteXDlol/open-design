@@ -5,6 +5,7 @@ import type {
   HyperFramesScaffoldResponse,
   MediaExecutionPolicy,
   MediaGenerationResultProps,
+  NativeDialogCapabilitiesResponse,
   ProjectFile,
   ProjectMediaTaskFile,
 } from '@open-design/contracts';
@@ -242,7 +243,7 @@ export function registerMediaRoutes(app: Express, ctx: RegisterMediaRoutesDeps) 
       ? ctx.appConfig.onAppConfigWritten
       : null;
   const { orbitService } = ctx.orbit;
-  const { openBrowser, openNativeFolderDialog } = ctx.nativeDialogs;
+  const { openBrowser, openNativeFolderDialog, folderPickerAvailable } = ctx.nativeDialogs;
   const { getWorkspaceProjectByProjectId, getProject } = ctx.projectStore;
   const { listFiles, resolveProjectDir, resolveProjectFilePath } = ctx.projectFiles;
   const { insertConversation, upsertMessage } = ctx.conversations;
@@ -978,6 +979,11 @@ export function registerMediaRoutes(app: Express, ctx: RegisterMediaRoutesDeps) 
         .status(500)
         .json({ ok: false, error: String(err && err.message ? err.message : err) });
     }
+  });
+
+  app.get('/api/dialog/capabilities', (_req, res) => {
+    const body: NativeDialogCapabilitiesResponse = { folderPicker: Boolean(folderPickerAvailable?.()) };
+    res.json(body);
   });
 
   // Native OS folder picker dialog. Returns { path: string | null }.
