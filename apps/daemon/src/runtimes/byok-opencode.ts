@@ -104,11 +104,10 @@ function normalizeProviderBaseUrl(
 ): string {
   const trimmed = baseUrl.trim().replace(/\/+$/, '');
   if (!trimmed) return trimmed;
-  if (protocol === 'anthropic' && !hasVersionedApiPath(trimmed)) {
+  // Same /vN rule as the connection test and direct BYOK chat, so a green
+  // connection test predicts the URL the OpenCode run will actually call.
+  if (protocol !== 'ollama' && !hasVersionedApiPath(trimmed)) {
     return appendVersionedApiPath(trimmed);
-  }
-  if (protocol === 'openai' && isExactOrigin(trimmed, 'https://api.openai.com')) {
-    return 'https://api.openai.com/v1';
   }
   if (protocol === 'ollama') {
     if (isExactOrigin(trimmed, 'https://ollama.com')) return 'https://ollama.com/v1';
