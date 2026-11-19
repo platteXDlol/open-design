@@ -18,7 +18,6 @@ const labels = {
   model: 'Deployment name',
   required: 'Required',
   searchPlaceholder: 'Search models',
-  suggestedModelsHint: 'Suggested models are shown.',
 };
 
 describe('ByokModelField', () => {
@@ -38,7 +37,6 @@ describe('ByokModelField', () => {
         forceTextInput
         showAzureModelFetchHint={false}
         showFetchModelsUnsupportedHint={false}
-        showSuggestedModelsHint={false}
         azureModelFetchHint="Enter a deployment name."
         onCustomModelChange={onCustomModelChange}
         onCustomModelSelect={vi.fn()}

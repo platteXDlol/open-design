@@ -189,10 +189,9 @@ import { TasksView } from './TasksView';
 import {
   API_KEY_PLACEHOLDERS,
   API_PROTOCOL_TABS,
-  SUGGESTED_MODELS_BY_PROTOCOL,
+  byokCompatibleProtocol,
+  DEFAULT_BASE_URL_BY_PROTOCOL,
 } from '../state/apiProtocols';
-import { defaultKnownProviderModel, KNOWN_PROVIDERS } from '../state/config';
-import type { KnownProvider } from '../state/config';
 import { testAgent, testApiProvider } from '../providers/connection-test';
 import { fetchProviderModels } from '../providers/provider-models';
 import { invalidateProjectFilesCache } from '../providers/registry';
@@ -2166,11 +2165,6 @@ function OnboardingView({
     providerModelsState.inputKey === providerModelsInputKey
       ? providerModelsState
       : { status: 'idle' as const };
-  const selectedProvider = KNOWN_PROVIDERS.find(
-    (provider) =>
-      provider.protocol === apiProtocol &&
-      provider.baseUrl === (config.apiProviderBaseUrl ?? config.baseUrl),
-  ) ?? null;
   const candidateCliAgents = agents.filter(
     (agent) => agent.id !== 'amr' && (agent.available || deepSeekHarnessNeedsSetup(agent)),
   );
@@ -2465,17 +2459,6 @@ function OnboardingView({
       onboarding_session_id: onboardingSessionId,
     });
   }
-  const protocolProviders = KNOWN_PROVIDERS.filter((provider) => provider.protocol === apiProtocol);
-  const hasProtocolOwnedEmptyProvider = false;
-  const byokProviderOptions = [
-    ...(hasProtocolOwnedEmptyProvider
-      ? []
-      : [{ value: '', label: t('settings.customProvider') }]),
-    ...protocolProviders.map((provider) => ({
-      value: provider.baseUrl,
-      label: provider.label,
-    })),
-  ];
   const agentModelOptions =
     selectedAgent?.models?.map((model) => ({
       value: model.id,
@@ -2485,9 +2468,8 @@ function OnboardingView({
     activeProviderModelsCache[providerModelsInputKey] ?? [];
   const byokModelOptions = mergeOnboardingProviderModelOptions(
     fetchedProviderModels,
-    selectedProvider?.preferredModels.length
-      ? selectedProvider.preferredModels
-      : SUGGESTED_MODELS_BY_PROTOCOL[apiProtocol],
+    // No hard-coded vendor models: live /models list plus the current model.
+    [],
     config.model,
   ).map((model) => ({
     value: model.id,
@@ -2540,7 +2522,6 @@ function OnboardingView({
     const preference = resolveByokModelPreference({
       currentModel: '',
       accountModels: models,
-      providerPreferredModels: selectedProvider?.preferredModels ?? [],
     });
     if (!preference.model) return;
     onApiModelChange(preference.model);
@@ -3631,21 +3612,9 @@ function OnboardingView({
                   apiKey={config.apiKey}
                   baseUrl={config.baseUrl}
                   model={config.model}
-                  selectedProvider={selectedProvider}
-                  providerOptions={byokProviderOptions}
                   apiKeyVisible={apiKeyVisible}
                   onToggleApiKey={() => setApiKeyVisible((current) => !current)}
                   onProtocolChange={onApiProtocolChange}
-                  onProviderChange={(baseUrl) => {
-                    const provider = KNOWN_PROVIDERS.find(
-                      (item) => item.protocol === apiProtocol && item.baseUrl === baseUrl,
-                    );
-                    updateApiConfig({
-                      baseUrl: provider?.baseUrl ?? '',
-                      model: defaultKnownProviderModel(provider),
-                      apiProviderBaseUrl: provider?.baseUrl ?? null,
-                    });
-                  }}
                   onApiKeyChange={(apiKey) => updateApiConfig({ apiKey })}
                   onModelChange={(model) => {
                     onApiModelChange(model);
@@ -3839,17 +3808,14 @@ function OnboardingCliSetupPanel({
   );
 }
 
-function OnboardingByokSetupPanel({
+export function OnboardingByokSetupPanel({
   apiProtocol,
   apiKey,
   baseUrl,
   model,
-  selectedProvider,
-  providerOptions,
   apiKeyVisible,
   onToggleApiKey,
   onProtocolChange,
-  onProviderChange,
   onApiKeyChange,
   onModelChange,
   onBaseUrlChange,
@@ -3865,13 +3831,10 @@ function OnboardingByokSetupPanel({
   apiKey: string;
   baseUrl: string;
   model: string;
-  selectedProvider: KnownProvider | null;
-  providerOptions: Array<{ value: string; label: string }>;
   modelOptions: Array<{ value: string; label: string }>;
   apiKeyVisible: boolean;
   onToggleApiKey: () => void;
   onProtocolChange: (protocol: ApiProtocol) => void;
-  onProviderChange: (baseUrl: string) => void;
   onApiKeyChange: (apiKey: string) => void;
   onModelChange: (model: string) => void;
   onBaseUrlChange: (baseUrl: string) => void;
@@ -3892,6 +3855,7 @@ function OnboardingByokSetupPanel({
   const running = testState.status === 'running';
   const fetchingModels = modelsState.status === 'running';
   const useDeploymentInput = false;
+  const compatibleProtocol = byokCompatibleProtocol(apiProtocol);
   return (
     <div className="onboarding-view__setup-panel">
       <div className="onboarding-view__setup-head">
@@ -3930,24 +3894,14 @@ function OnboardingByokSetupPanel({
             key={tab.id}
             type="button"
             role="tab"
-            aria-selected={apiProtocol === tab.id}
-            className={apiProtocol === tab.id ? 'is-selected' : ''}
+            aria-selected={compatibleProtocol === tab.id}
+            className={compatibleProtocol === tab.id ? 'is-selected' : ''}
             onClick={() => onProtocolChange(tab.id)}
           >
-            {tab.title}
+            {t(tab.labelKey)}
           </button>
         ))}
       </div>
-      <OnboardingDropdown
-        label={t('settings.quickFillProvider')}
-        placeholder={t('settings.customProvider')}
-        value={selectedProvider?.baseUrl ?? ''}
-        options={providerOptions}
-        onChange={onProviderChange}
-        allowEmptyValue={false}
-        searchable
-        searchPlaceholder={t('settings.quickFillProvider')}
-      />
       <label className="onboarding-view__inline-field">
         <span>{t('settings.apiKey')}</span>
         <span className="onboarding-view__field-row">
@@ -3969,14 +3923,14 @@ function OnboardingByokSetupPanel({
             type="url"
             inputMode="url"
             value={baseUrl}
-            placeholder={selectedProvider?.baseUrl ?? 'https://api.anthropic.com'}
+            placeholder={DEFAULT_BASE_URL_BY_PROTOCOL[compatibleProtocol]}
             onChange={(event) => onBaseUrlChange(event.target.value)}
           />
         </label>
         {modelOptions.length > 0 && !useDeploymentInput ? (
           <OnboardingDropdown
             label={t('settings.model')}
-            placeholder={defaultKnownProviderModel(selectedProvider) || 'claude-sonnet-4-5'}
+            placeholder={t('settings.model')}
             value={model}
             options={modelOptions}
             onChange={onModelChange}
@@ -3997,7 +3951,7 @@ function OnboardingByokSetupPanel({
               placeholder={
                 useDeploymentInput
                   ? t('settings.azureDeploymentModel')
-                  : defaultKnownProviderModel(selectedProvider) || 'claude-sonnet-4-5'
+                  : ''
               }
               onChange={(event) => onModelChange(event.target.value.trim())}
             />

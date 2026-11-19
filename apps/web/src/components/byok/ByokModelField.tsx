@@ -16,7 +16,6 @@ interface ByokModelFieldProps {
     model: string;
     required: string;
     searchPlaceholder: string;
-    suggestedModelsHint: string;
   };
   model: string;
   modelSelectRef: Ref<HTMLButtonElement>;
@@ -26,7 +25,6 @@ interface ByokModelFieldProps {
   forceTextInput?: boolean;
   showAzureModelFetchHint: boolean;
   showFetchModelsUnsupportedHint: boolean;
-  showSuggestedModelsHint: boolean;
   azureModelFetchHint: string;
   onCustomModelChange: (value: string) => void;
   onCustomModelSelect: () => void;
@@ -46,7 +44,6 @@ export function ByokModelField({
   forceTextInput = false,
   showAzureModelFetchHint,
   showFetchModelsUnsupportedHint,
-  showSuggestedModelsHint,
   azureModelFetchHint,
   onCustomModelChange,
   onCustomModelSelect,
@@ -121,9 +118,6 @@ export function ByokModelField({
         <span className="field-error" role="alert">
           {providerModelsFailureMessage}
         </span>
-      ) : null}
-      {showSuggestedModelsHint ? (
-        <p className="hint">{labels.suggestedModelsHint}</p>
       ) : null}
       {!forceTextInput && customActive ? (
         <label className={'field' + (model.trim() ? '' : ' settings-byok-required-empty')}>

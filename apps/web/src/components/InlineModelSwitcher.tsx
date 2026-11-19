@@ -51,9 +51,8 @@ import {
   useWorkspaceContext,
   workspaceBillingBalanceUsd,
 } from '../collab/useWorkspaceContext';
-import { KNOWN_PROVIDERS } from '../state/config';
 import { fetchProviderModels } from '../providers/provider-models';
-import { SUGGESTED_MODELS_BY_PROTOCOL } from '../state/apiProtocols';
+import { API_PROTOCOL_TABS, byokCompatibleProtocol } from '../state/apiProtocols';
 import {
   canUpgradeVelaPlan,
   cancelVelaLogin,
@@ -130,11 +129,6 @@ interface Props {
       | 'about',
   ) => void;
 }
-
-const API_PROTOCOL_TABS: Array<{ id: ApiProtocol; title: string }> = [
-  { id: 'anthropic', title: 'Anthropic' },
-  { id: 'openai', title: 'OpenAI' },
-];
 
 const AMR_REMINDER_SEEN_KEY = 'open-design:inline-amr-cli-reminder-seen:v2';
 let amrReminderSeenFallback = false;
@@ -969,17 +963,6 @@ export function InlineModelSwitcher({
   const amrStatusIconName = amrLoginPending ? 'spinner' : null;
 
   const apiProtocol = config.apiProtocol ?? 'anthropic';
-  const providerForProtocol = useMemo(
-    () =>
-      KNOWN_PROVIDERS.find(
-        (p) =>
-          p.protocol === apiProtocol &&
-          (config.apiProviderBaseUrl
-            ? p.baseUrl === config.apiProviderBaseUrl
-            : false),
-      ) ?? KNOWN_PROVIDERS.find((p) => p.protocol === apiProtocol),
-    [apiProtocol, config.apiProviderBaseUrl],
-  );
   const providerModelsKey = useMemo(
     () =>
       providerModelsCacheKey(
@@ -1044,16 +1027,10 @@ export function InlineModelSwitcher({
     onProviderModelsCacheChange,
   ]);
 
+  // No hard-coded vendor models: live /models list plus the current model.
   const suggestedApiModelIds = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          providerForProtocol?.preferredModels.length
-            ? providerForProtocol.preferredModels
-            : SUGGESTED_MODELS_BY_PROTOCOL[apiProtocol],
-        ),
-      ),
-    [apiProtocol, providerForProtocol],
+    () => (config.model ? [config.model] : []),
+    [config.model],
   );
   const apiModelOptions = useMemo(
     () => mergeProviderModelOptions(fetchedApiModelOptions, suggestedApiModelIds),
@@ -1325,7 +1302,7 @@ export function InlineModelSwitcher({
                 </span>
                 <div className="inline-switcher__chips" role="tablist">
                   {API_PROTOCOL_TABS.map((tab) => {
-                    const active = apiProtocol === tab.id;
+                    const active = byokCompatibleProtocol(apiProtocol) === tab.id;
                     return (
                       <button
                         key={tab.id}
@@ -1351,7 +1328,7 @@ export function InlineModelSwitcher({
                           onApiProtocolChange?.(tab.id);
                         }}
                       >
-                        {tab.title}
+                        {t(tab.labelKey)}
                       </button>
                     );
                   })}

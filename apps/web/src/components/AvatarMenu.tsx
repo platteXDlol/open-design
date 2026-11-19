@@ -20,8 +20,6 @@ import {
   mergeProviderModelOptions,
   providerModelsCacheKey,
 } from './providerModelsCache';
-import { KNOWN_PROVIDERS } from '../state/config';
-import { SUGGESTED_MODELS_BY_PROTOCOL } from '../state/apiProtocols';
 import { fetchProviderModels } from '../providers/provider-models';
 import {
   canReachWorkspaceBillingEntrance,
@@ -443,19 +441,8 @@ export function AvatarMenu({
   // #6142 collapsed this into a read-only readout). Models come from the
   // shared Settings cache when the host passes one, with a local discovery
   // fetch as fallback so surfaces without cache wiring still get the live
-  // catalogue; the curated suggested list seeds the merge either way.
+  // catalogue.
   const apiProtocol = config.apiProtocol ?? 'anthropic';
-  const byokProvider = useMemo(
-    () =>
-      KNOWN_PROVIDERS.find(
-        (provider) =>
-          provider.protocol === apiProtocol &&
-          (config.apiProviderBaseUrl
-            ? provider.baseUrl === config.apiProviderBaseUrl
-            : false),
-      ) ?? KNOWN_PROVIDERS.find((provider) => provider.protocol === apiProtocol),
-    [apiProtocol, config.apiProviderBaseUrl],
-  );
   const byokModelsKey = providerModelsCacheKey(
     apiProtocol,
     config.baseUrl ?? '',
@@ -493,7 +480,7 @@ export function AvatarMenu({
         }));
       })
       .catch(() => {
-        // Non-fatal: the list falls back to the suggested seed models.
+        // Non-fatal: the list falls back to the current model.
       });
     return () => {
       cancelled = true;
@@ -510,9 +497,8 @@ export function AvatarMenu({
 
   const byokModelOptions = mergeProviderModelOptions(
     fetchedByokModels,
-    byokProvider?.preferredModels.length
-      ? byokProvider.preferredModels
-      : SUGGESTED_MODELS_BY_PROTOCOL[apiProtocol] ?? [],
+    // No hard-coded vendor models: live /models list plus the current model.
+    config.model ? [config.model] : [],
   );
 
   // Selected-model readout shown inside the trigger (left of the Send button).

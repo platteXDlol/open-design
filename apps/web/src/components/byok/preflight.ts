@@ -1,5 +1,4 @@
 import type { TrackingByokPreflightBlockReason } from '@open-design/contracts/analytics';
-import { KNOWN_PROVIDERS } from '../../state/config';
 import type { AppConfig } from '../../types';
 import { byokProviderRequiresApiKey } from '../../utils/byokProvider';
 import { blockingByokDraftIssues, validateByokDraft } from './validation';
@@ -13,12 +12,6 @@ export function byokPreflightBlockReason(
   config: ByokPreflightConfig,
 ): TrackingByokPreflightBlockReason | null {
   const protocol = config.apiProtocol ?? 'anthropic';
-  const selectedProvider = KNOWN_PROVIDERS.find(
-    (provider) =>
-      provider.protocol === protocol &&
-      provider.baseUrl === config.baseUrl &&
-      (config.apiProviderBaseUrl == null || provider.baseUrl === config.apiProviderBaseUrl),
-  );
   const validation = validateByokDraft(
     protocol,
     {
@@ -27,11 +20,7 @@ export function byokPreflightBlockReason(
       model: config.model,
     },
     {
-      requiresApiKey: byokProviderRequiresApiKey(
-        protocol,
-        selectedProvider,
-        config.baseUrl,
-      ),
+      requiresApiKey: byokProviderRequiresApiKey(protocol, config.baseUrl),
     },
   );
   const missingReasons = new Set<TrackingByokPreflightBlockReason>();

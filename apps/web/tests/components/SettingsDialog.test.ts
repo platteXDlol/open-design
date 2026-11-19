@@ -421,46 +421,14 @@ describe('SettingsDialog API protocol switching', () => {
     });
   });
 
-  it('loads the new protocol default on first visit', () => {
+  it('starts a first-visit protocol empty instead of filling a vendor preset', () => {
     expect(switchApiProtocolConfig(baseConfig, 'openai')).toMatchObject({
       mode: 'api',
       apiProtocol: 'openai',
       apiKey: '',
-      baseUrl: 'https://api.openai.com/v1',
-      model: 'gpt-4o',
-      apiProviderBaseUrl: 'https://api.openai.com/v1',
-    });
-  });
-
-  it('keeps Atlas Cloud as an OpenAI-compatible known provider without changing the OpenAI default', () => {
-    const openai = switchApiProtocolConfig(baseConfig, 'openai');
-    const atlas = updateCurrentApiProtocolConfig(openai, {
-      baseUrl: 'https://api.atlascloud.ai/v1',
-      model: 'qwen/qwen3.5-flash',
-      apiProviderBaseUrl: 'https://api.atlascloud.ai/v1',
-    });
-
-    expect(openai).toMatchObject({
-      baseUrl: 'https://api.openai.com/v1',
-      model: 'gpt-4o',
-      apiProviderBaseUrl: 'https://api.openai.com/v1',
-    });
-    expect(atlas).toMatchObject({
-      apiProtocol: 'openai',
-      baseUrl: 'https://api.atlascloud.ai/v1',
-      model: 'qwen/qwen3.5-flash',
-      apiProviderBaseUrl: 'https://api.atlascloud.ai/v1',
-    });
-  });
-
-  it('auto-fills openai defaults when switching from a selected known provider', () => {
-    expect(switchApiProtocolConfig(baseConfig, 'openai')).toMatchObject({
-      mode: 'api',
-      apiProtocol: 'openai',
-      apiKey: '',
-      baseUrl: 'https://api.openai.com/v1',
-      model: 'gpt-4o',
-      apiProviderBaseUrl: 'https://api.openai.com/v1',
+      baseUrl: '',
+      model: '',
+      apiProviderBaseUrl: null,
     });
   });
 
