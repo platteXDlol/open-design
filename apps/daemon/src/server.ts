@@ -4054,12 +4054,9 @@ undefined,
    * authority as `POST /api/projects`; a headerless legacy/local request remains
    * unbound. No active/current/last-known Workspace is consulted.
    */
-  const resolveCreatedProjectHome = ((..._v05_unused: any[]) => ({} as any))({
-    ...(fetchProjectCreationWorkspaceDirectory
-      ? { fetchWorkspaceDirectory: fetchProjectCreationWorkspaceDirectory }
-      : {}),
-    configuredEnv: configuredAmrEnv,
-  });
+  // Local-only fork: no team plane, so a created project is always unbound
+  // (same as routes/project/index.ts). Must stay callable — brand-routes calls it.
+  const resolveCreatedProjectHome = async (_req: any): Promise<null> => null;
   function persistWorkspaceProjectSyncState(
     projectId: string,
     workspaceId: string | null | undefined,
