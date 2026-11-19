@@ -496,11 +496,10 @@ export interface Dict {
   'settings.amrModelUpgradeHint': string;
   'settings.amrLoginErrorCompact': string;
   'settings.apiSection': string;
-  'settings.quickFillProvider': string;
-  'settings.providerPreset': string;
   'settings.protocolGroupProtocols': string;
   'settings.protocolGroupGateways': string;
-  'settings.customProvider': string;
+  'settings.providerAnthropicCompatible': string;
+  'settings.providerOpenAICompatible': string;
   'settings.apiKey': string;
   'settings.apiKeyGetLink': string;
   'settings.showKey': string;
@@ -535,7 +534,6 @@ export interface Dict {
   'settings.fetchModelsEmpty': string;
   'settings.fetchModelsUnsupported': string;
   'settings.fetchModelsFailed': string;
-  'settings.suggestedModelsHint': string;
   'settings.maxTokens': string;
   'settings.maxTokensHint': string;
   'settings.baseUrl': string;

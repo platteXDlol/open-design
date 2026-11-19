@@ -6,66 +6,8 @@
 // support on the request side too. (Local-First fork: only
 // `anthropic`, `openai`, `ollama` are exposed — see PR #9.)
 
+import type { Dict } from '../i18n/types';
 import type { ApiProtocol } from '../types';
-
-// Suggested fast-pass / common models per protocol — what the BYOK
-// model dropdown lists by default.
-export const SUGGESTED_MODELS_BY_PROTOCOL: Record<ApiProtocol, readonly string[]> = {
-  anthropic: [
-    'claude-opus-4-5',
-    'claude-sonnet-4-5',
-    'claude-haiku-4-5',
-    'deepseek-chat',
-    'deepseek-reasoner',
-    'deepseek-v4-flash',
-    'deepseek-v4-pro',
-    'mimo-v2.5-pro',
-  ],
-  openai: [
-    'gpt-4o',
-    'gpt-4o-mini',
-    'o3',
-    'o4-mini',
-    'deepseek-chat',
-    'deepseek-reasoner',
-    'deepseek-v4-flash',
-    'deepseek-v4-pro',
-    'mimo-v2.5-pro',
-  ],
-  ollama: [
-    'cogito-2.1:671b',
-    'deepseek-v3.1:671b',
-    'deepseek-v3.2',
-    'deepseek-v4-flash',
-    'deepseek-v4-pro',
-    'devstral-2:123b',
-    'devstral-small-2:24b',
-    'gemini-3-flash-preview',
-    'gemma3:4b',
-    'gemma3:12b',
-    'gemma3:27b',
-    'gemma4:31b',
-    'glm-4.6',
-    'glm-4.7',
-    'glm-5',
-    'glm-5.1',
-    'glm-5.2',
-    'gpt-oss:20b',
-    'gpt-oss:120b',
-    'kimi-k2:1t',
-    'kimi-k2-thinking',
-    'kimi-k2.5',
-    'kimi-k2.6',
-    'kimi-k2.7-code',
-    'qwen3-coder:480b',
-    'qwen3-coder-next',
-    'qwen3-next:80b',
-    'qwen3-vl:235b',
-    'qwen3-vl:235b-instruct',
-    'qwen3.5:397b',
-    'rnj-1:8b',
-  ],
-};
 
 // "Fast / cheap" model recommendation for each protocol. Used by the
 // memory extractor's auto-mode pill ("we'll quietly run gpt-4o-mini on
@@ -82,14 +24,17 @@ export const FAST_MODEL_BY_PROTOCOL: Record<ApiProtocol, string> = {
   ollama: 'gemma3:4b',
 };
 
-export const API_PROTOCOL_TABS: ReadonlyArray<{
-  id: ApiProtocol;
-  title: string;
-}> = [
-  { id: 'anthropic', title: 'Anthropic' },
-  { id: 'openai', title: 'OpenAI' },
-  { id: 'ollama', title: 'Ollama Cloud' },
-];
+// The BYOK provider pickers offer only these two generic entries; the user
+// types base URL, key and model. Legacy `ollama` configs display as
+// OpenAI-compatible (see `byokCompatibleProtocol`).
+export const API_PROTOCOL_TABS = [
+  { id: 'anthropic', labelKey: 'settings.providerAnthropicCompatible' },
+  { id: 'openai', labelKey: 'settings.providerOpenAICompatible' },
+] as const satisfies ReadonlyArray<{ id: ApiProtocol; labelKey: keyof Dict }>;
+
+export function byokCompatibleProtocol(protocol: ApiProtocol): 'anthropic' | 'openai' {
+  return protocol === 'anthropic' ? 'anthropic' : 'openai';
+}
 
 export const API_PROTOCOL_LABELS: Record<ApiProtocol, string> = {
   anthropic: 'Anthropic API',
