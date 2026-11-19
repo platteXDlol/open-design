@@ -147,7 +147,7 @@ import {
 } from '../utils/apiProtocol';
 import { playSound, showCompletionNotification } from '../utils/notifications';
 import { randomUUID } from '../utils/uuid';
-import { DEFAULT_NOTIFICATIONS, KNOWN_PROVIDERS } from '../state/config';
+import { DEFAULT_NOTIFICATIONS } from '../state/config';
 import type { TodoItem } from '../runtime/todos';
 import {
   amrAuthRetryMatchesRouteContext,
@@ -1944,10 +1944,9 @@ function byokOpenCodeProviderFromConfig(
   config: AppConfig,
 ): ByokChatProviderConfig | undefined {
   if (!isOpenCodeByokChatProtocol(config.apiProtocol)) return undefined;
-  const selectedProvider = selectedKnownProviderForConfig(config);
   const model = config.model.trim();
   if (
-    (byokProviderRequiresApiKey(config.apiProtocol, selectedProvider, config.baseUrl)
+    (byokProviderRequiresApiKey(config.apiProtocol, config.baseUrl)
       && !config.apiKey.trim())
     || !model
     || model.toLowerCase() === 'default'
@@ -1959,25 +1958,8 @@ function byokOpenCodeProviderFromConfig(
     apiKey: config.apiKey.trim(),
     baseUrl: config.baseUrl.trim(),
     model,
-    requiresApiKey: byokProviderRequiresApiKey(
-      config.apiProtocol,
-      selectedProvider,
-      config.baseUrl,
-    ),
+    requiresApiKey: byokProviderRequiresApiKey(config.apiProtocol, config.baseUrl),
   };
-}
-
-function selectedKnownProviderForConfig(config: AppConfig) {
-  if (!config.apiProtocol) return undefined;
-  return KNOWN_PROVIDERS.find(
-    (provider) =>
-      provider.protocol === config.apiProtocol
-      && provider.baseUrl === config.baseUrl
-      && (
-        config.apiProviderBaseUrl == null
-        || provider.baseUrl === config.apiProviderBaseUrl
-      ),
-  );
 }
 
 function isOpenCodeByokChatProtocol(

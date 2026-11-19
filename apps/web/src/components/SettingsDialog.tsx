@@ -74,28 +74,24 @@ import {
   SearchableModelSelect,
 } from './modelOptions';
 import {
-  BYOK_PROVIDER_PRESETS,
   DEFAULT_NOTIFICATIONS,
   DEFAULT_ORBIT,
-  defaultKnownProviderModel,
   isStoredMediaProviderEntryEmpty,
   isStoredMediaProviderEntryPresent,
-  KNOWN_PROVIDERS,
   hasAnyConfiguredProvider,
   mergeDaemonMediaProviders,
   syncComposioConfigToDaemon,
   syncConfigToDaemon,
   syncMediaProvidersToDaemon,
 } from '../state/config';
-import type { KnownProvider } from '../state/config';
 import { navigate as navigateRoute, useRoute } from '../router';
 import {
   API_PROTOCOL_TABS,
   DEFAULT_BASE_URL_BY_PROTOCOL,
   API_PROTOCOL_LABELS,
+  byokCompatibleProtocol,
   isFixedOriginGateway,
   resolveFixedOriginBaseUrl,
-  SUGGESTED_MODELS_BY_PROTOCOL,
 } from '../state/apiProtocols';
 import {
   mergeProviderModelOptions,
@@ -189,7 +185,6 @@ import { ByokConnectionTestControl } from './byok/ByokConnectionTestControl';
 import { ByokKeyField } from './byok/ByokKeyField';
 import { ByokModelField } from './byok/ByokModelField';
 import { ByokProviderBaseUrl } from './byok/ByokProviderBaseUrl';
-import { ByokProviderPicker } from './byok/ByokProviderPicker';
 import { byokPreflightBlockReason } from './byok/preflight';
 import {
   blockingByokDraftFields,
@@ -288,9 +283,6 @@ interface ByokProviderPreset {
   id: string;
   title: string;
   protocol: ApiProtocol;
-  baseUrl: string;
-  preferredModels: readonly string[];
-  custom?: boolean;
 }
 
 // One-shot focus hint when opening the dialog. `'amr'` scrolls the AMR agent
@@ -734,18 +726,6 @@ export function isProviderModelDiscoveryUnsupported(
   }
 }
 
-function missingByokConnectionFields(
-  config: Pick<AppConfig, 'apiKey' | 'baseUrl' | 'model'>,
-  options: { requiresApiKey?: boolean } = {},
-): ByokRequiredField[] {
-  const requiresApiKey = options.requiresApiKey ?? true;
-  const missing: ByokRequiredField[] = [];
-  if (requiresApiKey && !config.apiKey.trim()) missing.push('api_key');
-  if (!config.baseUrl.trim()) missing.push('base_url');
-  if (!config.model.trim()) missing.push('model');
-  return missing;
-}
-
 function missingByokModelFetchFields(
   config: Pick<AppConfig, 'apiKey' | 'baseUrl'>,
   protocol?: ApiProtocol,
@@ -780,7 +760,6 @@ type ByokFirstPartyBaseUrlHint = {
 function byokFirstPartyBaseUrlHint(
   protocol: ApiProtocol,
   baseUrl: string,
-  protocolProviders: readonly KnownProvider[],
 ): ByokFirstPartyBaseUrlHint | undefined {
   if (
     protocol !== 'anthropic' &&
@@ -788,10 +767,7 @@ function byokFirstPartyBaseUrlHint(
   ) {
     return undefined;
   }
-  const firstPartyBaseUrl = protocolProviders.find(
-    (provider) => provider.baseUrl.trim(),
-  )?.baseUrl;
-  if (!firstPartyBaseUrl) return undefined;
+  const firstPartyBaseUrl = DEFAULT_BASE_URL_BY_PROTOCOL[protocol];
 
   const firstPartyHost = byokDraftBaseUrlHost(firstPartyBaseUrl);
   const draftHost = byokDraftBaseUrlHost(baseUrl);
@@ -927,37 +903,14 @@ const AGENT_CLI_ENV_FIELDS = [
   },
 ] as const;
 
-function defaultApiProtocolConfig(protocol: ApiProtocol): ApiProtocolConfig {
-  const provider = KNOWN_PROVIDERS.find((p) => p.protocol === protocol);
+function defaultApiProtocolConfig(): ApiProtocolConfig {
   return {
     apiKey: '',
-    baseUrl: provider?.baseUrl ?? '',
-    model: defaultKnownProviderModel(provider),
+    baseUrl: '',
+    model: '',
     apiVersion: '',
-    apiProviderBaseUrl: provider ? provider.baseUrl : null,
+    apiProviderBaseUrl: null,
   };
-}
-
-function providerFamilyLabel(provider: KnownProvider): string {
-  return provider.label.replace(/\s+—\s+(Anthropic|OpenAI)$/u, '');
-}
-
-function siblingProviderForProtocol(
-  providerBaseUrl: string | null | undefined,
-  protocol: ApiProtocol,
-): KnownProvider | null {
-  if (!providerBaseUrl) return null;
-  const currentProvider = KNOWN_PROVIDERS.find(
-    (p) => p.baseUrl === providerBaseUrl,
-  );
-  if (!currentProvider) return null;
-
-  const currentFamily = providerFamilyLabel(currentProvider);
-  return (
-    KNOWN_PROVIDERS.find(
-      (p) => p.protocol === protocol && providerFamilyLabel(p) === currentFamily,
-    ) ?? null
-  );
 }
 
 function nextApiProtocolConfig(
@@ -968,19 +921,6 @@ function nextApiProtocolConfig(
   if (savedConfig) return savedConfig;
 
   const currentConfig = currentApiProtocolConfig(config);
-  const siblingProvider = siblingProviderForProtocol(
-    currentConfig.apiProviderBaseUrl,
-    protocol,
-  );
-  if (siblingProvider) {
-    return {
-      ...defaultApiProtocolConfig(protocol),
-      baseUrl: siblingProvider.baseUrl,
-      model: defaultKnownProviderModel(siblingProvider),
-      apiProviderBaseUrl: siblingProvider.baseUrl,
-    };
-  }
-
   if (currentConfig.apiProviderBaseUrl === null) {
     return {
       ...currentConfig,
@@ -991,7 +931,7 @@ function nextApiProtocolConfig(
   }
 
   return {
-    ...defaultApiProtocolConfig(protocol),
+    ...defaultApiProtocolConfig(),
   };
 }
 
@@ -1181,17 +1121,9 @@ export function updateCurrentApiProtocolConfig(
   patch: Partial<ApiProtocolConfig>,
 ): AppConfig {
   const protocol = config.apiProtocol ?? 'anthropic';
-  const clearedApiKey =
-    patch.apiKey !== undefined &&
-    !patch.apiKey.trim() &&
-    Boolean(currentApiProtocolConfig(config).apiKey.trim());
-  const defaultModel = defaultApiProtocolConfig(protocol).model;
   const nextApiConfig: ApiProtocolConfig = {
     ...currentApiProtocolConfig(config),
     ...patch,
-    ...(clearedApiKey && defaultModel && patch.model === undefined
-      ? { model: defaultModel }
-      : {}),
   };
   return applyApiProtocolConfig(
     {
@@ -1865,7 +1797,6 @@ export function SettingsDialog({
   const baseUrlInputRef = useRef<HTMLInputElement | null>(null);
   const modelSelectRef = useRef<HTMLButtonElement | null>(null);
   const customModelInputRef = useRef<HTMLInputElement | null>(null);
-  const focusByokRequiredFieldAfterProtocolSwitchRef = useRef(false);
   const visualStabilityMode = isVisualStabilityMode();
   // Tracks whether the current BYOK model value came from an explicit user
   // pick (combobox selection or custom entry) rather than an auto-populated
@@ -2199,30 +2130,14 @@ export function SettingsDialog({
       apiModelCustomEditing,
       apiModelUserSelected: apiModelUserSelectedRef.current,
     };
-    const nextProviderBaseUrlForCurrent = provider.custom ? null : provider.baseUrl;
-    const providerChangedBeforeSwitch = provider.custom
-      ? (cfg.apiProviderBaseUrl ?? null) !== null
-      : (cfg.apiProtocol ?? 'anthropic') !== provider.protocol ||
-        (cfg.apiProviderBaseUrl ?? null) !== nextProviderBaseUrlForCurrent;
-    focusByokRequiredFieldAfterProtocolSwitchRef.current = !provider.custom;
-    providerModelsSkipNextResetRef.current = providerChangedBeforeSwitch;
+    providerModelsSkipNextResetRef.current = (cfg.apiProviderBaseUrl ?? null) !== null;
     setCfg((current) => {
-      const currentProtocol = current.apiProtocol ?? 'anthropic';
-      const nextProviderBaseUrl = provider.custom ? null : provider.baseUrl;
-      const providerChanged = provider.custom
-        ? (current.apiProviderBaseUrl ?? null) !== null
-        : currentProtocol !== provider.protocol ||
-          (current.apiProviderBaseUrl ?? null) !== nextProviderBaseUrl;
+      const providerChanged = (current.apiProviderBaseUrl ?? null) !== null;
       const switched = switchApiProtocolConfig(current, provider.protocol);
       const fallbackApiConfig = currentApiProtocolConfig(switched);
-      const customDraftKey = provider.custom
-        ? lastCustomByokProviderDraftKeysRef.current[provider.protocol]
-        : null;
-      const nextProviderDraftKey = customDraftKey ?? byokProviderDraftKey(
-        provider.protocol,
-        nextProviderBaseUrl,
-        provider.custom ? fallbackApiConfig.baseUrl : provider.baseUrl,
-      );
+      const nextProviderDraftKey =
+        lastCustomByokProviderDraftKeysRef.current[provider.protocol] ??
+        byokProviderDraftKey(provider.protocol, null, fallbackApiConfig.baseUrl);
       const savedDraft = nextProviderDraftKey
         ? byokProviderFormDraftsRef.current[nextProviderDraftKey]
         : undefined;
@@ -2276,19 +2191,10 @@ export function SettingsDialog({
         currentDraftKey,
         currentApiProtocolConfig(current),
       );
-      if (provider.custom) {
-        applyDraftUiState(undefined);
-        return updateCurrentApiProtocolConfig(switchedWithCurrentDraft, {
-          apiProviderBaseUrl: null,
-          ...(providerChanged ? { model: '' } : {}),
-        });
-      }
       applyDraftUiState(undefined);
       return updateCurrentApiProtocolConfig(switchedWithCurrentDraft, {
-        ...(providerChanged ? { apiKey: '' } : {}),
-        baseUrl: provider.baseUrl,
-        model: provider.preferredModels[0] ?? '',
-        apiProviderBaseUrl: provider.baseUrl,
+        apiProviderBaseUrl: null,
+        ...(providerChanged ? { model: '' } : {}),
       });
     });
   };
@@ -2983,55 +2889,12 @@ export function SettingsDialog({
 
   const apiProtocol = cfg.apiProtocol ?? 'anthropic';
   const defaultApiKeyConsoleLink = API_KEY_CONSOLE_LINKS[apiProtocol];
-  const byokProviderPresets: ReadonlyArray<ByokProviderPreset> = [
-    ...BYOK_PROVIDER_PRESETS,
-    {
-      id: 'custom',
-      title: t('settings.customProvider'),
-      protocol: apiProtocol,
-      baseUrl: cfg.baseUrl,
-      preferredModels: cfg.model ? [cfg.model] : [],
-      custom: true,
-    },
-  ];
-  const customByokProvider = byokProviderPresets.find((provider) => provider.custom) ?? {
-    id: 'custom',
-    title: t('settings.customProvider'),
-    protocol: apiProtocol,
-    baseUrl: cfg.baseUrl,
-    preferredModels: cfg.model ? [cfg.model] : [],
-    custom: true,
-  };
-  const byokPresetProtocols = new Set(
-    byokProviderPresets
-      .filter((provider) => !provider.custom)
-      .map((provider) => provider.protocol),
+  const byokProviderOptions: ReadonlyArray<ByokProviderPreset> = API_PROTOCOL_TABS.map(
+    (tab) => ({ id: `protocol-${tab.id}`, title: t(tab.labelKey), protocol: tab.id }),
   );
-  const byokProviderOptions: ReadonlyArray<ByokProviderPreset> = [
-    ...byokProviderPresets.filter((provider) => !provider.custom),
-    ...API_PROTOCOL_TABS.filter((tab) => !byokPresetProtocols.has(tab.id)).map((tab) => {
-      const fallback = defaultApiProtocolConfig(tab.id);
-      return {
-        id: `protocol-${tab.id}`,
-        title: tab.title,
-        protocol: tab.id,
-        baseUrl: fallback.baseUrl || DEFAULT_BASE_URL_BY_PROTOCOL[tab.id],
-        preferredModels: [
-          fallback.model || SUGGESTED_MODELS_BY_PROTOCOL[tab.id][0] || '',
-        ].filter(Boolean),
-      };
-    }),
-    customByokProvider,
-  ];
-  const selectedByokProvider =
-    cfg.apiProviderBaseUrl === null
-      ? customByokProvider
-      : byokProviderOptions.find(
-        (provider) =>
-          !provider.custom &&
-          provider.protocol === apiProtocol &&
-          provider.baseUrl === cfg.apiProviderBaseUrl,
-      ) ?? customByokProvider;
+  const selectedByokProvider = byokProviderOptions.find(
+    (provider) => provider.protocol === byokCompatibleProtocol(apiProtocol),
+  );
   const baseUrlValid = isValidApiBaseUrl(cfg.baseUrl);
   const baseUrlInvalid = Boolean(cfg.baseUrl.trim() && !baseUrlValid);
   const byokRequiredLabel = (field: ByokRequiredField): string => {
@@ -3410,69 +3273,23 @@ export function SettingsDialog({
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const protocolProviders = useMemo(
-    () => KNOWN_PROVIDERS.filter((p) => p.protocol === apiProtocol),
-    [apiProtocol],
-  );
-  const selectedProviderIndex =
-    protocolProviders.findIndex((p) => {
-      if (cfg.apiProviderBaseUrl == null) {
-        return false;
-      }
-      return p.baseUrl === cfg.apiProviderBaseUrl && p.baseUrl === cfg.baseUrl;
-    });
-  const selectedProvider = selectedProviderIndex >= 0 ? protocolProviders[selectedProviderIndex] : undefined;
-  const apiKeyConsoleLink =
-    selectedProvider?.apiKeyConsoleLink ?? defaultApiKeyConsoleLink;
-  const showProviderPreset =
-    protocolProviders.length > 0 && !isFixedOriginGateway(apiProtocol);
+  const apiKeyConsoleLink = defaultApiKeyConsoleLink;
   // Fixed-origin gateways resolve their Base URL automatically; nothing for the
   // user to edit, so hide the field entirely.
   const showBaseUrlField = !isFixedOriginGateway(apiProtocol);
-  const byokRequiresApiKey = byokProviderRequiresApiKey(
-    apiProtocol,
-    selectedProvider,
-    cfg.baseUrl,
-  );
+  const byokRequiresApiKey = byokProviderRequiresApiKey(apiProtocol, cfg.baseUrl);
   const byokProviderConfigured = (provider: ByokProviderPreset): boolean => {
-    if (provider.custom) {
-      return canRunProviderConnectionTest(currentApiProtocolConfig(cfg), {
-        requiresApiKey: byokRequiresApiKey,
-      }) && isValidApiBaseUrl(cfg.baseUrl);
-    }
-    const providerDraft = cfg.byokProviderConfigDrafts?.[
-      byokProviderDraftKey(provider.protocol, provider.baseUrl, provider.baseUrl)
-    ]?.apiConfig;
-    const activeProvider = selectedByokProvider?.id === provider.id;
-    const entry = activeProvider
+    const entry = selectedByokProvider?.id === provider.id
       ? currentApiProtocolConfig(cfg)
-      : providerDraft ?? (
-        provider.protocol === apiProtocol
-          ? undefined
-          : cfg.apiProtocolConfigs?.[provider.protocol]
-      );
+      : cfg.apiProtocolConfigs?.[provider.protocol];
     if (!entry) return false;
-    if (provider.baseUrl) {
-      if (entry.baseUrl !== provider.baseUrl) return false;
-    } else if (entry.baseUrl !== provider.baseUrl) {
-      return false;
-    }
-    const knownProvider = KNOWN_PROVIDERS.find((item) => item.baseUrl === provider.baseUrl);
     return canRunProviderConnectionTest(entry, {
-      requiresApiKey: byokProviderRequiresApiKey(
-        provider.protocol,
-        knownProvider,
-        entry.baseUrl,
-      ),
+      requiresApiKey: byokProviderRequiresApiKey(provider.protocol, entry.baseUrl),
     }) && isValidApiBaseUrl(entry.baseUrl);
   };
   const byokFirstPartyBaseUrl = useMemo(
-    () => byokFirstPartyBaseUrlHint(
-      apiProtocol,
-      cfg.baseUrl,
-      protocolProviders,
-    ),
-    [apiProtocol, cfg.baseUrl, protocolProviders],
+    () => byokFirstPartyBaseUrlHint(apiProtocol, cfg.baseUrl),
+    [apiProtocol, cfg.baseUrl],
   );
   const byokKeyValidationBaseUrl = byokFirstPartyBaseUrl?.baseUrl;
   const byokDraftValidation = useMemo(
@@ -3556,15 +3373,6 @@ export function SettingsDialog({
     providerModelDiscoveryUnavailable
       ? []
       : activeProviderModelsCache[providerModelsKey] ?? [];
-  const providerPreferredModels =
-    selectedProvider?.preferredModels ?? SUGGESTED_MODELS_BY_PROTOCOL[apiProtocol];
-  const providerManagedModelIds = useMemo(
-    () => new Set([
-      ...providerPreferredModels,
-      ...(selectedProvider?.retiredModels ?? []),
-    ]),
-    [providerPreferredModels, selectedProvider],
-  );
   const fetchedApiModelIds = useMemo(
     () => new Set(fetchedApiModelOptions.map((model) => model.id.trim())),
     [fetchedApiModelOptions],
@@ -3572,16 +3380,13 @@ export function SettingsDialog({
   const pendingProviderModelReconciliation = (() => {
     if (cfg.mode !== 'api' || apiModelCustomEditing) return null;
     if (apiModelUserSelectedRef.current) return null;
-    if (fetchedApiModelOptions.length === 0) return null;
-    const currentModel = cfg.model.trim();
-    if (currentModel && fetchedApiModelIds.has(currentModel)) return null;
-    if (currentModel && !providerManagedModelIds.has(currentModel)) return null;
+    if (cfg.model.trim()) return null;
+    // Only auto-pick when the endpoint reports exactly one model.
     const preference = resolveByokModelPreference({
       currentModel: '',
       accountModels: fetchedApiModelOptions,
-      providerPreferredModels,
     });
-    return preference.model === currentModel ? null : preference.model;
+    return preference.model || null;
   })();
   const commitProviderModelsInputs = () => {
     if (
@@ -3762,27 +3567,9 @@ export function SettingsDialog({
           : t('settings.testInvalidBaseUrl')
       )
       : null;
-  const suggestedApiModelIds = useMemo(
-    () => {
-      if (providerModelDiscoveryUnavailable) {
-        return selectedProvider?.preferredModels.length
-          ? Array.from(new Set(selectedProvider.preferredModels))
-          : [];
-      }
-      return Array.from(new Set(
-        selectedProvider?.preferredModels.length
-          ? selectedProvider.preferredModels
-          : SUGGESTED_MODELS_BY_PROTOCOL[apiProtocol],
-      ));
-    },
-    [apiProtocol, selectedProvider, providerModelDiscoveryUnavailable],
-  );
   const apiModelOptions = useMemo(
-    () => mergeProviderModelOptions(
-      fetchedApiModelOptions,
-      suggestedApiModelIds,
-    ),
-    [fetchedApiModelOptions, suggestedApiModelIds],
+    () => mergeProviderModelOptions(fetchedApiModelOptions, []),
+    [fetchedApiModelOptions],
   );
   // Local-First fork v0.3: 3 hooks (useByokImageModelOptions,
   // useByokVideoModelOptions, useByokSpeechModelOptions) were removed
@@ -3814,16 +3601,7 @@ export function SettingsDialog({
     apiProtocol === 'ollama'
       ? 'http://localhost:11434'
       : undefined;
-  useEffect(() => {
-    if (!focusByokRequiredFieldAfterProtocolSwitchRef.current) return;
-    focusByokRequiredFieldAfterProtocolSwitchRef.current = false;
-    focusByokRequiredField(
-      missingByokConnectionFields(cfg, {
-        requiresApiKey: byokRequiresApiKey,
-      })[0],
-    );
-  }, [apiModelCustomActive, cfg, apiProtocol, byokRequiresApiKey]);
-
+  
   // Header title/subtitle follow the active sidebar section so the dialog
   // header always reflects what the user is looking at, instead of being
   // pinned to one section's copy. The execution section's header doubles
@@ -5464,30 +5242,6 @@ export function SettingsDialog({
                   {byokPreconditionNotice.message}
                 </p>
               ) : null}
-              {showProviderPreset ? (
-                <ByokProviderPicker
-                  label={t('settings.providerPreset')}
-                  customProviderLabel={t('settings.customProvider')}
-                  providers={protocolProviders}
-                  selectedProviderIndex={selectedProviderIndex}
-                  onCustomProviderSelect={() => {
-                    setApiModelCustomEditing(false);
-                    updateApiConfig({
-                      baseUrl: '',
-                      model: '',
-                      apiProviderBaseUrl: null,
-                    });
-                  }}
-                  onProviderSelect={(p) => {
-                    setApiModelCustomEditing(false);
-                    updateApiConfig({
-                      baseUrl: p.baseUrl,
-                      model: defaultKnownProviderModel(p),
-                      apiProviderBaseUrl: p.baseUrl,
-                    });
-                  }}
-                />
-              ) : null}
               <ByokKeyField
                 apiKey={cfg.apiKey}
                 apiKeyConsoleLink={apiKeyConsoleLink}
@@ -5599,7 +5353,6 @@ export function SettingsDialog({
                   model: t('settings.model'),
                   required: t('settings.required'),
                   searchPlaceholder: t('designs.searchPlaceholder'),
-                  suggestedModelsHint: t('settings.suggestedModelsHint'),
                 }}
                 model={cfg.model}
                 modelSelectRef={modelSelectRef}
@@ -5628,12 +5381,11 @@ export function SettingsDialog({
                     : null
                 }
                 providerModelsFailureMessage={providerModelsFailureMessage}
-                forceTextInput={false}
+                forceTextInput={apiModelOptions.length === 0}
                 showAzureModelFetchHint={false}
                 showFetchModelsUnsupportedHint={
                   isProviderModelDiscoveryUnsupported(apiProtocol, cfg.baseUrl)
                 }
-                showSuggestedModelsHint={!selectedProvider}
                 azureModelFetchHint={t('settings.azureModelFetchHint')}
                 onCustomModelChange={(value) => updateApiConfig({ model: value })}
                 onCustomModelSelect={() => {

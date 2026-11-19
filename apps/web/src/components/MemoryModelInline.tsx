@@ -42,9 +42,6 @@ import type {
 } from '@open-design/contracts';
 import type { AgentModelOption, ApiProtocol, ExecMode } from '../types';
 import {
-  SUGGESTED_MODELS_BY_PROTOCOL,
-} from '../state/apiProtocols';
-import {
   CUSTOM_MODEL_SENTINEL,
   SearchableModelSelect,
 } from './modelOptions';
@@ -69,7 +66,7 @@ interface Props {
   // fetched+suggested list the chat picker above uses). When provided in API
   // mode, the memory picker offers this dynamic list instead of the static
   // suggestions, so e.g. AIHubMix shows its full live catalogue as a
-  // searchable dropdown. Falls back to SUGGESTED_MODELS_BY_PROTOCOL when empty.
+  // searchable dropdown. Empty list falls back to free text.
   apiModelOptions?: readonly AgentModelOption[];
   // The currently-selected CLI agent id. Used to derive a chat
   // protocol family in CLI mode (claude → anthropic, codex → openai,
@@ -241,17 +238,17 @@ export function MemoryModelInline({
 
   // The {id,label} option list fed to the searchable dropdown. In API mode we
   // prefer the live catalogue passed from the chat picker (e.g. AIHubMix's full
-  // fetched list) and fall back to the static suggestions; in CLI mode we use
+  // fetched list); with no live list the field is free text; in CLI mode we use
   // the agent's advertised models.
   const pickerModels = useMemo<AgentModelOption[]>(() => {
     if (mode === 'api') {
       if (apiModelOptions && apiModelOptions.length > 0) {
         return apiModelOptions.map((m) => ({ id: m.id, label: m.label }));
       }
-      return SUGGESTED_MODELS_BY_PROTOCOL[apiProtocol].map((id) => ({ id, label: id }));
+      return [];
     }
     return (cliModelOptions ?? []).map((id) => ({ id, label: id }));
-  }, [mode, apiProtocol, apiModelOptions, cliModelOptions]);
+  }, [mode, apiModelOptions, cliModelOptions]);
 
   // Plain id list — drives the "is the saved model a known option vs a custom
   // id" decision below.
