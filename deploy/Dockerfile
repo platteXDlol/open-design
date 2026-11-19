@@ -17,6 +17,8 @@ ENV https_proxy=${https_proxy}
 ENV no_proxy=${no_proxy}
 ENV NO_PROXY=${NO_PROXY}
 ENV CI=true
+# Skip onnxruntime-node CUDA download (404 upstream); CPU EP only.
+ENV ONNXRUNTIME_NODE_INSTALL_CUDA=skip
 
 RUN apk add --no-cache python3 make g++
 

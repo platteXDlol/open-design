@@ -83,7 +83,7 @@ describe('byok-opencode runtime config', () => {
         [BYOK_OPENCODE_PROVIDER_ID]: {
           npm: '@ai-sdk/openai-compatible',
           options: {
-            baseURL: 'https://api.senseaudio.cn',
+            baseURL: 'https://api.senseaudio.cn/v1',
             apiKey: `{env:${BYOK_OPENCODE_API_KEY_ENV}}`,
           },
           models: {
@@ -134,7 +134,7 @@ describe('byok-opencode runtime config', () => {
         [BYOK_OPENCODE_PROVIDER_ID]: {
           npm: '@ai-sdk/openai-compatible',
           options: {
-            baseURL: 'https://api.deepseek.com',
+            baseURL: 'https://api.deepseek.com/v1',
             apiKey: `{env:${BYOK_OPENCODE_API_KEY_ENV}}`,
           },
         },
@@ -145,6 +145,24 @@ describe('byok-opencode runtime config', () => {
       'deepseek-v4-pro',
     )?.config).toMatchObject({
       provider: { [BYOK_OPENCODE_PROVIDER_ID]: { npm: '@ai-sdk/openai' } },
+    });
+  });
+
+  // Connection test and direct BYOK chat both call `${base}/v1/chat/completions`
+  // when the base has no /vN segment; the OpenCode run must hit the same URL
+  // or a green connection test is followed by a 404 run (llama-swap, vLLM...).
+  it.each([
+    ['http://192.168.1.18:8080', 'http://192.168.1.18:8080/v1'],
+    ['http://192.168.1.18:8080/', 'http://192.168.1.18:8080/v1'],
+    ['https://gateway.example.com/openai', 'https://gateway.example.com/openai/v1'],
+    ['https://openrouter.ai/api/v1', 'https://openrouter.ai/api/v1'],
+    ['https://api.deepinfra.com/v1/openai', 'https://api.deepinfra.com/v1/openai'],
+  ])('adds /v1 to unversioned OpenAI-compatible base URL %s', (baseUrl, expected) => {
+    expect(buildOpenCodeByokProviderConfig(
+      { protocol: 'openai', apiKey: 'k', baseUrl },
+      'hlc-coding-5.5',
+    )?.config).toMatchObject({
+      provider: { [BYOK_OPENCODE_PROVIDER_ID]: { options: { baseURL: expected } } },
     });
   });
 
