@@ -1,47 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import {
-  FAST_MODEL_BY_PROTOCOL,
-  SUGGESTED_MODELS_BY_PROTOCOL,
-} from '../../src/state/apiProtocols';
-import { KNOWN_PROVIDERS } from '../../src/state/config';
+import * as apiProtocols from '../../src/state/apiProtocols';
+import { API_PROTOCOL_TABS, byokCompatibleProtocol } from '../../src/state/apiProtocols';
 
-describe('apiProtocols table consistency', () => {
-  // Local-First fork: dropped the Google Gemini table entry in v0.2
-  // (cloud-only). The previous test that asserted google's suggested
-  // models covered FAST_MODEL_BY_PROTOCOL.google; both sides of that
-  // assertion are gone now.
-
-  it('keeps the Ollama Cloud picker current with recent cloud models', () => {
-    const recentCloudModels = [
-      'glm-5.2',
-      'kimi-k2.7-code',
-    ];
-    const ollamaCloudProvider = KNOWN_PROVIDERS.find(
-      (provider) => provider.protocol === 'ollama' && provider.baseUrl === 'https://ollama.com',
-    );
-
-    expect(ollamaCloudProvider?.preferredModels).toBeDefined();
-    for (const model of recentCloudModels) {
-      expect(SUGGESTED_MODELS_BY_PROTOCOL.ollama).toContain(model);
-      expect(ollamaCloudProvider?.preferredModels).toContain(model);
-    }
+describe('BYOK provider picker entries', () => {
+  it('offers exactly Anthropic-compatible and OpenAI-compatible', () => {
+    expect(API_PROTOCOL_TABS).toEqual([
+      { id: 'anthropic', labelKey: 'settings.providerAnthropicCompatible' },
+      { id: 'openai', labelKey: 'settings.providerOpenAICompatible' },
+    ]);
   });
 
-  it('keeps the Atlas Cloud preset wired to OpenAI-compatible chat models', () => {
-    const atlasCloudProvider = KNOWN_PROVIDERS.find(
-      (provider) =>
-        provider.protocol === 'openai' &&
-        provider.baseUrl === 'https://api.atlascloud.ai/v1',
-    );
+  it('shows saved non-anthropic protocols (incl. legacy ollama) as OpenAI-compatible', () => {
+    expect(byokCompatibleProtocol('anthropic')).toBe('anthropic');
+    expect(byokCompatibleProtocol('openai')).toBe('openai');
+    expect(byokCompatibleProtocol('ollama')).toBe('openai');
+  });
 
-    expect(atlasCloudProvider).toMatchObject({
-      label: 'Atlas Cloud',
-      apiKeyConsoleLink: {
-        host: 'atlascloud.ai',
-        url: 'https://atlascloud.ai/?utm_source=open_design&utm_medium=provider_preset&utm_campaign=atlascloud_byok',
-      },
-    });
-    expect(atlasCloudProvider?.preferredModels).toContain('qwen/qwen3.5-flash');
-    expect(atlasCloudProvider?.preferredModels).toContain('deepseek-ai/deepseek-v4-flash');
+  it('no longer ships hard-coded vendor model suggestions', () => {
+    expect('SUGGESTED_MODELS_BY_PROTOCOL' in apiProtocols).toBe(false);
   });
 });

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { useState } from 'react';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -2157,7 +2157,43 @@ describe.skip('EntryShell onboarding OpenDesign AMR runtime', () => {
     await clickSignedInCloudContinue();
   });
 
-  it('uses provider preferences instead of the first upstream model during BYOK onboarding', async () => {
+  it('offers exactly Anthropic-compatible and OpenAI-compatible during BYOK onboarding', async () => {
+    globalThis.fetch = vi.fn(async (input) => {
+      const url = String(input);
+      if (url.endsWith('/api/integrations/vela/status')) {
+        return jsonResponse({
+          loggedIn: true,
+          profile: 'prod',
+          user: { id: 'u', email: 'user@example.com' },
+          configPath: '/x',
+        });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }) as typeof fetch;
+    renderOnboarding({
+      config: baseConfig({
+        apiProtocol: 'ollama',
+        apiKey: 'ollama-key',
+        baseUrl: 'https://ollama.com',
+        apiProviderBaseUrl: 'https://ollama.com',
+      }),
+    });
+
+    await openByokRuntimeSetup();
+
+    const tabs = within(screen.getByRole('tablist', { name: 'API protocol' })).getAllByRole('tab');
+    expect(tabs.map((tab) => tab.textContent?.trim())).toEqual([
+      'Anthropic-compatible',
+      'OpenAI-compatible',
+    ]);
+    // A saved legacy ollama config shows up as OpenAI-compatible.
+    expect(tabs[1]!.getAttribute('aria-selected')).toBe('true');
+    expect(screen.queryByText('Quick fill provider')).toBeNull();
+    expect(screen.queryByText(/Ollama|DeepSeek|OpenRouter/)).toBeNull();
+    expect((screen.getByLabelText('API key') as HTMLInputElement).value).toBe('ollama-key');
+  });
+
+  it('does not auto-pick a hard-coded preferred model during BYOK onboarding', async () => {
     globalThis.fetch = vi.fn(async (input, init) => {
       const url = String(input);
       if (url.endsWith('/api/integrations/vela/status')) {
@@ -2195,9 +2231,9 @@ describe.skip('EntryShell onboarding OpenDesign AMR runtime', () => {
     fireEvent.click(screen.getByRole('button', { name: /Fetch models/i }));
 
     await waitFor(() => {
-      expect(props.onApiModelChange).toHaveBeenCalledWith('claude-sonnet-4-5');
+      expect(screen.getByText('Fetched 2 models.')).toBeTruthy();
     });
-    expect(props.onApiModelChange).not.toHaveBeenCalledWith('upstream-first');
+    expect(props.onApiModelChange).not.toHaveBeenCalled();
   });
 
   it('tests BYOK on Continue, stays on rate limit, and retries on the next click', async () => {

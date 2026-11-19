@@ -1,13 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   buildMediaProvidersForDaemonSave,
-  BYOK_PROVIDER_PRESETS,
   DEFAULT_CONFIG,
-  defaultKnownProviderModel,
   fetchMediaProvidersFromDaemon,
   isStoredMediaProviderEntryEmpty,
   isStoredMediaProviderEntryPresent,
-  KNOWN_PROVIDERS,
   loadConfig,
   mergeDaemonConfig,
   mergeDaemonMediaProviders,
@@ -22,80 +19,12 @@ import type { AppConfig } from '../../src/types';
 const store = new Map<string, string>();
 const originalFetch = globalThis.fetch;
 
-describe('KNOWN_PROVIDERS', () => {
-  it('includes separate SiliconFlow CN and Global presets', () => {
-    expect(
-      KNOWN_PROVIDERS.filter((provider) => provider.label.startsWith('SiliconFlow')),
-    ).toEqual([
-      expect.objectContaining({
-        label: 'SiliconFlow (CN)',
-        protocol: 'openai',
-        baseUrl: 'https://api.siliconflow.cn/v1',
-        preferredModels: expect.arrayContaining(['deepseek-ai/DeepSeek-V3.1']),
-      }),
-      expect.objectContaining({
-        label: 'SiliconFlow (Global)',
-        protocol: 'openai',
-        baseUrl: 'https://api.siliconflow.com/v1',
-        preferredModels: expect.arrayContaining(['deepseek-ai/DeepSeek-V3.1']),
-      }),
-    ]);
-  });
-
-  it('keeps BYOK presets derived from the canonical provider registry', () => {
-    const moonshot = KNOWN_PROVIDERS.find((provider) => provider.label === 'Moonshot');
-    const moonshotPreset = BYOK_PROVIDER_PRESETS.find((preset) => preset.id === 'moonshot');
-
-    expect(moonshot?.preferredModels).toEqual(expect.arrayContaining([
-      'kimi-k2.6',
-      'kimi-k2.7-code',
-    ]));
-    expect(moonshot?.retiredModels).toContain('kimi-k2-0711-preview');
-    expect(moonshotPreset).toEqual(expect.objectContaining({
-      protocol: moonshot?.protocol,
-      baseUrl: moonshot?.baseUrl,
-      preferredModels: moonshot?.preferredModels,
-    }));
-  });
-
-  it('moves both DeepSeek gateways to the V4 model ids before legacy aliases retire', () => {
-    const deepSeekProviders = KNOWN_PROVIDERS.filter((provider) =>
-      provider.label.startsWith('DeepSeek'),
-    );
-
-    expect(deepSeekProviders).toHaveLength(2);
-    for (const provider of deepSeekProviders) {
-      expect(provider.preferredModels).toEqual([
-        'deepseek-v4-flash',
-        'deepseek-v4-pro',
-      ]);
-      expect(provider.retiredModels).toEqual([
-        'deepseek-chat',
-        'deepseek-reasoner',
-      ]);
-    }
-  });
-
-  it('keeps gpt-oss:120b as the Ollama Cloud default', () => {
-    const ollamaCloud = KNOWN_PROVIDERS.find(
-      (provider) => provider.label === 'Ollama Cloud (managed)',
-    );
-
-    expect(defaultKnownProviderModel(ollamaCloud)).toBe('gpt-oss:120b');
-  });
-
-  it('defaults OpenRouter to a live model and records retired defaults', () => {
-    const openRouter = KNOWN_PROVIDERS.find(
-      (provider) => provider.label === 'OpenRouter',
-    );
-
-    expect(defaultKnownProviderModel(openRouter)).toBe(
-      'anthropic/claude-sonnet-4.6',
-    );
-    expect(openRouter?.retiredModels).toEqual([
-      'anthropic/claude-3.7-sonnet',
-      'anthropic/claude-3.5-sonnet',
-    ]);
+describe('BYOK provider presets', () => {
+  it('no longer exports vendor preset tables', async () => {
+    const mod = await import('../../src/state/config');
+    expect('KNOWN_PROVIDERS' in mod).toBe(false);
+    expect('BYOK_PROVIDER_PRESETS' in mod).toBe(false);
+    expect('defaultKnownProviderModel' in mod).toBe(false);
   });
 });
 
@@ -1030,38 +959,29 @@ describe('loadConfig', () => {
 
     expect(config.mode).toBe('api');
     expect(config.baseUrl).toBe('https://api.deepseek.com');
-    expect(config.model).toBe('deepseek-v4-flash');
+    expect(config.apiKey).toBe('sk-test');
+    expect(config.model).toBe('deepseek-chat');
     expect(config.apiProtocol).toBe('openai');
     expect(config.configMigrationVersion).toBe(3);
     expect(config.configMigrationVersion).toBe(3);
   });
 
-  it('migrates retired provider defaults in active, protocol, and provider-draft configs', () => {
-    const moonshotBaseUrl = 'https://api.moonshot.cn/v1';
+  it('keeps a saved former-preset config (DeepSeek, openai) untouched', () => {
+    const deepSeekBaseUrl = 'https://api.deepseek.com';
     const persisted: Partial<AppConfig> = {
       mode: 'api',
       apiProtocol: 'openai',
-      apiKey: 'sk-moonshot',
-      baseUrl: moonshotBaseUrl,
-      model: 'kimi-k2-0711-preview',
-      apiProviderBaseUrl: moonshotBaseUrl,
-      configMigrationVersion: 1,
+      apiKey: 'sk-deepseek',
+      baseUrl: deepSeekBaseUrl,
+      model: 'deepseek-chat',
+      apiProviderBaseUrl: deepSeekBaseUrl,
+      configMigrationVersion: 3,
       apiProtocolConfigs: {
         openai: {
-          apiKey: 'sk-moonshot',
-          baseUrl: moonshotBaseUrl,
-          model: 'kimi-k2-0711-preview',
-          apiProviderBaseUrl: moonshotBaseUrl,
-        },
-      },
-      byokProviderConfigDrafts: {
-        [`openai:${moonshotBaseUrl}`]: {
-          apiConfig: {
-            apiKey: 'sk-moonshot',
-            baseUrl: moonshotBaseUrl,
-            model: 'kimi-k2-0711-preview',
-            apiProviderBaseUrl: moonshotBaseUrl,
-          },
+          apiKey: 'sk-deepseek',
+          baseUrl: deepSeekBaseUrl,
+          model: 'deepseek-chat',
+          apiProviderBaseUrl: deepSeekBaseUrl,
         },
       },
     };
@@ -1069,34 +989,21 @@ describe('loadConfig', () => {
 
     const config = loadConfig();
 
-    expect(config.model).toBe('kimi-k2.6');
-    expect(config.apiProtocolConfigs?.openai?.model).toBe('kimi-k2.6');
-    expect(
-      config.byokProviderConfigDrafts?.[`openai:${moonshotBaseUrl}`]?.apiConfig.model,
-    ).toBe('kimi-k2.6');
-    expect(config.configMigrationVersion).toBe(3);
-  });
-
-  it('migrates the retired OpenRouter default from migration version 3', () => {
-    const openRouterBaseUrl = 'https://openrouter.ai/api/v1';
-    const persisted: Partial<AppConfig> = {
-      mode: 'api',
+    expect(config).toMatchObject({
       apiProtocol: 'openai',
-      apiKey: 'sk-or-test',
-      baseUrl: openRouterBaseUrl,
-      model: 'anthropic/claude-3.7-sonnet',
-      apiProviderBaseUrl: openRouterBaseUrl,
-      configMigrationVersion: 3,
-    };
-    store.set('open-design:config', JSON.stringify(persisted));
-
-    const config = loadConfig();
-
-    expect(config.model).toBe('anthropic/claude-sonnet-4.6');
-    expect(config.configMigrationVersion).toBe(3);
+      apiKey: 'sk-deepseek',
+      baseUrl: deepSeekBaseUrl,
+      model: 'deepseek-chat',
+      apiProviderBaseUrl: deepSeekBaseUrl,
+    });
+    expect(config.apiProtocolConfigs?.openai).toMatchObject({
+      apiKey: 'sk-deepseek',
+      baseUrl: deepSeekBaseUrl,
+      model: 'deepseek-chat',
+    });
   });
 
-  it('migrates legacy SiliconFlow Global configs to the known OpenAI preset', () => {
+  it('migrates legacy SiliconFlow Global configs to OpenAI-compatible without a preset', () => {
     const legacyConfig: Partial<AppConfig> = {
       mode: 'api',
       apiKey: 'sk-test',
@@ -1111,7 +1018,9 @@ describe('loadConfig', () => {
     const config = loadConfig();
 
     expect(config.apiProtocol).toBe('openai');
-    expect(config.apiProviderBaseUrl).toBe('https://api.siliconflow.com/v1');
+    expect(config.baseUrl).toBe('https://api.siliconflow.com/v1');
+    expect(config.apiKey).toBe('sk-test');
+    expect(config.apiProviderBaseUrl).toBeNull();
     expect(config.configMigrationVersion).toBe(3);
   });
 
@@ -1246,7 +1155,7 @@ describe('loadConfig', () => {
     expect(config.baseUrl).toBe('https://ollama.com');
     expect(config.model).toBe('gpt-oss:120b');
     expect(config.apiProtocol).toBe('ollama');
-    expect(config.apiProviderBaseUrl).toBe('https://ollama.com');
+    expect(config.apiKey).toBe('ollama-key');
     expect(config.configMigrationVersion).toBe(3);
     expect(config.configMigrationVersion).toBe(3);
   });
