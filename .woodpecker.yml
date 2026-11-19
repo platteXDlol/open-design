@@ -39,6 +39,9 @@ steps:
     image: node:24-alpine
     environment:
       CI: "true"
+      # onnxruntime-node (via hyperframes) otherwise downloads CUDA binaries
+      # from a GitHub release that now 404s; the daemon only uses the CPU EP.
+      ONNXRUNTIME_NODE_INSTALL_CUDA: skip
     commands:
       - apk add --no-cache python3 make g++ git
       - npm install -g pnpm@10.33.2
