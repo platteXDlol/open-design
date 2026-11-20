@@ -83,8 +83,8 @@ Success looks like:
 Open:
 - `http://127.0.0.1:7456/`
 
-If the browser displays a sign-in dialog, enter `open-design` as the username
-and the `OD_API_TOKEN` value from `deploy/.env` as the password. You should then
+If the browser shows the OpenDesign sign-in page, enter the `OD_API_TOKEN`
+value from `deploy/.env`. The session lasts 30 days (`/logout` ends it). You should then
 see the OpenDesign interface. Docker bridge peers remain authenticated; no host
 networking override is required.
 
@@ -98,4 +98,4 @@ networking override is required.
 - `curl: (7) Failed to connect`: container is still starting; wait 10-20 seconds and retry
 - `pull access denied` or `authentication required` for `ghcr.io/nexu-io/od`: the GHCR package must be public for anonymous Docker, Compose, and Dokploy pulls. An organization maintainer must open GitHub -> Packages -> `od` -> Package settings and change visibility to Public.
 - reverse proxy + `OD_API_TOKEN`: either inject `Authorization: Bearer <OD_API_TOKEN>` at the proxy, or set `OPEN_DESIGN_DISABLE_API_AUTH=1` only when that proxy already authenticates every request and the daemon is not directly exposed.
-- browser sign-in repeats: use username `open-design` and the exact `OD_API_TOKEN` value from `deploy/.env`; recreate the container after changing the token.
+- browser sign-in repeats: use the exact `OD_API_TOKEN` value from `deploy/.env`; recreate the container after changing the token.
