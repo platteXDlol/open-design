@@ -35,9 +35,8 @@ Use `ghcr.io/nexu-io/od:latest` for the latest stable image, or
 `ghcr.io/nexu-io/od:<version>` to pin a supported release.
 
 Open `http://127.0.0.1:7456`. When Docker's bridge makes the browser appear as a
-non-loopback peer, the browser displays its native sign-in dialog. Enter
-`open-design` as the username and the `OD_API_TOKEN` value from `.env` as the
-password. The browser reuses those credentials for same-origin API requests;
+non-loopback peer, the browser is redirected to the `/login` page. Enter the `OD_API_TOKEN` value
+from `.env`; the daemon sets a 30-day HttpOnly session cookie (`/logout` clears it).
 CLI clients and reverse proxies can continue to send
 `Authorization: Bearer <OD_API_TOKEN>`.
 
@@ -58,8 +57,8 @@ Defaults:
 - Compose memory cap: `384m` (`OPEN_DESIGN_MEM_LIMIT=256m` to override)
 
 Do not publish the daemon directly on a public or shared LAN interface. The shared
-API token is single-tenant authentication, not user-level access control, and both
-Basic and Bearer credentials require TLS outside localhost. Remote deployments
+API token is single-tenant authentication, not user-level access control, and the
+login cookie, Basic and Bearer credentials all require TLS outside localhost. Remote deployments
 should keep Compose bound to localhost and put an authenticated TLS reverse proxy,
 SSH tunnel, or VPN in front of it.
 
@@ -278,6 +277,5 @@ custom `COLIMA_BUILD_SWAPFILE`, cleanup refuses to remove it unless
 
 Docker Desktop bridge networking makes host-browser traffic appear to the daemon
 as a non-loopback peer. This is expected: keep the default bridge configuration
-and complete the browser's native sign-in prompt with username `open-design` and
-the `OD_API_TOKEN` value from `.env`. Host networking is no longer required for
+and sign in on the `/login` page with the `OD_API_TOKEN` value from `.env`. Host networking is no longer required for
 the web UI authentication path.

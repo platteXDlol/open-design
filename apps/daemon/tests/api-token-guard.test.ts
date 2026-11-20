@@ -184,11 +184,10 @@ describe('browser authentication for non-loopback Docker peers', () => {
   });
 
   it('authenticates the browser without weakening API clients or probes', async () => {
-    const unauthenticatedShell = await fetch(`${baseUrl}/`);
-    expect(unauthenticatedShell.status).toBe(401);
-    expect(unauthenticatedShell.headers.get('www-authenticate')).toBe(
-      'Basic realm="OpenDesign", charset="UTF-8"',
-    );
+    const unauthenticatedShell = await fetch(`${baseUrl}/`, { redirect: 'manual' });
+    expect(unauthenticatedShell.status).toBe(302);
+    expect(unauthenticatedShell.headers.get('location')).toBe('/login');
+    expect(unauthenticatedShell.headers.get('www-authenticate')).toBeNull();
     expect(unauthenticatedShell.headers.get('set-cookie')).toBeNull();
     expect(await unauthenticatedShell.text()).not.toContain('docker shell');
 
@@ -228,10 +227,63 @@ describe('browser authentication for non-loopback Docker peers', () => {
       });
 
       expect(resp.status).toBe(401);
-      expect(resp.headers.get('www-authenticate')).toBe(
-        'Basic realm="OpenDesign", charset="UTF-8"',
-      );
+      // No Basic challenge: browsers would show the native popup on fetch 401s.
+      expect(resp.headers.get('www-authenticate')).toBeNull();
     }
+  });
+
+  it('signs the browser in through the /login page with a session cookie', async () => {
+    const page = await fetch(`${baseUrl}/login`);
+    expect(page.status).toBe(200);
+    expect(page.headers.get('content-type')).toContain('text/html');
+    const html = await page.text();
+    expect(html).toContain('<form');
+    expect(html).not.toContain('docker shell');
+
+    const wrong = await fetch(`${baseUrl}/api/auth/token-login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: 'token=wrong-token',
+      redirect: 'manual',
+    });
+    expect(wrong.status).toBe(302);
+    expect(wrong.headers.get('location')).toBe('/login?error=1');
+    expect(wrong.headers.get('set-cookie')).toBeNull();
+
+    const ok = await fetch(`${baseUrl}/api/auth/token-login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: 'token=secret-test-token',
+      redirect: 'manual',
+    });
+    expect(ok.status).toBe(302);
+    expect(ok.headers.get('location')).toBe('/');
+    const setCookie = ok.headers.get('set-cookie') ?? '';
+    expect(setCookie).toMatch(/^od_token_session=/);
+    expect(setCookie).toMatch(/HttpOnly/i);
+    expect(setCookie).toMatch(/Max-Age=2592000/);
+    expect(setCookie).not.toContain('secret-test-token');
+    const cookie = setCookie.split(';')[0]!;
+
+    const shell = await fetch(`${baseUrl}/`, { headers: { cookie } });
+    expect(shell.status).toBe(200);
+    expect(await shell.text()).toContain('docker shell');
+    const api = await fetch(`${baseUrl}/api/plugins`, { headers: { cookie } });
+    expect(api.status).toBe(200);
+
+    const forged = await fetch(`${baseUrl}/api/plugins`, {
+      headers: { cookie: 'od_token_session=forged' },
+    });
+    expect(forged.status).toBe(401);
+
+    // App.tsx sends expired sessions to /api/auth/login; it must land on /login.
+    const relogin = await fetch(`${baseUrl}/api/auth/login`);
+    expect(new URL(relogin.url).pathname).toBe('/login');
+
+    const logout = await fetch(`${baseUrl}/logout`, { headers: { cookie }, redirect: 'manual' });
+    expect(logout.status).toBe(302);
+    expect(logout.headers.get('location')).toBe('/login');
+    expect(logout.headers.get('set-cookie') ?? '').toMatch(/od_token_session=;/);
   });
 
   it('keeps the documented Docker browser host separate from powered previews', async () => {

@@ -1035,12 +1035,18 @@ import {
 } from './library-tokens.js';
 import { listLibraryTokenOrigins } from './library-store.js';
 import {
-  API_TOKEN_BASIC_CHALLENGE,
   apiTokenAuthorizationMatches,
   apiTokenFromEnv,
   isApiAuthDisabled,
   isApiTokenMiddlewareEnabled,
+  renderTokenLoginPage,
+  TOKEN_SESSION_COOKIE,
+  TOKEN_SESSION_MAX_AGE_MS,
+  tokenLoginMatches,
+  tokenSessionMatches,
+  tokenSessionValue,
 } from './api-token-auth.js';
+import { readCookie } from './auth/auth-middleware.js';
 import { createOpenDesignPublicMetadataService } from './services/open-design-public-metadata.js';
 import { createWhatsNewService } from './services/whats-new.js';
 import { execCommandViaLoginShell } from './services/login-shell.js';
@@ -3100,6 +3106,27 @@ export async function startServer({
       '/version',
       '/api/version',
     ]);
+    const hasTokenSession = (req: express.Request): boolean =>
+      tokenSessionMatches(readCookie(req, TOKEN_SESSION_COOKIE), apiToken);
+
+    // Browser sign-in page; replaces the native Basic-auth popup.
+    app.get('/login', (req, res) => {
+      res.setHeader('Cache-Control', 'no-store');
+      res.type('html').send(renderTokenLoginPage(req.query.error === '1'));
+    });
+    app.post('/api/auth/token-login', express.urlencoded({ extended: false, limit: '4kb' }), (req, res) => {
+      // shortcut: no rate limit on token guesses, add one if OD_API_TOKEN may be short.
+      if (!tokenLoginMatches(req.body?.token, apiToken)) return res.redirect(302, '/login?error=1');
+      res.cookie(TOKEN_SESSION_COOKIE, tokenSessionValue(apiToken), {
+        httpOnly: true, sameSite: 'lax', secure: req.secure, path: '/', maxAge: TOKEN_SESSION_MAX_AGE_MS,
+      });
+      return res.redirect(302, '/');
+    });
+    app.get('/logout', (_req, res) => {
+      res.clearCookie(TOKEN_SESSION_COOKIE, { path: '/' });
+      res.redirect(302, '/login');
+    });
+
     app.use('/api', (req, res, next) => {
       if (openProbePaths.has(req.path)) return next();
       if (req.method === 'GET') {
@@ -3117,6 +3144,7 @@ export async function startServer({
       // UI which has no proxy in the path.
       if (isLoopbackPeerAddress(req.socket?.remoteAddress)) return next();
       if (apiTokenAuthorizationMatches(req.get('authorization'), apiToken)) return next();
+      if (hasTokenSession(req)) return next();
       if (
         req.method === 'POST'
         && PROJECT_RUN_SCOPED_EXPORT_PATH_RE.test(req.path)
@@ -3127,11 +3155,11 @@ export async function startServer({
       ) {
         return next();
       }
-      res.setHeader('WWW-Authenticate', API_TOKEN_BASIC_CHALLENGE);
+      // No WWW-Authenticate: it would make browsers show the native popup.
       return res.status(401).json({
         error: {
           code: 'API_TOKEN_REQUIRED',
-          message: 'Authorization: Bearer <OD_API_TOKEN> or browser Basic authentication required',
+          message: 'Authorization: Bearer <OD_API_TOKEN> or a /login browser session required',
         },
       });
     });
@@ -3146,11 +3174,8 @@ export async function startServer({
       if (isLoopbackPeerAddress(req.socket?.remoteAddress)) return next();
       if (resolveStaticSpaFallbackPath(req, staticDir) === null) return next();
       if (apiTokenAuthorizationMatches(req.get('authorization'), apiToken)) return next();
-
-      res.setHeader('WWW-Authenticate', API_TOKEN_BASIC_CHALLENGE);
-      return res.status(401).type('text/plain').send(
-        'OpenDesign authentication required. Use username "open-design" and OD_API_TOKEN as the password.',
-      );
+      if (hasTokenSession(req)) return next();
+      return res.redirect(302, '/login');
     });
   }
 
