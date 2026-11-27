@@ -101,6 +101,8 @@ const MEDIA_SCAFFOLD_BOOLEAN_FLAGS = new Set(['help', 'h', 'json']);
 
 const MCP_STRING_FLAGS = new Set([
   'daemon-url',
+  // Read by cli-auth-fetch.ts from argv; sent as Bearer to the daemon URL only.
+  'token',
 ]);
 const MCP_BOOLEAN_FLAGS = new Set([
   'help',
@@ -2372,7 +2374,7 @@ async function runMcp(args) {
 }
 
 function printMcpHelp() {
-  console.log(`Usage: od mcp [--daemon-url <url>]
+  console.log(`Usage: od mcp [--daemon-url <url>] [--token <OD_API_TOKEN>]
 
 Run a stdio MCP (Model Context Protocol) server that proxies project
 tool calls to a running OpenDesign daemon. Wire it into a coding agent
@@ -2381,6 +2383,9 @@ project and create project-scoped artifacts without exporting a zip
 every iteration.
 
 Options:
+  --token <token>      Daemon token (OD_API_TOKEN or a per-user odt_ token)
+                       for a token-protected daemon, e.g. Docker. Sent
+                       only to the daemon URL.
   --daemon-url <url>   OpenDesign daemon HTTP base URL. Resolution
                        order: this flag, OD_DAEMON_URL, inherited sidecar status,
                        then http://127.0.0.1:7456. Each new MCP spawn
